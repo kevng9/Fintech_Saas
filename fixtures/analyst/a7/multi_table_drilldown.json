@@ -1,0 +1,46 @@
+{
+  "anchor": "a7",
+  "fixture_version": "1.0.0",
+  "id": "multi_table_drilldown",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "For the pending application, summarize submitted evidence and missing items.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Application APP-70231 (pending) has verified credit-bureau and income evidence, but its bank-statement verification is still unverified.",
+      "sql": {
+        "command": "SELECT source_type, verification_status FROM aa_credit_application_evidence WHERE application_id = 'APP-70231'",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_credit_application_evidence"
+        ]
+      },
+      "table": {
+        "columns": [
+          "source_type",
+          "verification_status"
+        ],
+        "rows": [
+          [
+            "credit_bureau",
+            "verified"
+          ],
+          [
+            "income_statement",
+            "verified"
+          ],
+          [
+            "bank_statement",
+            "unverified"
+          ]
+        ],
+        "row_count": 3,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

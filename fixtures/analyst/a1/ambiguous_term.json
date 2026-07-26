@@ -1,0 +1,46 @@
+{
+  "anchor": "a1",
+  "fixture_version": "1.0.0",
+  "id": "ambiguous_term",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Which channel is doing best?",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "\"Best\" can mean the highest completion rate, the highest approval rate, or the lowest referral rate, and channels do not rank the same way on all three. Tell me which measure you mean and I will rank channels on it.",
+      "sql": {
+        "command": "SELECT channel, SUM(applications_submitted)/SUM(sessions_started) AS completion_rate FROM aa_digital_funnel GROUP BY channel",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_digital_funnel"
+        ]
+      },
+      "table": {
+        "columns": [
+          "channel",
+          "completion_rate"
+        ],
+        "rows": [
+          [
+            "organic",
+            0.65
+          ],
+          [
+            "paid_search",
+            0.65
+          ],
+          [
+            "branch_referral",
+            0.65
+          ]
+        ],
+        "row_count": 3,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

@@ -1,0 +1,38 @@
+{
+  "anchor": "a4",
+  "fixture_version": "1.0.0",
+  "id": "baseline_kpi",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "How many AML alerts are open, and how many are at risk of an SLA breach in the next 24 hours?",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "214 AML alerts are open, and 26 are at risk of an SLA breach in the next 24 hours.",
+      "sql": {
+        "command": "SELECT COUNT(*) AS open_alert_count, SUM(CASE WHEN sla_due_at <= DATE_ADD(logical_time, INTERVAL 24 HOUR) THEN 1 ELSE 0 END) AS sla_risk_count FROM aml_alert",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_aml_backlog"
+        ]
+      },
+      "table": {
+        "columns": [
+          "open_alert_count",
+          "sla_risk_count"
+        ],
+        "rows": [
+          [
+            214,
+            26
+          ]
+        ],
+        "row_count": 1,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

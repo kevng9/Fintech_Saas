@@ -1,0 +1,47 @@
+{
+  "anchor": "a4",
+  "fixture_version": "1.0.0",
+  "id": "starter_entity_activity",
+  "latency_ms": 1800,
+  "match": [
+    "transaction value counterparties geographies prior alerts",
+    "entity activity summary"
+  ],
+  "prompt": "For the selected cohort, summarize transaction value, counterparties, geographies, and prior alerts.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Account ACCT-88213 has $412,000 in linked transactions across 9 distinct counterparties and 4 geographies in the evidence window, with 2 prior AML cases. That combination of counterparty and geography spread is why the alert is in the correspondent_banking queue.",
+      "sql": {
+        "command": "SELECT account_id, linked_transaction_amount_usd, distinct_counterparties, distinct_geographies, prior_case_count\nFROM aa_aml_entity_activity\nWHERE account_id = 'ACCT-88213'",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_aml_entity_activity"
+        ]
+      },
+      "table": {
+        "columns": [
+          "account_id",
+          "linked_transaction_amount_usd",
+          "distinct_counterparties",
+          "distinct_geographies",
+          "prior_case_count"
+        ],
+        "rows": [
+          [
+            "ACCT-88213",
+            412000,
+            9,
+            4,
+            2
+          ]
+        ],
+        "row_count": 1,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

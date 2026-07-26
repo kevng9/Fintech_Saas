@@ -1,0 +1,113 @@
+import type { AnchorDefinition } from "./types";
+
+/**
+ * A6 Liquidity Command Center. Positions and forecasts can be denominated in
+ * any synthetic currency; every widget aggregates the normalised USD columns.
+ */
+export const a6: AnchorDefinition = {
+  id: "a6",
+  name: "Liquidity Command Center",
+  jobTitle: "Corporate Treasurer",
+  criticalBusinessIssue:
+    "Maintain sufficient liquidity and meet settlement obligations at the lowest practical funding cost.",
+  takeaway: "See Funding Pressure",
+  deltaHypothesis:
+    "Show a funding gap forming hours before the settlement window closes, instead of discovering it at cutoff.",
+  criticalDate: "Not yet qualified",
+  domainKey: "a6_liquidity",
+  status: "available",
+  estimatedMinutes: 5,
+  primaryScenarioId: "A6_SETTLEMENT_DELAY",
+  entityTypes: ["entity"],
+  guardrailText:
+    "Aura Analyst explains measured liquidity and forecast variance. It does not release, stop, or transfer funds.",
+  humanOwnership: "Funding, release, and transfer decisions stay with treasury.",
+  starterPrompts: [
+    "Show current cash position, expected settlements, queued payments, and available liquidity by entity and currency.",
+    "Rank the drivers of the largest forecast variance.",
+    "Which queued payments fall inside the next funding window?",
+  ],
+  overviewWidgets: [
+    {
+      id: "available_liquidity_24h_usd",
+      title: "Available 24-hour liquidity",
+      subtitle: "Across every entity and currency, normalised to USD",
+      metricFormat: "currency",
+      backendRoute: "/api/v1/anchors/a6/overview",
+      visualization: "kpi",
+      expectedBaseline: "Consistent with the seeded baseline",
+      expectedScenarioDelta: "Falls by USD 25 million with the delayed settlement",
+      proofMode: "deterministic",
+      sourceTables: ["aa_liquidity_position"],
+    },
+    {
+      id: "queued_payments_usd",
+      title: "Queued outbound payments",
+      metricFormat: "currency",
+      backendRoute: "/api/v1/anchors/a6/overview",
+      visualization: "kpi",
+      expectedBaseline: "Consistent with the seeded baseline",
+      expectedScenarioDelta: "Not directly affected by the delayed settlement",
+      proofMode: "deterministic",
+      sourceTables: ["aa_liquidity_position"],
+    },
+    {
+      id: "net_expected_settlement_usd",
+      title: "Net expected settlement",
+      subtitle: "Expected inbound minus expected outbound",
+      metricFormat: "currency",
+      backendRoute: "/api/v1/anchors/a6/overview",
+      visualization: "kpi",
+      expectedBaseline: "Consistent with the seeded baseline",
+      expectedScenarioDelta: "Falls by USD 25 million with the delayed inbound settlement",
+      proofMode: "deterministic",
+      sourceTables: ["aa_liquidity_position"],
+    },
+    {
+      id: "funding_window_value_usd",
+      title: "Due in next funding window",
+      subtitle: "Queued payments due within 24 hours",
+      metricFormat: "currency",
+      backendRoute: "/api/v1/anchors/a6/overview",
+      visualization: "kpi",
+      expectedBaseline: "Consistent with the seeded baseline",
+      expectedScenarioDelta: "Settlement-at-risk rises by the delayed amount",
+      proofMode: "deterministic",
+      sourceTables: ["aa_funding_window"],
+    },
+    {
+      id: "position_by_entity",
+      title: "Liquidity position by entity and currency",
+      metricFormat: "currency",
+      backendRoute: "/api/v1/anchors/a6/overview",
+      visualization: "ranked-bar",
+      expectedBaseline: "Every entity within a normal liquidity band",
+      expectedScenarioDelta: "Affected entity drops to the tightest position",
+      proofMode: "analyst-optional",
+      sourceTables: ["aa_liquidity_position"],
+    },
+    {
+      id: "funding_window_table",
+      title: "Queued payments due in the next funding window",
+      metricFormat: "currency",
+      backendRoute: "/api/v1/anchors/a6/overview",
+      visualization: "table",
+      expectedBaseline: "Ranked by soonest due date",
+      expectedScenarioDelta: "Delayed settlement appears at risk in this window",
+      proofMode: "deterministic",
+      sourceTables: ["aa_funding_window"],
+    },
+    {
+      id: "what_changed",
+      title: "Change impact",
+      metricFormat: "text",
+      backendRoute: "/api/v1/anchors/a6/overview",
+      visualization: "callout",
+      expectedBaseline: "No operational event active",
+      expectedScenarioDelta:
+        "Projected 24-hour liquidity falls by USD 25 million and settlement-at-risk rises by the same amount",
+      proofMode: "deterministic",
+      sourceTables: ["settlement", "cash_position_snapshot", "demo_scenario_execution"],
+    },
+  ],
+};

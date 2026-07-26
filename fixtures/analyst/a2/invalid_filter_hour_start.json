@@ -1,0 +1,31 @@
+{
+  "anchor": "a2",
+  "fixture_version": "1.0.0",
+  "id": "invalid_filter_hour_start",
+  "latency_ms": 800,
+  "match": [
+    "not-a-date",
+    "invalid hour_start",
+    "bad date filter"
+  ],
+  "prompt": "Show authorization rate for hour_start = 'not-a-date'.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "chart": null,
+      "error": "invalid_filter_value",
+      "sql": null,
+      "table": {
+        "columns": [
+          "hour_start",
+          "approval_rate"
+        ],
+        "row_count": 0,
+        "rows": [],
+        "truncated": false
+      },
+      "text": "'not-a-date' is not a timestamp, so I cannot filter hour_start on it and I will not guess a period. hour_start values are logical-hour timestamps such as 2026-07-25 08:00:00. Give me a timestamp, or a relative period like the last 24 logical hours, and I will run the same query against it."
+    }
+  ],
+  "scenario_state": "any"
+}

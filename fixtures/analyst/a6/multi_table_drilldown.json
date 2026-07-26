@@ -1,0 +1,46 @@
+{
+  "anchor": "a6",
+  "fixture_version": "1.0.0",
+  "id": "multi_table_drilldown",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "For the entity with the tightest position, list queued payments due in the next funding window.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "EMEA Funding Ltd. has the tightest position. It has 6 queued payments due in the next funding window totalling USD 14.8 million.",
+      "sql": {
+        "command": "SELECT queued_payment_id, amount_usd, due_at FROM aa_funding_window WHERE entity_id = 'ENT-EMEA' ORDER BY minutes_until_due ASC",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_liquidity_position",
+          "aa_funding_window"
+        ]
+      },
+      "table": {
+        "columns": [
+          "queued_payment_id",
+          "amount_usd",
+          "due_at"
+        ],
+        "rows": [
+          [
+            "QP-88117",
+            6100000,
+            "2026-07-25 12:30:00"
+          ],
+          [
+            "QP-88121",
+            3900000,
+            "2026-07-25 15:00:00"
+          ]
+        ],
+        "row_count": 2,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

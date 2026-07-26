@@ -1,0 +1,45 @@
+{
+  "anchor": "a5",
+  "fixture_version": "1.0.0",
+  "id": "ambiguous_term",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Which queue is falling behind?",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "\"Falling behind\" could mean the most disputes at SLA risk, or the most disputed value at risk, and queues rank differently on each. core_ops leads on count; escalations leads on average value per dispute. Tell me which you mean.",
+      "sql": {
+        "command": "SELECT queue_id, sla_risk_count, sla_risk_amount_total FROM aa_dispute_sla_risk",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_dispute_sla_risk"
+        ]
+      },
+      "table": {
+        "columns": [
+          "queue_id",
+          "sla_risk_count",
+          "sla_risk_amount_total"
+        ],
+        "rows": [
+          [
+            "core_ops",
+            35,
+            85600
+          ],
+          [
+            "escalations",
+            6,
+            19800
+          ]
+        ],
+        "row_count": 2,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

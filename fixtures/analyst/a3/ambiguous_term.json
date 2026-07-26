@@ -1,0 +1,45 @@
+{
+  "anchor": "a3",
+  "fixture_version": "1.0.0",
+  "id": "ambiguous_term",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Which fraud type is the worst?",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "\"Worst\" could mean the most confirmed loss, the most cases, or the highest false-positive rate, and fraud types do not rank the same way on each. Tell me which measure you mean, or here is loss by fraud type so you can compare.",
+      "sql": {
+        "command": "SELECT fraud_type, confirmed_loss_usd, false_positive_rate FROM aa_fraud_loss_summary ORDER BY confirmed_loss_usd DESC",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_fraud_loss_summary"
+        ]
+      },
+      "table": {
+        "columns": [
+          "fraud_type",
+          "confirmed_loss_usd",
+          "false_positive_rate"
+        ],
+        "rows": [
+          [
+            "account_takeover",
+            61400,
+            0.22
+          ],
+          [
+            "synthetic_identity",
+            48900,
+            0.19
+          ]
+        ],
+        "row_count": 2,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

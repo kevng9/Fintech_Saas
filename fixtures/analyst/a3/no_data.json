@@ -1,0 +1,33 @@
+{
+  "anchor": "a3",
+  "fixture_version": "1.0.0",
+  "id": "no_data",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Show confirmed loss for fraud_type = 'INSURANCE_CLAIM'.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "There is no data for fraud_type = 'INSURANCE_CLAIM' in this dataset. The fraud types present are account_takeover, synthetic_identity, card_testing, and authorized_push_payment, so the filter returns no rows rather than a low value.",
+      "sql": {
+        "command": "SELECT * FROM aa_fraud_loss_summary WHERE fraud_type = 'INSURANCE_CLAIM'",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_fraud_loss_summary"
+        ]
+      },
+      "table": {
+        "columns": [
+          "fraud_type",
+          "confirmed_loss_usd"
+        ],
+        "rows": [],
+        "row_count": 0,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

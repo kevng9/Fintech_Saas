@@ -1,0 +1,38 @@
+{
+  "anchor": "a5",
+  "fixture_version": "1.0.0",
+  "id": "baseline_kpi",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "How many disputes are open, and how many are at risk of an SLA breach in the next 24 logical hours?",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "312 disputes are open, and 41 are at risk of an SLA breach in the next 24 logical hours.",
+      "sql": {
+        "command": "SELECT SUM(open_dispute_count) AS open_dispute_count, SUM(sla_risk_count) AS sla_risk_count FROM aa_dispute_sla_risk",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_dispute_sla_risk"
+        ]
+      },
+      "table": {
+        "columns": [
+          "open_dispute_count",
+          "sla_risk_count"
+        ],
+        "rows": [
+          [
+            312,
+            41
+          ]
+        ],
+        "row_count": 1,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

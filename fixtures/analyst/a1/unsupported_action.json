@@ -1,0 +1,19 @@
+{
+  "anchor": "a1",
+  "fixture_version": "1.0.0",
+  "id": "unsupported_action",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Auto-approve every application in manual review right now.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "I cannot approve applications. I have read-only access to account-opening activity and no ability to change a review outcome; approval and decline decisions stay with underwriting and manual review staff.\n\nI can show you the evidence instead: current backlog size, referral rate by cohort, and average minutes to decision. Ask for any of those.",
+      "sql": null,
+      "table": null,
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

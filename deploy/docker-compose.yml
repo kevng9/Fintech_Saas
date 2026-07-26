@@ -1,0 +1,86 @@
+# Runs the two demo processes against an existing SingleStore workspace.
+#
+# SingleStore is not part of this stack: the demo targets a Helios workspace, so
+# configure app/.env.local first and make sure this machine's IP is on the
+# workspace firewall allowlist.
+#
+#   cd deploy && docker compose up --build
+#
+# Order matters and is enforced below: bootstrap must finish before the
+# simulator starts advancing the clock, and the app is only useful once a run is
+# active.
+
+name: fintech-analyst-demo
+
+x-demo-env: &demo-env
+  # One file configures both processes. It holds credentials, so it is mounted
+  # rather than baked into an image.
+  env_file:
+    - ../app/.env.local
+
+services:
+  # Creates the database, applies migrations, seeds the template, activates run 1.
+  # Idempotent: on a second start it re-uses the existing template and just
+  # activates a fresh run.
+  bootstrap:
+    <<: *demo-env
+    build:
+      context: ..
+      dockerfile: deploy/simulator.Dockerfile
+    command: ["bootstrap"]
+    volumes:
+      # The recorded baseline fingerprint is written here and must survive the
+      # container, because reset verifies against it. On Linux, the container
+      # runs as uid 10001, so make sure ../fixtures is writable by it.
+      - ../fixtures:/demo/fixtures
+    restart: "no"
+
+  # The single leader: advances the logical clock, emits events, executes
+  # commands the app writes. Exactly one of these may run per database.
+  simulator:
+    <<: *demo-env
+    build:
+      context: ..
+      dockerfile: deploy/simulator.Dockerfile
+    command: ["run"]
+    volumes:
+      - ../fixtures:/demo/fixtures
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-m", "fintech_demo", "status"]
+      interval: 30s
+      timeout: 15s
+      start_period: 20s
+      retries: 3
+
+  app:
+    <<: *demo-env
+    build:
+      context: ..
+      dockerfile: deploy/app.Dockerfile
+    environment:
+      NODE_ENV: production
+      # Fixtures are read from disk at request time so they can be regenerated
+      # without rebuilding the image.
+      DEMO_FIXTURE_DIR: /demo/fixtures/analyst
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../fixtures:/demo/fixtures:ro
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      # Liveness, not readiness: the container should not be restarted because
+      # the workspace is briefly unreachable. Use /api/health/demo in the app to
+      # judge whether the demo itself is ready to present.
+      test:
+        ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health/live').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3

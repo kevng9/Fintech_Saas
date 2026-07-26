@@ -1,0 +1,114 @@
+import type { AnchorDefinition } from "./types";
+
+/**
+ * A3 Trace the Loss (Fraud Strategy). Confirmed loss and false-positive rate
+ * are always derived from a human investigator's disposition on a case, never
+ * from an alert score alone.
+ */
+export const a3: AnchorDefinition = {
+  id: "a3",
+  name: "Trace the Loss",
+  jobTitle: "VP of Fraud Strategy",
+  criticalBusinessIssue:
+    "Reduce fraud loss while controlling false positives and preserving legitimate revenue.",
+  takeaway: "Trace Loss Faster",
+  deltaHypothesis:
+    "Cut the time from a loss cluster appearing to an investigator having the supporting evidence in hand.",
+  criticalDate: "Not yet qualified",
+  domainKey: "a3_fraud_strategy",
+  status: "available",
+  estimatedMinutes: 5,
+  primaryScenarioId: "A3_LOSS_CLUSTER",
+  entityTypes: ["case"],
+  guardrailText:
+    "Aura Analyst assembles and explains evidence. It does not determine that a customer committed fraud.",
+  humanOwnership: "Case decisions and customer action stay with fraud investigators.",
+  starterPrompts: [
+    "Show confirmed fraud loss and false-positive rate by channel and fraud type.",
+    "For the highest-loss segment, compare device reuse, account age, merchant, and velocity.",
+    "List supporting cases for human investigator review.",
+  ],
+  overviewWidgets: [
+    {
+      id: "confirmed_loss",
+      title: "Confirmed fraud loss",
+      subtitle: "Cases opened in the last 24 logical hours",
+      metricFormat: "currency",
+      backendRoute: "/api/v1/anchors/a3/overview",
+      visualization: "kpi",
+      expectedBaseline: "Consistent with the seeded baseline",
+      expectedScenarioDelta: "Rises by $2,500 after human dispositions",
+      proofMode: "deterministic",
+      sourceTables: ["fraud_case", "fraud_alert"],
+    },
+    {
+      id: "false_positive_rate",
+      title: "False-positive rate",
+      subtitle: "Legitimate share of dispositioned alerts",
+      metricFormat: "percent",
+      backendRoute: "/api/v1/anchors/a3/overview",
+      visualization: "kpi",
+      expectedBaseline: "Consistent with the seeded baseline",
+      expectedScenarioDelta: "Injected cohort false-positive rate is 58.33 percent",
+      proofMode: "deterministic",
+      sourceTables: ["fraud_case"],
+    },
+    {
+      id: "confirmed_fraud_cases",
+      title: "Confirmed fraud cases",
+      metricFormat: "count",
+      backendRoute: "/api/v1/anchors/a3/overview",
+      visualization: "kpi",
+      expectedBaseline: "Consistent with the seeded baseline",
+      expectedScenarioDelta: "Rises by 5 cases",
+      proofMode: "deterministic",
+      sourceTables: ["fraud_case"],
+    },
+    {
+      id: "open_cases",
+      title: "Open cases",
+      subtitle: "Awaiting investigator disposition",
+      metricFormat: "count",
+      backendRoute: "/api/v1/anchors/a3/overview",
+      visualization: "kpi",
+      expectedBaseline: "Consistent with the seeded baseline",
+      expectedScenarioDelta: "Rises with newly opened cases before disposition",
+      proofMode: "deterministic",
+      sourceTables: ["fraud_case"],
+    },
+    {
+      id: "loss_by_type",
+      title: "Loss and false-positive rate by channel and fraud type",
+      metricFormat: "currency",
+      backendRoute: "/api/v1/anchors/a3/overview",
+      visualization: "ranked-bar",
+      expectedBaseline: "Losses spread across channels and fraud types",
+      expectedScenarioDelta: "Injected fraud type leads confirmed loss",
+      proofMode: "analyst-optional",
+      sourceTables: ["aa_fraud_loss_summary"],
+    },
+    {
+      id: "highest_loss_cases",
+      title: "Highest-loss cases for investigator review",
+      metricFormat: "currency",
+      backendRoute: "/api/v1/anchors/a3/overview",
+      visualization: "table",
+      expectedBaseline: "Ranked by confirmed loss and score",
+      expectedScenarioDelta: "Injected cases appear at the top of the list",
+      proofMode: "deterministic",
+      sourceTables: ["aa_fraud_case_review"],
+    },
+    {
+      id: "what_changed",
+      title: "Change impact",
+      metricFormat: "text",
+      backendRoute: "/api/v1/anchors/a3/overview",
+      visualization: "callout",
+      expectedBaseline: "No operational event active",
+      expectedScenarioDelta:
+        "100 transactions and 12 alerts added; 5 closed as fraud, 7 as legitimate",
+      proofMode: "deterministic",
+      sourceTables: ["fraud_case", "fraud_alert", "demo_scenario_execution"],
+    },
+  ],
+};

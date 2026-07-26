@@ -1,0 +1,48 @@
+{
+  "anchor": "a4",
+  "fixture_version": "1.0.0",
+  "id": "starter_missing_evidence",
+  "latency_ms": 1800,
+  "match": [
+    "missing evidence",
+    "incomplete evidence items"
+  ],
+  "prompt": "Identify missing evidence without recommending a disposition.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "For alert ALERT-19042, 2 of 7 evidence items are marked incomplete: the counterparty KYC profile and one prior-case cross-reference. No disposition is implied by this list.",
+      "sql": {
+        "command": "SELECT source_type, fact_text, completeness_status\nFROM aa_aml_alert_evidence\nWHERE alert_id = 'ALERT-19042' AND completeness_status <> 'complete'",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_aml_alert_evidence"
+        ]
+      },
+      "table": {
+        "columns": [
+          "source_type",
+          "fact_text",
+          "completeness_status"
+        ],
+        "rows": [
+          [
+            "kyc_profile",
+            "Counterparty KYC profile not on file",
+            "incomplete"
+          ],
+          [
+            "prior_case",
+            "Prior-case cross-reference pending",
+            "incomplete"
+          ]
+        ],
+        "row_count": 2,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

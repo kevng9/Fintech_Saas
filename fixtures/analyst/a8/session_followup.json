@@ -1,0 +1,42 @@
+{
+  "anchor": "a8",
+  "fixture_version": "1.0.0",
+  "id": "session_followup",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Now show the same thing for groceries.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "For groceries, this month's spending is $340, about the same as last month's $355 \u2014 no meaningful change.",
+      "sql": {
+        "command": "SELECT spend_month, category_spend_usd FROM aa_customer_spend_change WHERE category = 'groceries' ORDER BY spend_month DESC LIMIT 2",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_customer_spend_change"
+        ]
+      },
+      "table": {
+        "columns": [
+          "spend_month",
+          "category_spend_usd"
+        ],
+        "rows": [
+          [
+            "2026-07-01",
+            340.0
+          ],
+          [
+            "2026-06-01",
+            355.0
+          ]
+        ],
+        "row_count": 2,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

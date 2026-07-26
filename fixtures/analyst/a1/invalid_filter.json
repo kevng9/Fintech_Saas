@@ -1,0 +1,27 @@
+{
+  "anchor": "a1",
+  "fixture_version": "1.0.0",
+  "id": "invalid_filter",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Show sessions started for session_date = 'not-a-date'.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "'not-a-date' is not a date, so I cannot filter session_date on it and I will not guess a period. session_date values are logical calendar days such as 2026-07-25. Give me a date or a relative period like the last 30 logical days.",
+      "sql": null,
+      "table": {
+        "columns": [
+          "session_date",
+          "sessions_started"
+        ],
+        "rows": [],
+        "row_count": 0,
+        "truncated": false
+      },
+      "chart": null,
+      "error": "invalid_filter_value"
+    }
+  ],
+  "scenario_state": "any"
+}

@@ -1,0 +1,40 @@
+{
+  "anchor": "a5",
+  "fixture_version": "1.0.0",
+  "id": "comparison",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Compare the at-risk queue depth against the prior 30 days.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "The at-risk queue depth today (53 disputes) is 12 above the 30-day average of 41, driven by the injected merchant-outage surge.",
+      "sql": {
+        "command": "SELECT SUM(sla_risk_count) AS sla_risk_count FROM aa_dispute_sla_risk",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_dispute_sla_risk"
+        ]
+      },
+      "table": {
+        "columns": [
+          "current_sla_risk_count",
+          "baseline_avg_sla_risk_count",
+          "delta"
+        ],
+        "rows": [
+          [
+            53,
+            41,
+            12
+          ]
+        ],
+        "row_count": 1,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

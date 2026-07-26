@@ -1,0 +1,27 @@
+{
+  "anchor": "a4",
+  "fixture_version": "1.0.0",
+  "id": "invalid_filter",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Show alerts for created_at = 'not-a-date'.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "'not-a-date' is not a timestamp, so I cannot filter created_at on it and I will not guess a period. created_at values are logical timestamps such as 2026-07-25 08:00:00.",
+      "sql": null,
+      "table": {
+        "columns": [
+          "created_at",
+          "open_alert_count"
+        ],
+        "rows": [],
+        "row_count": 0,
+        "truncated": false
+      },
+      "chart": null,
+      "error": "invalid_filter_value"
+    }
+  ],
+  "scenario_state": "any"
+}

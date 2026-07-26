@@ -1,0 +1,62 @@
+{
+  "anchor": "a1",
+  "fixture_version": "1.0.0",
+  "id": "starter_cohort_driver",
+  "latency_ms": 1800,
+  "match": [
+    "cohort driving manual review",
+    "highest referral cohort",
+    "intent cohort ranking"
+  ],
+  "prompt": "Which high-intent cohort explains the largest conversion change?",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "high_intent_promo has the highest manual-review referral rate today at 50.0%, well above the other tracked cohorts, which sit between 10% and 18%. It is also the only cohort with scenario activity flagged in the current run.",
+      "sql": {
+        "command": "SELECT intent_cohort, channel, sessions_started, submit_rate, referral_rate\nFROM aa_digital_intent_cohort\nORDER BY referral_rate DESC LIMIT 5",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_digital_intent_cohort"
+        ]
+      },
+      "table": {
+        "columns": [
+          "intent_cohort",
+          "channel",
+          "sessions_started",
+          "submit_rate",
+          "referral_rate"
+        ],
+        "rows": [
+          [
+            "high_intent_promo",
+            "paid_search",
+            100,
+            0.8,
+            0.5
+          ],
+          [
+            "price_sensitive",
+            "organic",
+            340,
+            0.62,
+            0.18
+          ],
+          [
+            "returning_visitor",
+            "organic",
+            510,
+            0.71,
+            0.1
+          ]
+        ],
+        "row_count": 3,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

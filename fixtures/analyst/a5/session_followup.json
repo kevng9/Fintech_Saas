@@ -1,0 +1,38 @@
+{
+  "anchor": "a5",
+  "fixture_version": "1.0.0",
+  "id": "session_followup",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Now show the timeline for the largest dispute in that reason code.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "The largest MERCHANT_OUTAGE dispute is DSP-04471 at $612.00, opened 2026-07-24 09:10, currently in core_ops with a provisional credit already issued.",
+      "sql": {
+        "command": "SELECT dispute_id, disputed_amount FROM dispute_case WHERE reason_code = 'MERCHANT_OUTAGE' ORDER BY disputed_amount DESC LIMIT 1",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_dispute_timeline"
+        ]
+      },
+      "table": {
+        "columns": [
+          "dispute_id",
+          "disputed_amount"
+        ],
+        "rows": [
+          [
+            "DSP-04471",
+            612.0
+          ]
+        ],
+        "row_count": 1,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

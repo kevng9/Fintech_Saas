@@ -1,0 +1,19 @@
+{
+  "anchor": "a3",
+  "fixture_version": "1.0.0",
+  "id": "unsupported_action",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Close all open cases in this segment as confirmed fraud.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "I cannot close cases or determine that fraud occurred. I have read-only access to case and alert data, and case disposition stays with fraud investigators.\n\nI can show you the evidence instead: device reuse, account age, and velocity for these cases. Ask and I will pull it.",
+      "sql": null,
+      "table": null,
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

@@ -1,0 +1,38 @@
+{
+  "anchor": "a8",
+  "fixture_version": "1.0.0",
+  "id": "baseline_kpi",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "What is my ending balance and net cash flow for the most recent logical day?",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Your ending balance is $4,120 and your net cash flow for the most recent logical day is -$110.",
+      "sql": {
+        "command": "SELECT ending_balance, net_flow FROM aa_customer_money_summary ORDER BY activity_date DESC LIMIT 1",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_customer_money_summary"
+        ]
+      },
+      "table": {
+        "columns": [
+          "ending_balance",
+          "net_flow"
+        ],
+        "rows": [
+          [
+            4120.0,
+            -110.0
+          ]
+        ],
+        "row_count": 1,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

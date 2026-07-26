@@ -1,0 +1,32 @@
+# Secrets. The app and the simulator both read app/.env.local; it must never be
+# committed. app/.env.local.example is the template that is.
+.env
+.env.local
+.env.*.local
+app/.env.local
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Node and Next
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+# Editors and OS
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Local simulator output
+*.log
+
+# fixtures/baseline/ is deliberately NOT ignored: the recorded baseline
+# fingerprint and checksum are the contract that reset verifies against.
+.gstack/

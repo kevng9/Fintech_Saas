@@ -1,0 +1,33 @@
+{
+  "anchor": "a1",
+  "fixture_version": "1.0.0",
+  "id": "no_data",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Show the funnel for channel = 'branch'.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "There is no digital-channel data for channel = 'branch' in this dataset: this anchor tracks organic, paid_search, and branch_referral. The filter returns no rows rather than a low value, and I have not substituted a nearby channel.",
+      "sql": {
+        "command": "SELECT * FROM aa_digital_funnel WHERE channel = 'branch'",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_digital_funnel"
+        ]
+      },
+      "table": {
+        "columns": [
+          "channel",
+          "sessions_started"
+        ],
+        "rows": [],
+        "row_count": 0,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

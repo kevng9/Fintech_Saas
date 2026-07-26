@@ -1,0 +1,73 @@
+{
+  "anchor": "a3",
+  "fixture_version": "1.0.0",
+  "id": "starter_loss_by_type_baseline",
+  "latency_ms": 1800,
+  "match": [
+    "confirmed loss by fraud type",
+    "loss and false positive rate"
+  ],
+  "prompt": "Show confirmed fraud loss and false-positive rate by channel and fraud type.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Confirmed fraud loss over the run totals $184,200 across five fraud types. account_takeover on card_not_present carries the most loss at $61,400, with a false-positive rate of 22.0%.",
+      "sql": {
+        "command": "SELECT channel, fraud_type, cases_total, confirmed_fraud_cases, confirmed_loss_usd, false_positive_rate\nFROM aa_fraud_loss_summary\nORDER BY confirmed_loss_usd DESC",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_fraud_loss_summary"
+        ]
+      },
+      "table": {
+        "columns": [
+          "channel",
+          "fraud_type",
+          "cases_total",
+          "confirmed_fraud_cases",
+          "confirmed_loss_usd",
+          "false_positive_rate"
+        ],
+        "rows": [
+          [
+            "card_not_present",
+            "account_takeover",
+            58,
+            22,
+            61400,
+            0.22
+          ],
+          [
+            "ach",
+            "synthetic_identity",
+            41,
+            15,
+            48900,
+            0.19
+          ],
+          [
+            "card_not_present",
+            "card_testing",
+            63,
+            18,
+            39800,
+            0.31
+          ],
+          [
+            "wire",
+            "authorized_push_payment",
+            24,
+            9,
+            34100,
+            0.12
+          ]
+        ],
+        "row_count": 4,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "baseline"
+}

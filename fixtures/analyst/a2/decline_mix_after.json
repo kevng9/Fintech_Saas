@@ -1,0 +1,308 @@
+{
+  "anchor": "a2",
+  "fixture_version": "1.0.0",
+  "id": "decline_mix_after",
+  "latency_ms": 2900,
+  "match": [
+    "merchant category",
+    "response code",
+    "decline breakdown",
+    "why declines"
+  ],
+  "prompt": "Break the largest change down by merchant category and response code.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "chart": null,
+      "error": null,
+      "sql": {
+        "command": "SELECT merchant_category, response_code,\n       SUM(decline_count) AS declines,\n       SUM(declined_amount_usd) AS declined_amount_usd\nFROM aa_payment_decline_mix\nWHERE hour_start >= (SELECT MAX(hour_start) FROM aa_payment_decline_mix)\nGROUP BY merchant_category, response_code\nORDER BY declines DESC",
+        "confidence_score": 0.95,
+        "tables_used": [
+          "aa_payment_decline_mix"
+        ]
+      },
+      "table": {
+        "columns": [
+          "merchant_category",
+          "response_code",
+          "declines",
+          "share",
+          "declined_amount_usd"
+        ],
+        "row_count": 38,
+        "rows": [
+          [
+            "Digital Goods",
+            "TIMEOUT",
+            18,
+            0.1698,
+            1120.18
+          ],
+          [
+            "Digital Goods",
+            "DO_NOT_HONOR",
+            7,
+            0.066,
+            546.28
+          ],
+          [
+            "Streaming",
+            "INSUFFICIENT_FUNDS",
+            7,
+            0.066,
+            137.61
+          ],
+          [
+            "Digital Goods",
+            "INSUFFICIENT_FUNDS",
+            6,
+            0.0566,
+            326.31
+          ],
+          [
+            "Ride Hailing",
+            "INSUFFICIENT_FUNDS",
+            5,
+            0.0472,
+            215.81
+          ],
+          [
+            "Digital Goods",
+            "ISSUER_UNAVAILABLE",
+            4,
+            0.0377,
+            127.97
+          ],
+          [
+            "Gaming",
+            "TIMEOUT",
+            4,
+            0.0377,
+            363.9
+          ],
+          [
+            "Gaming",
+            "INSUFFICIENT_FUNDS",
+            4,
+            0.0377,
+            328.14
+          ],
+          [
+            "Travel",
+            "DO_NOT_HONOR",
+            4,
+            0.0377,
+            3935.45
+          ],
+          [
+            "Travel",
+            "INSUFFICIENT_FUNDS",
+            4,
+            0.0377,
+            2806.57
+          ],
+          [
+            "Apparel",
+            "DO_NOT_HONOR",
+            3,
+            0.0283,
+            547.83
+          ],
+          [
+            "Electronics",
+            "DO_NOT_HONOR",
+            3,
+            0.0283,
+            1281.8
+          ],
+          [
+            "Ride Hailing",
+            "DO_NOT_HONOR",
+            3,
+            0.0283,
+            115.34
+          ],
+          [
+            "Ride Hailing",
+            "TIMEOUT",
+            3,
+            0.0283,
+            95.84
+          ],
+          [
+            "Travel",
+            "TIMEOUT",
+            3,
+            0.0283,
+            3410.15
+          ],
+          [
+            "Electronics",
+            "TIMEOUT",
+            2,
+            0.0189,
+            269.35
+          ],
+          [
+            "Gaming",
+            "DO_NOT_HONOR",
+            2,
+            0.0189,
+            206.82
+          ],
+          [
+            "Grocery",
+            "RISK_DECLINE",
+            2,
+            0.0189,
+            338.04
+          ],
+          [
+            "Streaming",
+            "TIMEOUT",
+            2,
+            0.0189,
+            40.27
+          ],
+          [
+            "Streaming",
+            "INVALID_CVV",
+            2,
+            0.0189,
+            23.2
+          ],
+          [
+            "Apparel",
+            "EXPIRED_CARD",
+            1,
+            0.0094,
+            104.17
+          ],
+          [
+            "Apparel",
+            "INSUFFICIENT_FUNDS",
+            1,
+            0.0094,
+            213.76
+          ],
+          [
+            "Apparel",
+            "TIMEOUT",
+            1,
+            0.0094,
+            45.68
+          ],
+          [
+            "Digital Goods",
+            "EXPIRED_CARD",
+            1,
+            0.0094,
+            34.37
+          ],
+          [
+            "Digital Goods",
+            "INVALID_CVV",
+            1,
+            0.0094,
+            34.18
+          ],
+          [
+            "Electronics",
+            "INVALID_CVV",
+            1,
+            0.0094,
+            466.31
+          ],
+          [
+            "Electronics",
+            "INSUFFICIENT_FUNDS",
+            1,
+            0.0094,
+            72.93
+          ],
+          [
+            "Gaming",
+            "RISK_DECLINE",
+            1,
+            0.0094,
+            74.55
+          ],
+          [
+            "Gaming",
+            "ISSUER_UNAVAILABLE",
+            1,
+            0.0094,
+            81.03
+          ],
+          [
+            "Gaming",
+            "EXPIRED_CARD",
+            1,
+            0.0094,
+            102.83
+          ],
+          [
+            "Grocery",
+            "TIMEOUT",
+            1,
+            0.0094,
+            50.35
+          ],
+          [
+            "Grocery",
+            "ISSUER_UNAVAILABLE",
+            1,
+            0.0094,
+            86.5
+          ],
+          [
+            "Grocery",
+            "DO_NOT_HONOR",
+            1,
+            0.0094,
+            153.78
+          ],
+          [
+            "Grocery",
+            "INVALID_CVV",
+            1,
+            0.0094,
+            119.73
+          ],
+          [
+            "Ride Hailing",
+            "ISSUER_UNAVAILABLE",
+            1,
+            0.0094,
+            60.38
+          ],
+          [
+            "Streaming",
+            "DO_NOT_HONOR",
+            1,
+            0.0094,
+            18.89
+          ],
+          [
+            "Streaming",
+            "RISK_DECLINE",
+            1,
+            0.0094,
+            22.62
+          ],
+          [
+            "Travel",
+            "ISSUER_UNAVAILABLE",
+            1,
+            0.0094,
+            705.27
+          ]
+        ],
+        "truncated": false
+      },
+      "text": "In the most recent logical hour, declines are led by TIMEOUT on Digital Goods with 18 declines, 17.0% of all declines in the period and $1,120 of declined value. TIMEOUT is the dominant code, which points at processor response time rather than issuer decisioning. Confirming that is a human step."
+    }
+  ],
+  "scenario_state": "after_injection"
+}

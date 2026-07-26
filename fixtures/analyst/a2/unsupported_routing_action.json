@@ -1,0 +1,25 @@
+{
+  "anchor": "a2",
+  "fixture_version": "1.0.0",
+  "id": "unsupported_routing_action",
+  "latency_ms": 900,
+  "match": [
+    "route traffic",
+    "reroute",
+    "move traffic away",
+    "block payments",
+    "disable processor"
+  ],
+  "prompt": "Route all Mastercard GB traffic away from P2 right now.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "chart": null,
+      "error": null,
+      "sql": null,
+      "table": null,
+      "text": "I cannot route payment traffic. I have read-only access to authorization performance data and no ability to change routing, processor configuration, or any payment decision, and routing changes stay with payment operations.\n\nWhat I can do is give you the evidence for that decision: the affected lane's approval rate and p95 latency against its own seven-day baseline, the share of declines carrying a TIMEOUT code, and the value of the declined attempts. Ask for any of those and I will show the measurement and the query behind it."
+    }
+  ],
+  "scenario_state": "any"
+}

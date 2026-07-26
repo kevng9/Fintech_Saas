@@ -1,0 +1,48 @@
+{
+  "anchor": "a4",
+  "fixture_version": "1.0.0",
+  "id": "ambiguous_term",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Which queue is worst?",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "\"Worst\" could mean the largest backlog, the oldest average age, or the most SLA risk, and queues do not rank the same way on each. Here is all three so you can choose, or tell me which one matters.",
+      "sql": {
+        "command": "SELECT assigned_queue, open_alert_count, avg_age_hours, sla_risk_count FROM aa_aml_backlog",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_aml_backlog"
+        ]
+      },
+      "table": {
+        "columns": [
+          "assigned_queue",
+          "open_alert_count",
+          "avg_age_hours",
+          "sla_risk_count"
+        ],
+        "rows": [
+          [
+            "correspondent_banking",
+            62,
+            33,
+            10
+          ],
+          [
+            "retail_review",
+            153,
+            20,
+            17
+          ]
+        ],
+        "row_count": 2,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

@@ -1,0 +1,54 @@
+{
+  "anchor": "a1",
+  "fixture_version": "1.0.0",
+  "id": "starter_review_comparison",
+  "latency_ms": 1800,
+  "match": [
+    "manual review vs straight through",
+    "review path comparison"
+  ],
+  "prompt": "Compare manual review with straight-through applications.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Straight-through applications approve at 88.0% with an average 4 minutes to decision. Manual review approves at 61.0% with an average 214 minutes to decision, which is the expected trade-off: review exists to catch the harder cases, at the cost of speed.",
+      "sql": {
+        "command": "SELECT review_path, product_id, applications, approval_rate, avg_minutes_to_decision\nFROM aa_digital_review_comparison\nORDER BY applications DESC",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_digital_review_comparison"
+        ]
+      },
+      "table": {
+        "columns": [
+          "review_path",
+          "product_id",
+          "applications",
+          "approval_rate",
+          "avg_minutes_to_decision"
+        ],
+        "rows": [
+          [
+            "straight_through",
+            "CHECKING",
+            4200,
+            0.88,
+            4
+          ],
+          [
+            "manual_review",
+            "CHECKING",
+            620,
+            0.61,
+            214
+          ]
+        ],
+        "row_count": 2,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

@@ -1,0 +1,46 @@
+{
+  "anchor": "a8",
+  "fixture_version": "1.0.0",
+  "id": "multi_table_drilldown",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Show the transactions that explain the change in my dining spending.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Six new dining transactions this period total $300 in new spending: Harbor Bistro ($52), Corner Cafe ($48), and Riverside Grill ($60) are the largest three.",
+      "sql": {
+        "command": "SELECT merchant_name, amount_usd FROM aa_customer_transaction_evidence WHERE category = 'dining' AND is_scenario_event = 1 ORDER BY amount_usd DESC",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_customer_transaction_evidence"
+        ]
+      },
+      "table": {
+        "columns": [
+          "merchant_name",
+          "amount_usd"
+        ],
+        "rows": [
+          [
+            "Riverside Grill",
+            60.0
+          ],
+          [
+            "Harbor Bistro",
+            52.0
+          ],
+          [
+            "Corner Cafe",
+            48.0
+          ]
+        ],
+        "row_count": 3,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

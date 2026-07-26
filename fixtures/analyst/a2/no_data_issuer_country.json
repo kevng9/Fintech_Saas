@@ -1,0 +1,38 @@
+{
+  "anchor": "a2",
+  "fixture_version": "1.0.0",
+  "id": "no_data_issuer_country",
+  "latency_ms": 1500,
+  "match": [
+    "issuer country JP",
+    "japan authorization",
+    "country jp"
+  ],
+  "prompt": "Show authorization rate for issuer country JP.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "chart": null,
+      "error": null,
+      "sql": {
+        "command": "SELECT issuer_country,\n       SUM(attempts) AS attempts,\n       SUM(approvals) / SUM(attempts) AS approval_rate\nFROM aa_payment_performance_hourly\nWHERE issuer_country = 'JP'\nGROUP BY issuer_country",
+        "confidence_score": 0.95,
+        "tables_used": [
+          "aa_payment_performance_hourly"
+        ]
+      },
+      "table": {
+        "columns": [
+          "issuer_country",
+          "attempts",
+          "approval_rate"
+        ],
+        "row_count": 0,
+        "rows": [],
+        "truncated": false
+      },
+      "text": "There is no authorization data for issuer country JP in this dataset. The issuer countries present are US, GB, DE and CA, so the filter returns no rows rather than a low value, and I have not substituted a nearby country."
+    }
+  ],
+  "scenario_state": "any"
+}

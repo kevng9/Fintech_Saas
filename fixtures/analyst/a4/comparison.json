@@ -1,0 +1,50 @@
+{
+  "anchor": "a4",
+  "fixture_version": "1.0.0",
+  "id": "comparison",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Compare backlog by rule and risk band.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "retail_review carries the largest backlog by rule/risk-band split: STRUCTURING_PATTERN (medium risk) has 88 open alerts, VELOCITY_SPIKE (medium risk) has 65, and CORRESPONDENT_EXPOSURE (high risk) has 61.",
+      "sql": {
+        "command": "SELECT rule_id, risk_band, open_alert_count FROM aa_aml_backlog ORDER BY open_alert_count DESC",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_aml_backlog"
+        ]
+      },
+      "table": {
+        "columns": [
+          "rule_id",
+          "risk_band",
+          "open_alert_count"
+        ],
+        "rows": [
+          [
+            "STRUCTURING_PATTERN",
+            "medium",
+            88
+          ],
+          [
+            "VELOCITY_SPIKE",
+            "medium",
+            65
+          ],
+          [
+            "CORRESPONDENT_EXPOSURE",
+            "high",
+            61
+          ]
+        ],
+        "row_count": 3,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

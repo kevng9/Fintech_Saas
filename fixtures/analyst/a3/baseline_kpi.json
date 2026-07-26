@@ -1,0 +1,38 @@
+{
+  "anchor": "a3",
+  "fixture_version": "1.0.0",
+  "id": "baseline_kpi",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "What is confirmed fraud loss and the false-positive rate for the last 24 logical hours?",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Confirmed fraud loss is $6,100 and the false-positive rate is 21.0% over the last 24 logical hours.",
+      "sql": {
+        "command": "SELECT SUM(confirmed_loss_usd) AS confirmed_loss, AVG(false_positive_rate) AS false_positive_rate FROM aa_fraud_loss_summary",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_fraud_loss_summary"
+        ]
+      },
+      "table": {
+        "columns": [
+          "confirmed_loss",
+          "false_positive_rate"
+        ],
+        "rows": [
+          [
+            6100,
+            0.21
+          ]
+        ],
+        "row_count": 1,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

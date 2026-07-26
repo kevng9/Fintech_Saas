@@ -1,0 +1,38 @@
+{
+  "anchor": "a7",
+  "fixture_version": "1.0.0",
+  "id": "baseline_kpi",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "What is application volume and the manual-review rate for the last 30 logical days?",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Application volume is 1,861 over the last 30 logical days, with a 22.0% manual-review rate.",
+      "sql": {
+        "command": "SELECT SUM(application_count) AS application_count, SUM(manual_review_count)/SUM(application_count) AS manual_review_rate FROM aa_credit_operations",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_credit_operations"
+        ]
+      },
+      "table": {
+        "columns": [
+          "application_count",
+          "manual_review_rate"
+        ],
+        "rows": [
+          [
+            1861,
+            0.22
+          ]
+        ],
+        "row_count": 1,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

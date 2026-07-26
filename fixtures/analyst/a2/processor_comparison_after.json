@@ -1,0 +1,90 @@
+{
+  "anchor": "a2",
+  "fixture_version": "1.0.0",
+  "id": "processor_comparison_after",
+  "latency_ms": 3300,
+  "match": [
+    "rank processors",
+    "compare processor",
+    "against baseline",
+    "processor rail comparison"
+  ],
+  "prompt": "During the weakest window, rank processors and rails against the prior seven-day baseline.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "chart": null,
+      "error": null,
+      "sql": {
+        "command": "WITH recent AS (\n  SELECT processor_id, processor_name, rail,\n         SUM(attempts) AS attempts,\n         SUM(approvals) / SUM(attempts) AS approval_rate,\n         MAX(p95_latency_ms) AS p95_latency_ms\n  FROM aa_payment_performance_hourly\n  WHERE hour_start >= (SELECT MAX(hour_start) FROM aa_payment_performance_hourly)\n  GROUP BY processor_id, processor_name, rail\n),\nbaseline AS (\n  SELECT processor_id,\n         SUM(approvals) / SUM(attempts) AS approval_rate,\n         MAX(p95_latency_ms) AS p95_latency_ms\n  FROM aa_payment_performance_hourly\n  WHERE hour_start < (SELECT MAX(hour_start) FROM aa_payment_performance_hourly)\n  GROUP BY processor_id\n)\nSELECT r.processor_id, r.processor_name, r.rail, r.attempts,\n       r.approval_rate, b.approval_rate AS baseline_approval_rate,\n       r.approval_rate - b.approval_rate AS approval_rate_change,\n       r.p95_latency_ms, b.p95_latency_ms AS baseline_p95_latency_ms\nFROM recent r JOIN baseline b ON b.processor_id = r.processor_id\nORDER BY approval_rate_change",
+        "confidence_score": 0.95,
+        "tables_used": [
+          "aa_payment_performance_hourly"
+        ]
+      },
+      "table": {
+        "columns": [
+          "processor_id",
+          "processor_name",
+          "rail",
+          "attempts",
+          "approval_rate",
+          "baseline_approval_rate",
+          "approval_rate_change",
+          "p95_latency_ms",
+          "baseline_p95_latency_ms"
+        ],
+        "row_count": 4,
+        "rows": [
+          [
+            "P1",
+            "Northwind Pay",
+            "card_ecommerce",
+            609,
+            0.9704,
+            0.97,
+            0.000446,
+            150,
+            150
+          ],
+          [
+            "P2",
+            "Cardinal Rails",
+            "card_ecommerce",
+            992,
+            0.9435,
+            0.96,
+            -0.016447,
+            420,
+            180
+          ],
+          [
+            "P3",
+            "Vantage Gateway",
+            "card_present",
+            406,
+            0.9507,
+            0.95,
+            0.000745,
+            200,
+            200
+          ],
+          [
+            "P4",
+            "Meridian Direct",
+            "account_to_account",
+            203,
+            0.9409,
+            0.94,
+            0.000895,
+            260,
+            260
+          ]
+        ],
+        "truncated": false
+      },
+      "text": "Comparing the most recent logical hour against the preceding seven logical days, Cardinal Rails (P2, card_ecommerce) has moved furthest: 94.35% against a baseline of 96.00%, a change of -1.64 points, with p95 latency at 420 ms against 180 ms. The other processors are within a fraction of a point of their own baselines, so the movement is specific to one processor rather than systemic."
+    }
+  ],
+  "scenario_state": "after_injection"
+}

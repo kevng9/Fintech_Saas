@@ -1,0 +1,65 @@
+{
+  "anchor": "a4",
+  "fixture_version": "1.0.0",
+  "id": "starter_backlog_baseline",
+  "latency_ms": 1800,
+  "match": [
+    "open alerts by age rule risk band queue",
+    "aml backlog"
+  ],
+  "prompt": "Show open AML alerts by age, rule, risk band, and queue.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "There are 214 open AML alerts, 38 high-priority, and 26 at risk of an SLA breach in the next 24 hours. The correspondent_banking queue carries the largest backlog at 61 open alerts, averaging 34 hours old.",
+      "sql": {
+        "command": "SELECT rule_id, risk_band, assigned_queue, priority, open_alert_count, high_priority_count, sla_risk_count, avg_age_hours\nFROM aa_aml_backlog\nORDER BY sla_risk_count DESC, open_alert_count DESC",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_aml_backlog"
+        ]
+      },
+      "table": {
+        "columns": [
+          "rule_id",
+          "risk_band",
+          "assigned_queue",
+          "open_alert_count",
+          "sla_risk_count",
+          "avg_age_hours"
+        ],
+        "rows": [
+          [
+            "CORRESPONDENT_EXPOSURE",
+            "high",
+            "correspondent_banking",
+            61,
+            9,
+            34
+          ],
+          [
+            "STRUCTURING_PATTERN",
+            "medium",
+            "retail_review",
+            88,
+            11,
+            22
+          ],
+          [
+            "VELOCITY_SPIKE",
+            "medium",
+            "retail_review",
+            65,
+            6,
+            18
+          ]
+        ],
+        "row_count": 3,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "baseline"
+}

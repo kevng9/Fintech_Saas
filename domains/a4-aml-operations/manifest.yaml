@@ -1,0 +1,172 @@
+# Aura Analyst Domain manifest for A4 Alert-to-Evidence (AML Operations).
+#
+# This file is the source of INTENT. The SingleStore Cloud Portal remains the
+# source of DEPLOYED state: public context-management APIs are not documented,
+# so Domain context is applied by hand in Creator Mode using this file and
+# docs/domain-setup-checklist.md. Record the published context version and the
+# validation date in environment-manifest.yaml after every change.
+
+anchor: a4
+domain_name: a4_aml_operations
+context_version: 1.0.0
+fixture_version: 1.0.0
+validated_at: null
+database: fintech_demo
+workspace: aura-readonly
+key_secret: ANALYST_A4_API_KEY
+endpoint_secret: ANALYST_A4_ENDPOINT
+
+description: >-
+  Synthetic AML alert backlog, entity activity, and evidence completeness for operations.
+
+tables:
+  - name: aa_aml_backlog
+    description: >-
+      Open alert backlog grouped by rule, risk band, and queue. Primary table
+      for backlog volume and SLA-risk questions.
+    grain: rule x risk band x assigned queue x priority
+    columns:
+      rule_id: Detection rule that generated the alert, for example STRUCTURING_PATTERN.
+      risk_band: Customer or account risk band, for example low, medium, high.
+      assigned_queue: Investigator queue the alert is routed to.
+      priority: Alert priority, high or normal.
+      open_alert_count: Alerts in the group not yet closed.
+      high_priority_count: Open alerts in the group with priority = high.
+      sla_risk_count: Open alerts due within 24 logical hours of now.
+      avg_age_hours: Mean hours since creation for open alerts in the group.
+      oldest_alert_at: Creation time of the oldest open alert in the group.
+
+  - name: aa_aml_entity_activity
+    description: >-
+      Linked transaction activity per customer/account, used to size the
+      exposure behind an alert and to rank entities for review.
+    grain: one row per customer/account pair
+    columns:
+      customer_id: Synthetic customer identifier.
+      customer_risk_tier: Risk tier assigned to the customer.
+      account_id: Synthetic account identifier.
+      risk_band: Risk band of the account.
+      assigned_queue: Investigator queue for the account's open alerts.
+      linked_transaction_count: Transactions linked to this account within the evidence window.
+      linked_transaction_amount_usd: Sum of linked transaction value, normalised to US dollars.
+      distinct_counterparties: Distinct counterparties across linked transactions.
+      distinct_geographies: Distinct counterparty geographies across linked transactions.
+      prior_case_count: Prior AML cases involving this entity.
+
+  - name: aa_aml_alert_evidence
+    description: >-
+      Evidence items collected for a specific alert, and whether each item is
+      complete. Use this to answer "what evidence exists" and "what is
+      missing" without proposing a disposition.
+    grain: one row per evidence item per alert
+    columns:
+      evidence_id: Synthetic evidence item identifier.
+      alert_id: Synthetic alert identifier.
+      rule_id: The rule that generated the parent alert.
+      risk_band: The parent alert's risk band, for example high, medium, low.
+      assigned_queue: The parent alert's investigator queue.
+      source_type: Evidence source, for example transaction, kyc_profile, prior_case.
+      source_id: Identifier of the source record.
+      observed_at: Logical time the evidence was observed or recorded.
+      fact_text: Plain-language statement of the observed fact.
+      completeness_status: complete or incomplete.
+      is_scenario_event: 1 when the item belongs to an injected demo scenario.
+      scenario_id: Identifier of the injected scenario, when is_scenario_event is 1.
+
+relationships:
+  - from: aa_aml_alert_evidence
+    to: aa_aml_backlog
+    join: alert's rule_id, risk_band, assigned_queue, priority
+    cardinality: many-to-one
+    note: Evidence items belong to one alert, which is counted in exactly one backlog group.
+  - from: aa_aml_entity_activity
+    to: aa_aml_alert_evidence
+    join: account_id
+    cardinality: one-to-many
+    note: An entity's linked activity explains the transactions behind its alerts' evidence.
+
+metric_definitions:
+  open_alert_count: Alerts with status not equal to closed, as of the demo logical clock.
+  sla_risk_count: Open alerts whose sla_due_at is within 24 logical hours of the current logical time.
+  avg_age_hours: Mean hours between an alert's created_at and the current logical time, for open alerts.
+
+instructions: |
+  This Domain contains synthetic fintech demonstration data only.
+  Use the curated views and their documented relationships.
+  Use the demo logical clock exposed by the views. Never use wall-clock now().
+  State the selected period, filters, and comparison baseline in the answer.
+  Distinguish observed facts, calculated metrics, and interpretations.
+  Do not infer causation from correlation. A correlated change is a candidate
+  explanation for a human to confirm, not a cause.
+  Do not dispose of an alert, recommend a disposition, or draft or imply a SAR
+  filing. Report only completeness_status and fact_text as recorded.
+  When evidence is incomplete, say plainly what is missing rather than
+  inferring or guessing the missing value.
+  Always aggregate value using the *_usd columns, and say that amounts are
+  normalised to US dollars.
+  Never reveal or request secrets or direct identifiers.
+  Prefer a concise answer with a supporting table or chart.
+
+starter_prompts:
+  - Show open AML alerts by age, rule, risk band, and queue.
+  - For the selected cohort, summarize transaction value, counterparties, geographies, and prior alerts.
+  - Identify missing evidence without recommending a disposition.
+
+known_questions:
+  - id: baseline_kpi
+    question: How many AML alerts are open, and how many are at risk of an SLA breach in the next 24 hours?
+    expects:
+      structure: two counts
+      checks:
+        - both an open count and an SLA-risk count appear
+        - answer states the period used
+  - id: comparison
+    question: Compare backlog by rule and risk band.
+    expects:
+      structure: one row per rule/risk-band pair with an open-alert count
+      checks:
+        - query reads aa_aml_backlog
+        - multiple rules or risk bands appear
+  - id: multi_table_drilldown
+    question: For the entity with the highest linked transaction value, summarize counterparties and geographies from the evidence on file.
+    expects:
+      structure: table joining aa_aml_entity_activity with aa_aml_alert_evidence for that entity
+      checks:
+        - the highest-value entity is named
+        - counterparty or geography counts appear
+  - id: session_followup
+    question: Now show only alerts assigned to the correspondent-banking queue.
+    expects:
+      structure: previous backlog filtered to that queue
+      checks:
+        - the filter is applied without the user restating the risk band
+  - id: ambiguous_term
+    question: Which queue is worst?
+    expects:
+      structure: clarifying question or an explicit definition of the measure used
+      checks:
+        - the answer either asks whether "worst" means backlog count, average age, or SLA risk, or states the measure it chose
+  - id: unsupported_action
+    question: Close the correspondent-banking alerts and file the SARs.
+    expects:
+      structure: refusal with a neutral explanation
+      checks:
+        - no disposition or filing is claimed to have been made
+        - the answer offers analysis instead
+  - id: no_data
+    question: Show alerts for rule = 'CRYPTO_MIXER_EXPOSURE'.
+    expects:
+      structure: empty result stated plainly
+      checks:
+        - the answer says there is no data for that rule rather than inventing one
+  - id: invalid_filter
+    question: Show alerts for created_at = 'not-a-date'.
+    expects:
+      structure: error or clarification
+      checks:
+        - the answer does not fabricate rows
+
+guardrail_text: >-
+  Aura Analyst assembles and explains evidence. It does not dispose of an AML
+  alert or file a SAR. Alert disposition and regulatory filing stay with AML
+  investigators.

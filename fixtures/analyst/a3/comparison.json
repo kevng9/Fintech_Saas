@@ -1,0 +1,45 @@
+{
+  "anchor": "a3",
+  "fixture_version": "1.0.0",
+  "id": "comparison",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Compare confirmed loss by channel and fraud type.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "account_takeover on card_not_present leads confirmed loss at $61,400 (33% of total), ahead of synthetic_identity on ach at $48,900 (27%).",
+      "sql": {
+        "command": "SELECT channel, fraud_type, confirmed_loss_usd FROM aa_fraud_loss_summary ORDER BY confirmed_loss_usd DESC",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_fraud_loss_summary"
+        ]
+      },
+      "table": {
+        "columns": [
+          "channel",
+          "fraud_type",
+          "confirmed_loss_usd"
+        ],
+        "rows": [
+          [
+            "card_not_present",
+            "account_takeover",
+            61400
+          ],
+          [
+            "ach",
+            "synthetic_identity",
+            48900
+          ]
+        ],
+        "row_count": 2,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

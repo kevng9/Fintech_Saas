@@ -1,0 +1,40 @@
+{
+  "anchor": "a6",
+  "fixture_version": "1.0.0",
+  "id": "comparison",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Compare net expected settlement against the forecast.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Net expected settlement is USD -6.1 million against a forecast of USD 19.3 million, a USD 25.4 million unfavourable variance driven by the delayed EMEA settlement.",
+      "sql": {
+        "command": "SELECT SUM(forecast_net_flow_usd) AS forecast, SUM(actual_net_flow_usd) AS actual FROM aa_liquidity_variance",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_liquidity_variance"
+        ]
+      },
+      "table": {
+        "columns": [
+          "forecast_net_flow_usd",
+          "actual_net_flow_usd",
+          "variance_usd"
+        ],
+        "rows": [
+          [
+            19300000,
+            -6100000,
+            -25400000
+          ]
+        ],
+        "row_count": 1,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

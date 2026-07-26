@@ -1,0 +1,50 @@
+{
+  "anchor": "a7",
+  "fixture_version": "1.0.0",
+  "id": "comparison",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Compare average hours to decision by product and channel.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Auto Loan via broker averages 19.1 hours to decision; Credit Card via digital averages 6.4 hours; Personal Line via branch averages 21.8 hours.",
+      "sql": {
+        "command": "SELECT product_name, channel, avg_hours_to_decision FROM aa_credit_operations",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_credit_operations"
+        ]
+      },
+      "table": {
+        "columns": [
+          "product_name",
+          "channel",
+          "avg_hours_to_decision"
+        ],
+        "rows": [
+          [
+            "Auto Loan",
+            "broker",
+            19.1
+          ],
+          [
+            "Credit Card",
+            "digital",
+            6.4
+          ],
+          [
+            "Personal Line",
+            "branch",
+            21.8
+          ]
+        ],
+        "row_count": 3,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

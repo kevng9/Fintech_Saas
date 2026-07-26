@@ -1,0 +1,45 @@
+{
+  "anchor": "a7",
+  "fixture_version": "1.0.0",
+  "id": "starter_pending_concentration",
+  "latency_ms": 1800,
+  "match": [
+    "pending request portfolio concentration",
+    "pro forma concentration"
+  ],
+  "prompt": "Compare the pending request with current portfolio concentration without making a decision.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Booked Transportation/CA concentration is 20.00% of the portfolio today. If the pending USD 5 million application booked at its requested amount, illustrative pro forma concentration would move to 23.81%. Booked exposure has not changed and this is not a forecast of what will book.",
+      "sql": {
+        "command": "SELECT industry_code, geography_id, concentration_share, pending_amount, pro_forma_concentration_share\nFROM aa_portfolio_concentration\nWHERE industry_code = 'Transportation' AND geography_id = 'CA'",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_portfolio_concentration"
+        ]
+      },
+      "table": {
+        "columns": [
+          "industry_code",
+          "geography_id",
+          "concentration_share",
+          "pro_forma_concentration_share"
+        ],
+        "rows": [
+          [
+            "Transportation",
+            "CA",
+            0.2,
+            0.2381
+          ]
+        ],
+        "row_count": 1,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

@@ -1,0 +1,178 @@
+# Deployed state of one demo environment.
+#
+# The repository is the source of intent; this file records what is actually
+# running, because Aura Domain context is applied by hand in Creator Mode and is
+# not otherwise version controlled. Update it whenever a Domain's context, the
+# fixture version, or the seed changes, and re-run the known-question suite at
+# /admin/domain-check before declaring the environment validated.
+
+environment: local
+updated_at: 2026-07-25
+updated_by: null
+
+engine:
+  # Fill from the SingleStore portal. Never record a password here.
+  workspace_group: null
+  read_write_workspace: aws-virginia-8
+  database: fintech_demo
+  engine_version: 10.1.0
+  # Set true once the Aura workspace is attached read-only to the database above.
+  aura_workspace_attached_read_only: false
+
+demo_data:
+  # DEMO_DEFAULT_SEED and DEMO_DEFAULT_EPOCH in app/.env.local.
+  seed: 20260725
+  logical_epoch: 2026-07-25T09:00:00Z
+  baseline_days: 7
+  fixture_version: 1.1.0
+  baseline_rows: 322000
+  # Recorded by `python -m fintech_demo seed`; a reset is rejected unless the
+  # cloned run reproduces it exactly.
+  baseline_checksum: cdb666fbd53c8735104c436c03a9e417927f7054cf36d09f6d84f1cf263897a5
+  # All eight scenarios verified with inject+reset: A1–A8 deltas + baseline integrity.
+  verified_at: 2026-07-25
+
+analyst:
+  mode: auto
+  region: us-east-1
+  org_id_set: false
+  project_id_set: false
+  timeout_seconds: 90
+  max_rows: 500
+
+anchors:
+  # Every anchor below has its application layer (pages, metrics, API routes,
+  # known questions, manifest, fixtures) shipped in-repo. `domain_built` and
+  # `domain_key_configured` stay false until the Domain is created by hand in
+  # Creator Mode and a Domain-scoped key is set in ANALYST_A{N}_API_KEY - set
+  # both true and fill `known_questions_passed_at` only after /admin/domain-check
+  # passes for that anchor.
+  - id: a1
+    name: Digital Journey Intelligence
+    status: available
+    domain_name: a1_digital_journey
+    manifest: domains/a1-digital-journey/manifest.yaml
+    context_version: 1.0.0
+    domain_built: false
+    domain_key_configured: false
+    known_questions_passed_at: null
+    fixture_count: 12
+    scenario: A1_REVIEW_SPIKE
+
+  - id: a2
+    name: Payment Pulse
+    status: available
+    domain_name: a2_payment_pulse
+    manifest: domains/a2-payment-pulse/manifest.yaml
+    context_version: 1.0.0
+    # Set once the Domain exists in Creator Mode and a Domain-scoped key is in
+    # ANALYST_A2_API_KEY.
+    domain_built: false
+    domain_key_configured: false
+    known_questions_passed_at: null
+    fixture_count: 12
+    scenario: A2_PROCESSOR_TIMEOUT
+
+  - id: a3
+    name: Trace the Loss
+    status: available
+    domain_name: a3_fraud_strategy
+    manifest: domains/a3-fraud-strategy/manifest.yaml
+    context_version: 1.0.0
+    domain_built: false
+    domain_key_configured: false
+    known_questions_passed_at: null
+    fixture_count: 12
+    scenario: A3_LOSS_CLUSTER
+
+  - id: a4
+    name: Alert-to-Evidence
+    status: available
+    domain_name: a4_aml_operations
+    manifest: domains/a4-aml-operations/manifest.yaml
+    context_version: 1.0.0
+    domain_built: false
+    domain_key_configured: false
+    known_questions_passed_at: null
+    fixture_count: 12
+    scenario: A4_CORRESPONDENT_SPIKE
+
+  - id: a5
+    name: Dispute Resolution Lens
+    status: available
+    domain_name: a5_disputes_ops
+    manifest: domains/a5-disputes-operations/manifest.yaml
+    context_version: 1.0.0
+    domain_built: false
+    domain_key_configured: false
+    known_questions_passed_at: null
+    fixture_count: 12
+    scenario: A5_CASE_SURGE
+
+  - id: a6
+    name: Liquidity Command Center
+    status: available
+    domain_name: a6_liquidity
+    manifest: domains/a6-liquidity/manifest.yaml
+    context_version: 1.0.0
+    domain_built: false
+    domain_key_configured: false
+    known_questions_passed_at: null
+    fixture_count: 12
+    scenario: A6_SETTLEMENT_DELAY
+
+  - id: a7
+    name: Credit Risk Pulse
+    status: available
+    domain_name: a7_credit_risk
+    manifest: domains/a7-credit-risk/manifest.yaml
+    context_version: 1.0.0
+    domain_built: false
+    domain_key_configured: false
+    known_questions_passed_at: null
+    fixture_count: 12
+    scenario: A7_PENDING_EXPOSURE
+
+  - id: a8
+    name: Explain My Money
+    status: available
+    domain_name: a8_customer_money
+    manifest: domains/a8-customer-money/manifest.yaml
+    context_version: 1.0.0
+    domain_built: false
+    domain_key_configured: false
+    known_questions_passed_at: null
+    fixture_count: 12
+    scenario: A8_DINING_SPIKE
+
+access_control:
+  default_role: presenter
+  # An empty DEMO_ADMIN_TOKEN means anyone who can reach the app can drive the
+  # controls. Acceptable on a laptop, never acceptable on a hosted URL.
+  admin_token_set: false
+  authenticating_proxy_in_front: false
+
+verification:
+  # Commands that must pass before a demo is considered ready.
+  offline:
+    - python -m fintech_demo preflight
+    - python -m pytest simulator/tests -q
+    - python scripts/build_fixtures.py --check
+    - npm --prefix app run lint
+    - npm --prefix app run typecheck
+    - npm --prefix app run build
+    - npm --prefix app run scan:bundle
+  against_workspace:
+    - python -m fintech_demo doctor
+    - python -m fintech_demo bootstrap
+    - python -m fintech_demo verify --scenario A1_REVIEW_SPIKE --inject
+    - python -m fintech_demo verify --scenario A2_PROCESSOR_TIMEOUT --inject
+    - python -m fintech_demo verify --scenario A3_LOSS_CLUSTER --inject
+    - python -m fintech_demo verify --scenario A4_CORRESPONDENT_SPIKE --inject
+    - python -m fintech_demo verify --scenario A5_CASE_SURGE --inject
+    - python -m fintech_demo verify --scenario A6_SETTLEMENT_DELAY --inject
+    - python -m fintech_demo verify --scenario A7_PENDING_EXPOSURE --inject
+    - python -m fintech_demo verify --scenario A8_DINING_SPIKE --inject
+  in_app:
+    - GET /api/health/demo returns status demo_ready
+    - /admin/domain-check run all, every question marked correct

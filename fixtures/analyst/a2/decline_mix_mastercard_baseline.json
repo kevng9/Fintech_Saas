@@ -1,0 +1,160 @@
+{
+  "anchor": "a2",
+  "fixture_version": "1.0.0",
+  "id": "decline_mix_mastercard_baseline",
+  "latency_ms": 2500,
+  "match": [
+    "mastercard only",
+    "same breakdown mastercard",
+    "filter mastercard"
+  ],
+  "prompt": "Now show the same breakdown for Mastercard only.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "chart": null,
+      "error": null,
+      "sql": {
+        "command": "SELECT merchant_category, response_code,\n       SUM(decline_count) AS declines,\n       SUM(declined_amount_usd) AS declined_amount_usd\nFROM aa_payment_decline_mix\nWHERE hour_start >= (SELECT MAX(hour_start) FROM aa_payment_decline_mix)\n  AND card_network = 'Mastercard'\nGROUP BY merchant_category, response_code\nORDER BY declines DESC",
+        "confidence_score": 0.95,
+        "tables_used": [
+          "aa_payment_decline_mix"
+        ]
+      },
+      "table": {
+        "columns": [
+          "merchant_category",
+          "response_code",
+          "declines",
+          "share",
+          "declined_amount_usd"
+        ],
+        "row_count": 17,
+        "rows": [
+          [
+            "Ride Hailing",
+            "INSUFFICIENT_FUNDS",
+            4,
+            0.1333,
+            134.58
+          ],
+          [
+            "Digital Goods",
+            "INSUFFICIENT_FUNDS",
+            3,
+            0.1,
+            169.57
+          ],
+          [
+            "Travel",
+            "INSUFFICIENT_FUNDS",
+            3,
+            0.1,
+            2343.82
+          ],
+          [
+            "Digital Goods",
+            "TIMEOUT",
+            2,
+            0.0667,
+            96.46
+          ],
+          [
+            "Ride Hailing",
+            "DO_NOT_HONOR",
+            2,
+            0.0667,
+            66.78
+          ],
+          [
+            "Ride Hailing",
+            "TIMEOUT",
+            2,
+            0.0667,
+            66.82
+          ],
+          [
+            "Streaming",
+            "INSUFFICIENT_FUNDS",
+            2,
+            0.0667,
+            54.39
+          ],
+          [
+            "Travel",
+            "DO_NOT_HONOR",
+            2,
+            0.0667,
+            1953.34
+          ],
+          [
+            "Travel",
+            "TIMEOUT",
+            2,
+            0.0667,
+            2046.3
+          ],
+          [
+            "Digital Goods",
+            "DO_NOT_HONOR",
+            1,
+            0.0333,
+            7.84
+          ],
+          [
+            "Electronics",
+            "TIMEOUT",
+            1,
+            0.0333,
+            218.41
+          ],
+          [
+            "Gaming",
+            "DO_NOT_HONOR",
+            1,
+            0.0333,
+            102.93
+          ],
+          [
+            "Gaming",
+            "TIMEOUT",
+            1,
+            0.0333,
+            86.78
+          ],
+          [
+            "Ride Hailing",
+            "ISSUER_UNAVAILABLE",
+            1,
+            0.0333,
+            60.38
+          ],
+          [
+            "Streaming",
+            "DO_NOT_HONOR",
+            1,
+            0.0333,
+            18.89
+          ],
+          [
+            "Streaming",
+            "RISK_DECLINE",
+            1,
+            0.0333,
+            22.62
+          ],
+          [
+            "Streaming",
+            "INVALID_CVV",
+            1,
+            0.0333,
+            9.2
+          ]
+        ],
+        "truncated": false
+      },
+      "text": "In the most recent logical hour for Mastercard, declines are led by INSUFFICIENT_FUNDS on Ride Hailing with 4 declines, 13.3% of all declines in the period and $135 of declined value. The mix is the usual issuer-side pattern led by insufficient funds and do-not-honor, with no code out of proportion."
+    }
+  ],
+  "scenario_state": "baseline"
+}

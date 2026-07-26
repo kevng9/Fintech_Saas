@@ -1,0 +1,53 @@
+{
+  "anchor": "a6",
+  "fixture_version": "1.0.0",
+  "id": "starter_variance_drivers",
+  "latency_ms": 1800,
+  "match": [
+    "forecast variance drivers",
+    "largest variance"
+  ],
+  "prompt": "Rank the drivers of the largest forecast variance.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "EMEA Funding Ltd. in EUR shows the largest forecast variance this period at USD -25.4 million (actual below forecast), driven almost entirely by the delayed inbound settlement. Every other entity is within USD 1.5 million of forecast.",
+      "sql": {
+        "command": "SELECT entity_id, currency, forecast_net_flow_usd, actual_net_flow_usd, forecast_variance_usd\nFROM aa_liquidity_variance\nORDER BY ABS(forecast_variance_usd) DESC LIMIT 5",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_liquidity_variance"
+        ]
+      },
+      "table": {
+        "columns": [
+          "entity_id",
+          "currency",
+          "forecast_variance_usd"
+        ],
+        "rows": [
+          [
+            "ENT-EMEA",
+            "EUR",
+            -25400000
+          ],
+          [
+            "ENT-NA",
+            "USD",
+            900000
+          ],
+          [
+            "ENT-APAC",
+            "SGD",
+            -400000
+          ]
+        ],
+        "row_count": 3,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

@@ -1,0 +1,42 @@
+{
+  "anchor": "a4",
+  "fixture_version": "1.0.0",
+  "id": "multi_table_drilldown",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "For the entity with the highest linked transaction value, summarize counterparties and geographies from the evidence on file.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Account ACCT-88213 has the highest linked transaction value at $412,000, spanning 9 counterparties and 4 geographies, with 2 prior cases.",
+      "sql": {
+        "command": "SELECT account_id, linked_transaction_amount_usd, distinct_counterparties, distinct_geographies FROM aa_aml_entity_activity ORDER BY linked_transaction_amount_usd DESC LIMIT 1",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_aml_entity_activity"
+        ]
+      },
+      "table": {
+        "columns": [
+          "account_id",
+          "linked_transaction_amount_usd",
+          "distinct_counterparties",
+          "distinct_geographies"
+        ],
+        "rows": [
+          [
+            "ACCT-88213",
+            412000,
+            9,
+            4
+          ]
+        ],
+        "row_count": 1,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

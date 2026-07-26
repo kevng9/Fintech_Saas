@@ -1,0 +1,42 @@
+{
+  "anchor": "a1",
+  "fixture_version": "1.0.0",
+  "id": "session_followup",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Now break that cohort down by channel.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "For high_intent_promo, the paid_search channel accounts for essentially all of the cohort's activity this period: 100 sessions, 80 applications, 40 referrals.",
+      "sql": {
+        "command": "SELECT channel, sessions_started, applications_submitted, referred_to_review FROM aa_digital_intent_cohort WHERE intent_cohort = 'high_intent_promo'",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_digital_intent_cohort"
+        ]
+      },
+      "table": {
+        "columns": [
+          "channel",
+          "sessions_started",
+          "applications_submitted",
+          "referred_to_review"
+        ],
+        "rows": [
+          [
+            "paid_search",
+            100,
+            80,
+            40
+          ]
+        ],
+        "row_count": 1,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

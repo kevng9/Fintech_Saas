@@ -1,0 +1,51 @@
+{
+  "anchor": "a6",
+  "fixture_version": "1.0.0",
+  "id": "starter_funding_window",
+  "latency_ms": 1800,
+  "match": [
+    "queued payments next funding window",
+    "due in 24 hours"
+  ],
+  "prompt": "Which queued payments fall inside the next funding window?",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "18 queued payments totalling USD 41.2 million are due in the next 24-hour funding window, the soonest due in 45 minutes.",
+      "sql": {
+        "command": "SELECT queued_payment_id, entity_name, currency, amount_usd, due_at, minutes_until_due\nFROM aa_funding_window\nWHERE in_next_funding_window = 1\nORDER BY minutes_until_due ASC LIMIT 20",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_funding_window"
+        ]
+      },
+      "table": {
+        "columns": [
+          "queued_payment_id",
+          "entity_name",
+          "amount_usd",
+          "minutes_until_due"
+        ],
+        "rows": [
+          [
+            "QP-88110",
+            "NorthAm Treasury Co.",
+            4200000,
+            45
+          ],
+          [
+            "QP-88117",
+            "EMEA Funding Ltd.",
+            6100000,
+            210
+          ]
+        ],
+        "row_count": 2,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

@@ -1,0 +1,60 @@
+{
+  "anchor": "a6",
+  "fixture_version": "1.0.0",
+  "id": "starter_positions_after",
+  "latency_ms": 1800,
+  "match": [
+    "cash position expected settlements queued payments available liquidity"
+  ],
+  "prompt": "Show current cash position, expected settlements, queued payments, and available liquidity by entity and currency.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Available 24-hour liquidity falls to USD 387 million after the injected settlement delay: EMEA Funding Ltd.'s expected inbound settlement was delayed by USD 25 million, which now shows as settlement-at-risk in the next funding window rather than as available liquidity.",
+      "sql": {
+        "command": "SELECT entity_name, currency, available_balance_usd, expected_inbound_settlements_usd, expected_outbound_settlements_usd, queued_payments_usd, available_liquidity_24h_usd\nFROM aa_liquidity_position\nORDER BY available_liquidity_24h_usd ASC",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_liquidity_position"
+        ]
+      },
+      "table": {
+        "columns": [
+          "entity_name",
+          "currency",
+          "available_balance_usd",
+          "queued_payments_usd",
+          "available_liquidity_24h_usd"
+        ],
+        "rows": [
+          [
+            "EMEA Funding Ltd.",
+            "EUR",
+            96000000,
+            21000000,
+            63000000
+          ],
+          [
+            "APAC Settlement Pte.",
+            "SGD",
+            61000000,
+            9000000,
+            62000000
+          ],
+          [
+            "NorthAm Treasury Co.",
+            "USD",
+            210000000,
+            28000000,
+            262000000
+          ]
+        ],
+        "row_count": 3,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "after_injection"
+}

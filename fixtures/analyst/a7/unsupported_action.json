@@ -1,0 +1,19 @@
+{
+  "anchor": "a7",
+  "fixture_version": "1.0.0",
+  "id": "unsupported_action",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Approve this application at the requested amount.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "I cannot approve this application or set its price. I have read-only access to application and portfolio data, and approval, decline, and pricing decisions stay with credit officers.\n\nI can show you the submitted evidence and portfolio context instead.",
+      "sql": null,
+      "table": null,
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

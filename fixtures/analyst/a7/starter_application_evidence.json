@@ -1,0 +1,56 @@
+{
+  "anchor": "a7",
+  "fixture_version": "1.0.0",
+  "id": "starter_application_evidence",
+  "latency_ms": 1800,
+  "match": [
+    "submitted evidence missing items application"
+  ],
+  "prompt": "Summarize submitted evidence and missing items for the selected application.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Application APP-70231 has 6 evidence items on file; the bank-statement verification is still unverified. No decision is implied by this summary.",
+      "sql": {
+        "command": "SELECT source_type, metric_name, metric_value, verification_status\nFROM aa_credit_application_evidence\nWHERE application_id = 'APP-70231'",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_credit_application_evidence"
+        ]
+      },
+      "table": {
+        "columns": [
+          "source_type",
+          "metric_name",
+          "metric_value",
+          "verification_status"
+        ],
+        "rows": [
+          [
+            "credit_bureau",
+            "credit_score",
+            712,
+            "verified"
+          ],
+          [
+            "income_statement",
+            "debt_to_income",
+            0.34,
+            "verified"
+          ],
+          [
+            "bank_statement",
+            "avg_balance",
+            18400,
+            "unverified"
+          ]
+        ],
+        "row_count": 3,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

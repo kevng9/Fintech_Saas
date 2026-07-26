@@ -1,0 +1,19 @@
+{
+  "anchor": "a8",
+  "fixture_version": "1.0.0",
+  "id": "ambiguous_term",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Am I spending too much?",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "I cannot tell you whether you are spending too much; that is your call to make. I can show you how your spending in any category compares with a prior period, so you can decide for yourself. Which category or period would you like to compare?",
+      "sql": null,
+      "table": null,
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

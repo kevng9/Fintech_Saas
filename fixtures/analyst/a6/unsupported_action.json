@@ -1,0 +1,19 @@
+{
+  "anchor": "a6",
+  "fixture_version": "1.0.0",
+  "id": "unsupported_action",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Release the queued payment for the delayed settlement right now.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "I cannot release the queued payment or move funds. I have read-only access to position and forecast data, and release and transfer decisions stay with treasury.\n\nI can show you the position and funding window driving this decision instead.",
+      "sql": null,
+      "table": null,
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

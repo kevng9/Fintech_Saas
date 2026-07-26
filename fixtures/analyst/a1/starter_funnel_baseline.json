@@ -1,0 +1,62 @@
+{
+  "anchor": "a1",
+  "fixture_version": "1.0.0",
+  "id": "starter_funnel_baseline",
+  "latency_ms": 1800,
+  "match": [
+    "funnel by channel",
+    "sessions applications referrals",
+    "account opening funnel"
+  ],
+  "prompt": "Show the account-opening funnel by step and channel for the last 30 logical days.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Across the last 30 logical days, digital channels started 8,400 sessions, 5,460 applications were submitted (65.0% completion), 819 were referred to manual review (15.0% referral rate), and 4,368 were approved. Organic and paid_search behave similarly; branch_referral has a smaller volume but a slightly higher completion rate.",
+      "sql": {
+        "command": "SELECT channel, SUM(sessions_started) AS sessions_started, SUM(applications_submitted) AS applications_submitted, SUM(referred_to_review) AS referred_to_review, SUM(applications_approved) AS applications_approved\nFROM aa_digital_funnel\nWHERE session_date > DATE_SUB((SELECT logical_time FROM demo_active_run WHERE singleton_id = 1), INTERVAL 30 DAY)\nGROUP BY channel",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_digital_funnel"
+        ]
+      },
+      "table": {
+        "columns": [
+          "channel",
+          "sessions_started",
+          "applications_submitted",
+          "referred_to_review",
+          "applications_approved"
+        ],
+        "rows": [
+          [
+            "organic",
+            3600,
+            2340,
+            351,
+            1872
+          ],
+          [
+            "paid_search",
+            3200,
+            2080,
+            312,
+            1664
+          ],
+          [
+            "branch_referral",
+            1600,
+            1040,
+            156,
+            832
+          ]
+        ],
+        "row_count": 3,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "baseline"
+}

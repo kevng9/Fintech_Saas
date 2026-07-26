@@ -1,0 +1,44 @@
+{
+  "checksum": "8cf571ccfcbc88212fffff5ef129c6d2b2d6d78900b3a7980a62f7d3423e765e",
+  "fingerprint": {
+    "baseline_days": 7,
+    "fixture_version": "1.0.0",
+    "logical_epoch": "2026-07-25 09:00:00",
+    "seed": 20260725,
+    "tables": {
+      "dim_account": {
+        "max_id": "ACCT-0500",
+        "min_id": "ACCT-0001",
+        "rows": 500
+      },
+      "dim_customer": {
+        "max_id": "CUST-0500",
+        "min_id": "CUST-0001",
+        "rows": 500
+      },
+      "dim_merchant": {
+        "max_id": "MERCH-040",
+        "min_id": "MERCH-001",
+        "rows": 40
+      },
+      "dim_processor": {
+        "max_id": "P4",
+        "min_id": "P1",
+        "rows": 4
+      },
+      "payment_event": {
+        "amount_cents": 7215930317,
+        "amount_usd_cents": 8305562784,
+        "approvals": 308798,
+        "first_event": "2026-07-18 09:00:00.000000",
+        "last_event": "2026-07-25 08:59:51.428571",
+        "latency_sum": 47566680,
+        "max_sequence": 1007900037,
+        "min_sequence": 0,
+        "processors": 4,
+        "rows": 322000,
+        "timeouts": 3220
+      }
+    }
+  }
+}

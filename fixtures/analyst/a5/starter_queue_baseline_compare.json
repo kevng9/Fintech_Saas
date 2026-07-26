@@ -1,0 +1,53 @@
+{
+  "anchor": "a5",
+  "fixture_version": "1.0.0",
+  "id": "starter_queue_baseline_compare",
+  "latency_ms": 1800,
+  "match": [
+    "largest at risk queue prior 30 days",
+    "queue driver trend"
+  ],
+  "prompt": "What explains the largest at-risk queue compared with the prior 30 days?",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "core_ops is the largest at-risk queue and its daily dispute volume has been flat at roughly 12-15 disputes per day over the prior 30 days, so today's SLA risk is driven by the MERCHANT_OUTAGE reason code rather than a change in overall queue volume.",
+      "sql": {
+        "command": "SELECT opened_date, reason_code, dispute_count\nFROM aa_dispute_queue_driver\nWHERE queue_id = 'core_ops'\nORDER BY opened_date DESC LIMIT 10",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_dispute_queue_driver"
+        ]
+      },
+      "table": {
+        "columns": [
+          "opened_date",
+          "reason_code",
+          "dispute_count"
+        ],
+        "rows": [
+          [
+            "2026-07-25",
+            "MERCHANT_OUTAGE",
+            20
+          ],
+          [
+            "2026-07-24",
+            "DUPLICATE_CHARGE",
+            13
+          ],
+          [
+            "2026-07-23",
+            "DUPLICATE_CHARGE",
+            12
+          ]
+        ],
+        "row_count": 3,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

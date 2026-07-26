@@ -1,0 +1,191 @@
+{
+  "checksum": "cdb666fbd53c8735104c436c03a9e417927f7054cf36d09f6d84f1cf263897a5",
+  "fingerprint": {
+    "baseline_days": 7,
+    "fixture_version": "1.1.0",
+    "logical_epoch": "2026-07-25 09:00:00",
+    "seed": 20260725,
+    "tables": {
+      "aml_alert": {
+        "max_id": "AMLA-A4B-000014",
+        "min_id": "AMLA-A4B-000001",
+        "rows": 14
+      },
+      "aml_alert_transaction": {
+        "rows": 56
+      },
+      "aml_case_history": {
+        "max_id": "AMLC-A4B-000008",
+        "min_id": "AMLC-A4B-000001",
+        "rows": 8
+      },
+      "aml_evidence": {
+        "max_id": "AMLE-A4B-000044",
+        "min_id": "AMLE-A4B-000003",
+        "rows": 42
+      },
+      "application": {
+        "max_id": "APP-A1B-000378",
+        "min_id": "APP-A1B-000001",
+        "rows": 262
+      },
+      "cash_flow_forecast": {
+        "expected_inflow_usd_cents": 748545000,
+        "expected_outflow_usd_cents": 673690500,
+        "rows": 42
+      },
+      "cash_position_snapshot": {
+        "available_balance_usd_cents": 36025880009,
+        "ledger_balance_usd_cents": 37526958341,
+        "rows": 42
+      },
+      "credit_application": {
+        "max_id": "CAPP-A7B-000028",
+        "min_id": "CAPP-A7B-000001",
+        "requested_amount_cents": 2255882405,
+        "rows": 28
+      },
+      "credit_evidence": {
+        "max_id": "CEVD-A7B-000057",
+        "min_id": "CEVD-A7B-000002",
+        "rows": 56
+      },
+      "customer_contact": {
+        "max_id": "CONT-A5B-000021",
+        "min_id": "CONT-A5B-000001",
+        "rows": 21
+      },
+      "customer_financial_daily": {
+        "ending_balance_cents": 3503625,
+        "net_flow_cents": -12863,
+        "rows": 7
+      },
+      "customer_transaction": {
+        "amount_usd_cents": 432863,
+        "max_id": "TXN-A8B-000029",
+        "min_id": "TXN-A8B-000001",
+        "rows": 29
+      },
+      "digital_event": {
+        "max_id": null,
+        "min_id": null,
+        "rows": 0
+      },
+      "digital_session": {
+        "max_id": "SESS-A1B-000378",
+        "min_id": "SESS-A1B-000001",
+        "rows": 378
+      },
+      "dim_account": {
+        "max_id": "ACCT-0500",
+        "min_id": "ACCT-0001",
+        "rows": 500
+      },
+      "dim_counterparty": {
+        "max_id": "CPTY-010",
+        "min_id": "CPTY-001",
+        "rows": 10
+      },
+      "dim_customer": {
+        "max_id": "CUST-0500",
+        "min_id": "CUST-0001",
+        "rows": 500
+      },
+      "dim_device": {
+        "max_id": "DEV-0040",
+        "min_id": "DEV-0001",
+        "rows": 40
+      },
+      "dim_entity": {
+        "max_id": "ENT-06",
+        "min_id": "ENT-01",
+        "rows": 6
+      },
+      "dim_merchant": {
+        "max_id": "MERCH-040",
+        "min_id": "MERCH-001",
+        "rows": 40
+      },
+      "dim_processor": {
+        "max_id": "P4",
+        "min_id": "P1",
+        "rows": 4
+      },
+      "dim_product": {
+        "max_id": "PROD-012",
+        "min_id": "PROD-001",
+        "rows": 12
+      },
+      "dispute_case": {
+        "disputed_amount_cents": 743531,
+        "max_id": "DISP-A5B-000021",
+        "min_id": "DISP-A5B-000001",
+        "rows": 21
+      },
+      "dispute_event": {
+        "max_id": "DEVT-A5B-000021",
+        "min_id": "DEVT-A5B-000001",
+        "rows": 21
+      },
+      "fraud_alert": {
+        "max_id": "FALT-A3B-000021",
+        "min_id": "FALT-A3B-000001",
+        "rows": 21
+      },
+      "fraud_case": {
+        "confirmed_loss_cents": 379291,
+        "max_id": "FCASE-A3B-000021",
+        "min_id": "FCASE-A3B-000001",
+        "rows": 21
+      },
+      "fraud_evidence": {
+        "max_id": "FEVD-A3B-000021",
+        "min_id": "FEVD-A3B-000001",
+        "rows": 21
+      },
+      "manual_review": {
+        "max_id": "REV-A1B-000374",
+        "min_id": "REV-A1B-000001",
+        "rows": 44
+      },
+      "payment_event": {
+        "amount_cents": 7215930317,
+        "amount_usd_cents": 8305562784,
+        "approvals": 308798,
+        "first_event": "2026-07-18 09:00:00.000000",
+        "last_event": "2026-07-25 08:59:51.428571",
+        "latency_sum": 47566680,
+        "max_sequence": 1007900037,
+        "min_sequence": 0,
+        "processors": 4,
+        "rows": 322000,
+        "timeouts": 3220
+      },
+      "portfolio_exposure_snapshot": {
+        "committed_amount_cents": 11500000000,
+        "max_id": "FAC-A7B-006",
+        "min_id": "FAC-A7B-001",
+        "outstanding_amount_cents": 10000000000,
+        "rows": 6
+      },
+      "provisional_credit": {
+        "amount_cents": 404054,
+        "max_id": "CRED-A5B-000021",
+        "min_id": "CRED-A5B-000004",
+        "rows": 10
+      },
+      "queued_payment": {
+        "amount_usd_cents": 292449427,
+        "max_id": "QP-A6B-06-01",
+        "min_id": "QP-A6B-01-00",
+        "rows": 12
+      },
+      "settlement": {
+        "amount_usd_cents": 4396341428,
+        "max_id": "STL-A6B-DELAYCANDIDATE",
+        "min_id": "STL-A6B-01-00",
+        "rows": 19
+      }
+    }
+  }
+}

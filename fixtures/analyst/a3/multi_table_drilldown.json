@@ -1,0 +1,51 @@
+{
+  "anchor": "a3",
+  "fixture_version": "1.0.0",
+  "id": "multi_table_drilldown",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "For the highest-loss fraud type, list the supporting cases with device reuse and velocity evidence.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "The highest-loss fraud type is account_takeover. Its top three cases by loss are CASE-00042 ($4,200, device reused on 5 prior alerts), CASE-00058 ($3,900, device reused on 4 prior alerts), and CASE-00061 ($3,600, new device).",
+      "sql": {
+        "command": "SELECT r.case_id, r.confirmed_loss_usd, e.device_alert_count FROM aa_fraud_case_review r JOIN aa_fraud_segment_evidence e ON e.case_id = r.case_id WHERE r.fraud_type = 'account_takeover' ORDER BY r.confirmed_loss_usd DESC LIMIT 3",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_fraud_case_review",
+          "aa_fraud_segment_evidence"
+        ]
+      },
+      "table": {
+        "columns": [
+          "case_id",
+          "confirmed_loss_usd",
+          "device_alert_count"
+        ],
+        "rows": [
+          [
+            "CASE-00042",
+            4200,
+            5
+          ],
+          [
+            "CASE-00058",
+            3900,
+            4
+          ],
+          [
+            "CASE-00061",
+            3600,
+            0
+          ]
+        ],
+        "row_count": 3,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

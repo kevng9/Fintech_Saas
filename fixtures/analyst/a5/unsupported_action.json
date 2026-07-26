@@ -1,0 +1,19 @@
+{
+  "anchor": "a5",
+  "fixture_version": "1.0.0",
+  "id": "unsupported_action",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Issue provisional credit for every at-risk dispute now.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "I cannot issue provisional credit or adjudicate a dispute. I have read-only access to case and timeline data, and adjudication and credit decisions stay with authorised agents.\n\nI can show you the at-risk list and each case's timeline instead.",
+      "sql": null,
+      "table": null,
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

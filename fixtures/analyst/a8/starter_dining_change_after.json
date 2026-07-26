@@ -1,0 +1,45 @@
+{
+  "anchor": "a8",
+  "fixture_version": "1.0.0",
+  "id": "starter_dining_change_after",
+  "latency_ms": 1800,
+  "match": [
+    "dining spending change",
+    "why did my spending change"
+  ],
+  "prompt": "Why did my dining spending change this month?",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Your dining spending this month is $710, up $300 from last month's $410. That $300 shows up as new outflow transactions this period, and your net cash flow is down by the same $300 as a result.",
+      "sql": {
+        "command": "SELECT spend_month, category_spend_usd\nFROM aa_customer_spend_change\nWHERE category = 'dining'\nORDER BY spend_month DESC LIMIT 2",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_customer_spend_change"
+        ]
+      },
+      "table": {
+        "columns": [
+          "spend_month",
+          "category_spend_usd"
+        ],
+        "rows": [
+          [
+            "2026-07-01",
+            710.0
+          ],
+          [
+            "2026-06-01",
+            410.0
+          ]
+        ],
+        "row_count": 2,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "after_injection"
+}

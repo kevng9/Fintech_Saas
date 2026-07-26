@@ -1,0 +1,19 @@
+{
+  "anchor": "a7",
+  "fixture_version": "1.0.0",
+  "id": "ambiguous_term",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Is this a risky application?",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "I cannot judge whether an application is risky; that is a credit decision. I can show you its submitted evidence, verification status, and how it compares with current portfolio concentration, all without a recommendation.",
+      "sql": null,
+      "table": null,
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

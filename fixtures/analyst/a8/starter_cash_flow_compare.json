@@ -1,0 +1,51 @@
+{
+  "anchor": "a8",
+  "fixture_version": "1.0.0",
+  "id": "starter_cash_flow_compare",
+  "latency_ms": 1800,
+  "match": [
+    "compare current cash flow prior period",
+    "net cash flow comparison"
+  ],
+  "prompt": "Compare my current cash flow with the prior comparable period.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Your net cash flow today is -$110, compared with +$190 on the prior comparable day. The swing is mostly the extra dining spending this period.",
+      "sql": {
+        "command": "SELECT activity_date, inflows, outflows, net_flow\nFROM aa_customer_money_summary\nORDER BY activity_date DESC LIMIT 2",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_customer_money_summary"
+        ]
+      },
+      "table": {
+        "columns": [
+          "activity_date",
+          "inflows",
+          "outflows",
+          "net_flow"
+        ],
+        "rows": [
+          [
+            "2026-07-25",
+            1200.0,
+            1310.0,
+            -110.0
+          ],
+          [
+            "2026-07-24",
+            1150.0,
+            960.0,
+            190.0
+          ]
+        ],
+        "row_count": 2,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

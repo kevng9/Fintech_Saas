@@ -1,0 +1,42 @@
+{
+  "anchor": "a6",
+  "fixture_version": "1.0.0",
+  "id": "ambiguous_term",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Which entity is tightest?",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "\"Tightest\" could mean the lowest available liquidity or the largest negative net settlement, and entities do not rank the same way on each. EMEA Funding Ltd. is tightest on both today, but tell me which measure you want and I will rank on it.",
+      "sql": {
+        "command": "SELECT entity_name, available_liquidity_24h_usd FROM aa_liquidity_position ORDER BY available_liquidity_24h_usd ASC",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_liquidity_position"
+        ]
+      },
+      "table": {
+        "columns": [
+          "entity_name",
+          "available_liquidity_24h_usd"
+        ],
+        "rows": [
+          [
+            "EMEA Funding Ltd.",
+            63000000
+          ],
+          [
+            "APAC Settlement Pte.",
+            62000000
+          ]
+        ],
+        "row_count": 2,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

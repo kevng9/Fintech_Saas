@@ -1,0 +1,42 @@
+{
+  "anchor": "a6",
+  "fixture_version": "1.0.0",
+  "id": "session_followup",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Now show the same list in EUR only.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Filtered to EUR: 2 queued payments totalling USD 10.0 million fall in the next funding window.",
+      "sql": {
+        "command": "SELECT queued_payment_id, amount_usd FROM aa_funding_window WHERE entity_id = 'ENT-EMEA' AND currency = 'EUR'",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_funding_window"
+        ]
+      },
+      "table": {
+        "columns": [
+          "queued_payment_id",
+          "amount_usd"
+        ],
+        "rows": [
+          [
+            "QP-88117",
+            6100000
+          ],
+          [
+            "QP-88121",
+            3900000
+          ]
+        ],
+        "row_count": 2,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

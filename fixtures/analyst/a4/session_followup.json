@@ -1,0 +1,40 @@
+{
+  "anchor": "a4",
+  "fixture_version": "1.0.0",
+  "id": "session_followup",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Now show only alerts assigned to the correspondent-banking queue.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Restricting to the correspondent_banking queue: 62 open alerts, 10 at SLA risk, averaging 33 hours old.",
+      "sql": {
+        "command": "SELECT open_alert_count, sla_risk_count, avg_age_hours FROM aa_aml_backlog WHERE assigned_queue = 'correspondent_banking'",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_aml_backlog"
+        ]
+      },
+      "table": {
+        "columns": [
+          "open_alert_count",
+          "sla_risk_count",
+          "avg_age_hours"
+        ],
+        "rows": [
+          [
+            62,
+            10,
+            33
+          ]
+        ],
+        "row_count": 1,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

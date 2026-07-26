@@ -1,0 +1,61 @@
+{
+  "anchor": "a5",
+  "fixture_version": "1.0.0",
+  "id": "starter_sla_risk_baseline",
+  "latency_ms": 1800,
+  "match": [
+    "disputes at risk of sla breach",
+    "sla risk queue"
+  ],
+  "prompt": "Show disputes at risk of SLA breach in the next 24 logical hours.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "312 disputes are open and 41 are at risk of an SLA breach in the next 24 hours, totalling $186,400 of disputed value at risk. The DUPLICATE_CHARGE reason code in the core_ops queue carries the most risk at 14 disputes.",
+      "sql": {
+        "command": "SELECT queue_id, reason_code, priority, open_dispute_count, sla_risk_count, sla_risk_amount_total\nFROM aa_dispute_sla_risk\nORDER BY sla_risk_count DESC, sla_risk_amount_total DESC",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_dispute_sla_risk"
+        ]
+      },
+      "table": {
+        "columns": [
+          "queue_id",
+          "reason_code",
+          "open_dispute_count",
+          "sla_risk_count",
+          "sla_risk_amount_total"
+        ],
+        "rows": [
+          [
+            "core_ops",
+            "DUPLICATE_CHARGE",
+            58,
+            14,
+            41200
+          ],
+          [
+            "core_ops",
+            "SERVICE_NOT_RECEIVED",
+            44,
+            9,
+            28600
+          ],
+          [
+            "escalations",
+            "FRIENDLY_FRAUD",
+            22,
+            6,
+            19800
+          ]
+        ],
+        "row_count": 3,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "baseline"
+}

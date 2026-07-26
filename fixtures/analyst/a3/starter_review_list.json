@@ -1,0 +1,65 @@
+{
+  "anchor": "a3",
+  "fixture_version": "1.0.0",
+  "id": "starter_review_list",
+  "latency_ms": 1800,
+  "match": [
+    "cases for investigator review",
+    "highest loss cases"
+  ],
+  "prompt": "List supporting cases for human investigator review.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Twelve open or recently-dispositioned cases are ranked below by confirmed loss, then alert score, for investigator review.",
+      "sql": {
+        "command": "SELECT case_id, fraud_type, channel, score, human_disposition, confirmed_loss_usd\nFROM aa_fraud_case_review\nORDER BY confirmed_loss_usd DESC, score DESC LIMIT 12",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_fraud_case_review"
+        ]
+      },
+      "table": {
+        "columns": [
+          "case_id",
+          "fraud_type",
+          "channel",
+          "score",
+          "human_disposition",
+          "confirmed_loss_usd"
+        ],
+        "rows": [
+          [
+            "CASE-00042",
+            "account_takeover",
+            "card_not_present",
+            0.91,
+            "confirmed_fraud",
+            4200
+          ],
+          [
+            "CASE-00058",
+            "account_takeover",
+            "card_not_present",
+            0.88,
+            "open",
+            0
+          ],
+          [
+            "CASE-00071",
+            "synthetic_identity",
+            "ach",
+            0.83,
+            "legitimate",
+            0
+          ]
+        ],
+        "row_count": 3,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

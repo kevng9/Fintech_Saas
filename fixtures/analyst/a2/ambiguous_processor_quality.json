@@ -1,0 +1,69 @@
+{
+  "anchor": "a2",
+  "fixture_version": "1.0.0",
+  "id": "ambiguous_processor_quality",
+  "latency_ms": 2200,
+  "match": [
+    "performing badly",
+    "worst processor",
+    "which processor is bad"
+  ],
+  "prompt": "Which processor is performing badly?",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "chart": null,
+      "error": null,
+      "sql": {
+        "command": "SELECT processor_id, processor_name,\n       SUM(approvals) / SUM(attempts) AS approval_rate,\n       MAX(p95_latency_ms) AS p95_latency_ms,\n       SUM(timeout_declines) / SUM(attempts) AS timeout_decline_rate\nFROM aa_payment_performance_hourly\nWHERE hour_start >= (SELECT MAX(hour_start) FROM aa_payment_performance_hourly)\nGROUP BY processor_id, processor_name\nORDER BY approval_rate",
+        "confidence_score": 0.95,
+        "tables_used": [
+          "aa_payment_performance_hourly"
+        ]
+      },
+      "table": {
+        "columns": [
+          "processor_id",
+          "processor_name",
+          "approval_rate",
+          "p95_latency_ms",
+          "timeout_decline_rate"
+        ],
+        "row_count": 4,
+        "rows": [
+          [
+            "P1",
+            "Northwind Pay",
+            0.9704,
+            150,
+            0.0099
+          ],
+          [
+            "P2",
+            "Cardinal Rails",
+            0.9435,
+            420,
+            0.0222
+          ],
+          [
+            "P3",
+            "Vantage Gateway",
+            0.9507,
+            200,
+            0.0099
+          ],
+          [
+            "P4",
+            "Meridian Direct",
+            0.9409,
+            260,
+            0.0099
+          ]
+        ],
+        "truncated": false
+      },
+      "text": "\"Badly\" can mean several different things here, so I have not picked one for you. I can rank processors by approval rate, by p95 authorization latency, or by timeout share, and those rankings do not always agree.\n\nBelow is the most recent logical hour on all three measures so you can see which one you mean. Tell me which measure matters and I will rank on it against the seven-day baseline."
+    }
+  ],
+  "scenario_state": "any"
+}

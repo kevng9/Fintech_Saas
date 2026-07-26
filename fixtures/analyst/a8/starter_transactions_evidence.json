@@ -1,0 +1,57 @@
+{
+  "anchor": "a8",
+  "fixture_version": "1.0.0",
+  "id": "starter_transactions_evidence",
+  "latency_ms": 1800,
+  "match": [
+    "transactions that explain the change",
+    "what transactions"
+  ],
+  "prompt": "Show the transactions that explain the change.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Six new dining transactions this period, flagged below, add up to the $300 increase.",
+      "sql": {
+        "command": "SELECT event_time, merchant_name, amount_usd, is_scenario_event\nFROM aa_customer_transaction_evidence\nWHERE category = 'dining'\nORDER BY event_time DESC LIMIT 6",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_customer_transaction_evidence"
+        ]
+      },
+      "table": {
+        "columns": [
+          "event_time",
+          "merchant_name",
+          "amount_usd",
+          "is_scenario_event"
+        ],
+        "rows": [
+          [
+            "2026-07-25 19:40:00",
+            "Harbor Bistro",
+            52.0,
+            "New this period"
+          ],
+          [
+            "2026-07-25 12:15:00",
+            "Corner Cafe",
+            48.0,
+            "New this period"
+          ],
+          [
+            "2026-07-24 20:05:00",
+            "Riverside Grill",
+            60.0,
+            "New this period"
+          ]
+        ],
+        "row_count": 3,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

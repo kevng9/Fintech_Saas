@@ -1,0 +1,58 @@
+{
+  "anchor": "a3",
+  "fixture_version": "1.0.0",
+  "id": "starter_segment_evidence",
+  "latency_ms": 1800,
+  "match": [
+    "device reuse account age merchant velocity",
+    "segment evidence"
+  ],
+  "prompt": "For the highest-loss segment, compare device reuse, account age, merchant, and velocity.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "The highest-loss segment (account_takeover / card_not_present) shows heavy device reuse: the median device has 4 prior alerts and the median account is 11 days old, both well below the book average, alongside repeat merchants in digital goods.",
+      "sql": {
+        "command": "SELECT merchant_category, customer_risk_tier, account_age_days, device_risk_band, device_alert_count\nFROM aa_fraud_segment_evidence\nWHERE case_id IN (SELECT case_id FROM aa_fraud_case_review WHERE fraud_type = 'account_takeover' ORDER BY confirmed_loss_usd DESC LIMIT 20)",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_fraud_segment_evidence",
+          "aa_fraud_case_review"
+        ]
+      },
+      "table": {
+        "columns": [
+          "merchant_category",
+          "account_age_days",
+          "device_risk_band",
+          "device_alert_count"
+        ],
+        "rows": [
+          [
+            "Digital Goods",
+            9,
+            "high",
+            5
+          ],
+          [
+            "Digital Goods",
+            14,
+            "high",
+            3
+          ],
+          [
+            "Electronics",
+            6,
+            "medium",
+            4
+          ]
+        ],
+        "row_count": 3,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

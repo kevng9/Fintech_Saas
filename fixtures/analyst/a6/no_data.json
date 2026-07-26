@@ -1,0 +1,33 @@
+{
+  "anchor": "a6",
+  "fixture_version": "1.0.0",
+  "id": "no_data",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Show the liquidity position for currency = 'JPY'.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "There is no liquidity position data for currency = 'JPY' in this dataset. The currencies present are USD, EUR, and SGD, so the filter returns no rows rather than a low value.",
+      "sql": {
+        "command": "SELECT * FROM aa_liquidity_position WHERE currency = 'JPY'",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_liquidity_position"
+        ]
+      },
+      "table": {
+        "columns": [
+          "currency",
+          "available_liquidity_24h_usd"
+        ],
+        "rows": [],
+        "row_count": 0,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "any"
+}

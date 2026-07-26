@@ -1,0 +1,60 @@
+{
+  "anchor": "a7",
+  "fixture_version": "1.0.0",
+  "id": "starter_operations_baseline",
+  "latency_ms": 1800,
+  "match": [
+    "application volume manual review rate time to decision"
+  ],
+  "prompt": "Show application volume, manual-review rate, and time to decision by product and channel.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Over the last 30 logical days, 1,860 applications were submitted, 22.0% referred to manual review, averaging 14.2 hours to decision. AUTO_LOAN via the broker channel has the highest review rate at 34.0%.",
+      "sql": {
+        "command": "SELECT product_name, channel, application_count, manual_review_rate, avg_hours_to_decision, requested_amount_total\nFROM aa_credit_operations\nWHERE submitted_date > DATE_SUB((SELECT logical_time FROM demo_active_run WHERE singleton_id = 1), INTERVAL 30 DAY)",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_credit_operations"
+        ]
+      },
+      "table": {
+        "columns": [
+          "product_name",
+          "channel",
+          "application_count",
+          "manual_review_rate",
+          "avg_hours_to_decision"
+        ],
+        "rows": [
+          [
+            "Auto Loan",
+            "broker",
+            420,
+            0.34,
+            19.1
+          ],
+          [
+            "Credit Card",
+            "digital",
+            980,
+            0.15,
+            6.4
+          ],
+          [
+            "Personal Line",
+            "branch",
+            460,
+            0.24,
+            21.8
+          ]
+        ],
+        "row_count": 3,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "baseline"
+}

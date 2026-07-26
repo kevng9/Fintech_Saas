@@ -1,0 +1,27 @@
+{
+  "anchor": "a5",
+  "fixture_version": "1.0.0",
+  "id": "invalid_filter",
+  "latency_ms": 1800,
+  "match": [],
+  "prompt": "Show disputes for opened_at = 'not-a-date'.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "'not-a-date' is not a timestamp, so I cannot filter opened_at on it and I will not guess a period. opened_at values are logical timestamps such as 2026-07-25 08:00:00.",
+      "sql": null,
+      "table": {
+        "columns": [
+          "opened_at",
+          "open_dispute_count"
+        ],
+        "rows": [],
+        "row_count": 0,
+        "truncated": false
+      },
+      "chart": null,
+      "error": "invalid_filter_value"
+    }
+  ],
+  "scenario_state": "any"
+}

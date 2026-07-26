@@ -1,0 +1,61 @@
+{
+  "anchor": "a5",
+  "fixture_version": "1.0.0",
+  "id": "starter_sla_risk_after",
+  "latency_ms": 1800,
+  "match": [
+    "disputes at risk of sla breach",
+    "sla risk queue"
+  ],
+  "prompt": "Show disputes at risk of SLA breach in the next 24 logical hours.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Open disputes jumped to 332 and SLA-risk count to 53 after the injected merchant-outage surge: 20 new disputes landed with reason code MERCHANT_OUTAGE, of which 12 are already at SLA risk, which is now the leading reason code in the ranking.",
+      "sql": {
+        "command": "SELECT queue_id, reason_code, priority, open_dispute_count, sla_risk_count, sla_risk_amount_total\nFROM aa_dispute_sla_risk\nORDER BY sla_risk_count DESC, sla_risk_amount_total DESC",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_dispute_sla_risk"
+        ]
+      },
+      "table": {
+        "columns": [
+          "queue_id",
+          "reason_code",
+          "open_dispute_count",
+          "sla_risk_count",
+          "sla_risk_amount_total"
+        ],
+        "rows": [
+          [
+            "core_ops",
+            "MERCHANT_OUTAGE",
+            20,
+            12,
+            15800
+          ],
+          [
+            "core_ops",
+            "DUPLICATE_CHARGE",
+            58,
+            14,
+            41200
+          ],
+          [
+            "core_ops",
+            "SERVICE_NOT_RECEIVED",
+            44,
+            9,
+            28600
+          ]
+        ],
+        "row_count": 3,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "after_injection"
+}
