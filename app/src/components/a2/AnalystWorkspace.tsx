@@ -16,6 +16,15 @@ import { AnalystTable } from "@/components/AnalystTable";
 import { useDemoState } from "@/components/DemoStateProvider";
 import { Banner, Card, Pill, type Tone } from "@/components/ui";
 import { readChatStream, type StreamItem } from "@/lib/analyst/chatStream";
+import {
+  contextualizeStarter,
+  entityLabel,
+  type AnalystPageContext,
+} from "@/lib/analyst/pageContext";
+import {
+  isUnsupportedSinglestoreSqlError,
+  SINGLESTORE_SQL_RETRY_HINT,
+} from "@/lib/analyst/singlestoreSql";
 
 interface Turn {
   id: string;
@@ -109,14 +118,24 @@ function TurnBody({ turn }: { turn: Turn }) {
   );
 }
 
+function turnLooksLikeDialectError(items: StreamItem[], error: string | null): boolean {
+  if (isUnsupportedSinglestoreSqlError(error)) return true;
+  return items.some(
+    (item) =>
+      isUnsupportedSinglestoreSqlError(item.text) || isUnsupportedSinglestoreSqlError(item.sql)
+  );
+}
+
 export function AnalystWorkspace({
   anchorId,
   guardrailText,
   humanOwnership,
+  pageContext = null,
 }: {
   anchorId: string;
   guardrailText: string;
   humanOwnership: string | null;
+  pageContext?: AnalystPageContext | null;
 }) {
   const { analystMode, envelope, config, tabId, persona } = useDemoState();
   const [starters, setStarters] = useState<string[]>([]);
@@ -130,6 +149,12 @@ export function AnalystWorkspace({
   const runId = envelope?.state.run_id ?? null;
   const anchorSummary = config?.anchors.find((anchor) => anchor.id === anchorId);
   const configured = anchorSummary?.analyst_configured ?? false;
+  const contextKey = pageContext ? `${pageContext.entityType}:${pageContext.entityId}` : "";
+
+  const displayStarters = useMemo(
+    () => starters.map((starter) => contextualizeStarter(starter, pageContext)),
+    [starters, pageContext]
+  );
 
   const pinTranscript = useCallback((force = false) => {
     const node = transcriptRef.current;
@@ -159,7 +184,8 @@ export function AnalystWorkspace({
   }, [anchorId]);
 
   // A reset produces a new run, which invalidates the conversation: the data
-  // behind the previous answers no longer exists.
+  // behind the previous answers no longer exists. Changing the open entity
+  // also starts a fresh thread so prior answers do not imply the wrong id.
   useEffect(() => {
     setTurns([]);
     if (runId === null) return;
@@ -168,7 +194,7 @@ export function AnalystWorkspace({
       headers: { "Content-Type": "application/json", "x-demo-tab-id": tabId },
       body: JSON.stringify({ anchor: anchorId }),
     }).catch(() => undefined);
-  }, [runId, anchorId, tabId]);
+  }, [runId, anchorId, tabId, contextKey]);
 
   // Keep the transcript pinned inside its own scroller. Never use
   // scrollIntoView — that scrolls the whole page and makes the layout bounce
@@ -212,11 +238,16 @@ export function AnalystWorkspace({
           current.map((turn) => (turn.id === turnId ? { ...turn, ...changes } : turn))
         );
 
-      try {
+      const runOnce = async (outbound: string) => {
         const response = await fetch("/api/v1/analyst/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-demo-tab-id": tabId },
-          body: JSON.stringify({ anchor: anchorId, message: trimmed, mode: analystMode }),
+          body: JSON.stringify({
+            anchor: anchorId,
+            message: outbound,
+            mode: analystMode,
+            page_context: pageContext,
+          }),
           signal: controller.signal,
         });
 
@@ -224,16 +255,18 @@ export function AnalystWorkspace({
           const body = (await response.json().catch(() => ({}))) as {
             error?: { message?: string };
           };
-          patch({
-            streaming: false,
+          return {
+            ok: false as const,
+            source: null as "live" | "fixture" | null,
             error: body.error?.message ?? `Analyst request failed (${response.status}).`,
-            latencyMs: Math.round(performance.now() - startedAt),
-          });
-          return;
+            items: [] as StreamItem[],
+          };
         }
 
+        const source =
+          (response.headers.get("x-analyst-source") as "live" | "fixture" | null) ?? null;
         patch({
-          source: (response.headers.get("x-analyst-source") as "live" | "fixture") ?? null,
+          source,
           fixtureId: response.headers.get("x-analyst-fixture-id"),
           degradedReason: response.headers.get("x-analyst-degraded-reason"),
         });
@@ -243,9 +276,43 @@ export function AnalystWorkspace({
           (state) => patch({ items: state.items, error: state.error }),
           controller.signal
         );
-        patch({
-          items: final.items,
+        return {
+          ok: true as const,
+          source,
           error: final.error,
+          items: final.items,
+        };
+      };
+
+      try {
+        let result = await runOnce(trimmed);
+        if (!result.ok) {
+          patch({
+            streaming: false,
+            error: result.error,
+            latencyMs: Math.round(performance.now() - startedAt),
+          });
+          return;
+        }
+
+        // Aura sometimes emits MySQL GROUP_CONCAT shapes SingleStore rejects
+        // (error 1706). Retry once on the same turn with an explicit SQL constraint.
+        if (result.source === "live" && turnLooksLikeDialectError(result.items, result.error)) {
+          patch({ items: [], error: null, streaming: true });
+          result = await runOnce(`${trimmed}\n\n${SINGLESTORE_SQL_RETRY_HINT}`);
+          if (!result.ok) {
+            patch({
+              streaming: false,
+              error: result.error,
+              latencyMs: Math.round(performance.now() - startedAt),
+            });
+            return;
+          }
+        }
+
+        patch({
+          items: result.items,
+          error: result.error,
           streaming: false,
           latencyMs: Math.round(performance.now() - startedAt),
         });
@@ -260,7 +327,7 @@ export function AnalystWorkspace({
         setPending(false);
       }
     },
-    [analystMode, anchorId, pending, pinTranscript, tabId]
+    [analystMode, anchorId, pageContext, pending, pinTranscript, tabId]
   );
 
   const modeNote = useMemo(() => {
@@ -306,6 +373,14 @@ export function AnalystWorkspace({
       }
     >
       <div className="flex min-h-0 flex-col gap-3">
+        {pageContext && (
+          <Banner tone="accent">
+            Looking at {entityLabel(pageContext.entityType)}{" "}
+            <span className="font-semibold">{pageContext.entityId}</span>. Questions about the
+            selected record use this id automatically.
+          </Banner>
+        )}
+
         {persona === "risk" && (
           <Banner tone="accent">
             Analyst reads only the curated views in this anchor&apos;s Domain. It cannot see raw
@@ -314,7 +389,7 @@ export function AnalystWorkspace({
         )}
 
         <div className="flex flex-wrap gap-2">
-          {starters.map((starter) => (
+          {displayStarters.map((starter) => (
             <button
               key={starter}
               type="button"

@@ -9,6 +9,8 @@ import {
 } from "@/lib/analyst/client";
 import { findFixture, fixtureUnavailableResult } from "@/lib/analyst/fixtures";
 import { canGoLive, fixtureFallbackReason, resolveMode, scenarioState } from "@/lib/analyst/mode";
+import { withPageContext, type AnalystPageContext } from "@/lib/analyst/pageContext";
+import { SINGLESTORE_SQL_LIVE_HINT } from "@/lib/analyst/singlestoreSql";
 import { clearSession, getSession, rememberSession } from "@/lib/analyst/sessionStore";
 import { fixtureStream, tapSessionId } from "@/lib/analyst/sse";
 import { readDemoState } from "@/lib/demoState";
@@ -18,6 +20,15 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 const SOURCE_HEADER = "x-analyst-source";
+
+function readPageContext(raw: unknown): AnalystPageContext | null {
+  if (!raw || typeof raw !== "object") return null;
+  const value = raw as { entityType?: unknown; entityId?: unknown };
+  const entityType = clampString(String(value.entityType ?? ""), 32).toLowerCase();
+  const entityId = clampString(String(value.entityId ?? ""), 128);
+  if (!entityType || !entityId) return null;
+  return { entityType, entityId };
+}
 
 /**
  * Conversational Analyst proxy.
@@ -37,10 +48,12 @@ export async function POST(req: NextRequest) {
     message?: string;
     mode?: string;
     included_events?: string[];
+    page_context?: unknown;
   }>(req);
 
   const anchorId = clampString(body.anchor, 8).toLowerCase();
   const message = clampString(body.message, analystConfig.maxMessageChars).trim();
+  const pageContext = readPageContext(body.page_context);
   const anchor = requireAvailableAnchor(anchorId);
   if (!anchor) {
     return fail(req, 404, "anchor_unavailable", `Anchor ${anchorId || "?"} is not available.`);
@@ -58,12 +71,19 @@ export async function POST(req: NextRequest) {
   const runId = state?.runId ?? 0;
   const tab = tabId(req);
   const existingSession = getSession(appUserId, tab, anchorId, runId);
+  // Live Analyst has no browser selection; attach the open entity id when present.
+  // Also remind the model of SingleStore SQL limits — Aura still emits GROUP_CONCAT
+  // patterns that fail with error 1706 until Domain instructions are republished.
+  const liveMessage = clampString(
+    [withPageContext(message, pageContext), SINGLESTORE_SQL_LIVE_HINT].join("\n\n"),
+    analystConfig.maxMessageChars + 420
+  );
 
   if (canGoLive(anchorId, mode)) {
     try {
       const upstream = await analystChat(
         anchorId,
-        message,
+        liveMessage,
         existingSession?.sessionId ?? null,
         includedEvents
       );

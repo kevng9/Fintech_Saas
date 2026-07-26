@@ -175,6 +175,21 @@ Usually one of:
 
 Restart the Next.js process after editing `.env.local`, then ask again.
 
+### Live answer shows SingleStore error 1706 (`GROUP_CONCAT` / `DISTINCT`)
+
+Aura sometimes generates MySQL-shaped SQL that SingleStore rejects:
+
+`Feature 'GROUP_CONCAT with ORDER BY mixed with DISTINCT aggregates' is not supported`
+
+The app appends a SingleStore SQL constraint on every live chat prompt and
+retries once with a stronger hint when that error appears. Re-ask the question
+after a refresh if you still see it.
+
+For a lasting fix, republish Domain instructions from
+`domains/a7-credit-risk/manifest.yaml` (context_version `1.1.0`+), which tells
+Analyst to use detail-row `SELECT`s on `aa_credit_application_evidence` and
+never `GROUP_CONCAT`.
+
 ### Live calls fail with 404 on the Domain
 
 The Domain does not exist, or its name does not match the manifest's

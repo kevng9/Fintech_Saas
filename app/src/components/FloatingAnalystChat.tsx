@@ -13,6 +13,7 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AnalystWorkspace } from "@/components/a2/AnalystWorkspace";
 import { useDemoState } from "@/components/DemoStateProvider";
+import { parseAnalystPageContext } from "@/lib/analyst/pageContext";
 
 const OPEN_KEY = "demo-analyst-chat-open";
 
@@ -25,6 +26,7 @@ export function FloatingAnalystChat() {
     () => pathname.match(/^\/anchors\/(a[1-8])(?:\/|$)/)?.[1] ?? null,
     [pathname]
   );
+  const pageContext = useMemo(() => parseAnalystPageContext(pathname), [pathname]);
   const anchor = config?.anchors.find((item) => item.id === anchorId) ?? null;
 
   useEffect(() => {
@@ -63,9 +65,12 @@ export function FloatingAnalystChat() {
         }`}
       >
         <header className="flex shrink-0 items-center justify-between border-b border-white/10 bg-[var(--navy)] px-4 py-3 text-white">
-          <div>
+          <div className="min-w-0">
             <p className="text-[13px] font-semibold">Aura Analyst</p>
-            <p className="mt-0.5 text-[10px] text-white/55">{anchor.name}</p>
+            <p className="mt-0.5 truncate text-[10px] text-white/55">
+              {anchor.name}
+              {pageContext ? ` · ${pageContext.entityType} ${pageContext.entityId}` : ""}
+            </p>
           </div>
           <button
             type="button"
@@ -82,6 +87,7 @@ export function FloatingAnalystChat() {
             anchorId={anchorId}
             guardrailText={anchor.guardrailText}
             humanOwnership={anchor.humanOwnership}
+            pageContext={pageContext}
           />
         </div>
       </aside>

@@ -74,6 +74,11 @@ decisions: it must not approve, decline, block, route, file, release, price,
 adjudicate, or contact a customer, and it must not recommend routing or contract
 changes. Trimming these changes what the demo demonstrates.
 
+For A7 (and any Domain after a `context_version` bump), also keep the
+SingleStore SQL constraints: Analyst must not emit `GROUP_CONCAT` or mix
+`DISTINCT` aggregates with `ORDER BY` (error 1706). Evidence questions must use
+detail-row `SELECT`s.
+
 ## 6. Add the starter prompts
 
 Add the three `starter_prompts` from the manifest. These appear as conversation

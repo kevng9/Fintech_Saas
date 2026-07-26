@@ -8,7 +8,7 @@
 
 anchor: a7
 domain_name: a7_credit_risk
-context_version: 1.0.0
+context_version: 1.1.0
 fixture_version: 1.0.0
 validated_at: null
 database: fintech_demo
@@ -41,7 +41,9 @@ tables:
     description: >-
       Evidence items submitted for one application, and whether each is
       verified. Use this as the entity detail source for an application, and
-      to answer "what's missing" without proposing a decision.
+      to answer "what's missing" without proposing a decision. Query it with
+      a simple SELECT filtered by application_id (one row per evidence item).
+      Do not collapse rows with GROUP_CONCAT.
     grain: one row per evidence item per application
     columns:
       evidence_id: Synthetic evidence item identifier.
@@ -52,7 +54,7 @@ tables:
       metric_name: Name of the observed metric, for example debt_to_income.
       metric_value: Observed value of the metric.
       observed_at: Logical time the evidence was observed or recorded.
-      verification_status: verified or unverified.
+      verification_status: verified or unverified. Treat unverified as still outstanding or missing.
       provenance_ref: Reference to the underlying source document or feed.
 
   - name: aa_portfolio_concentration
@@ -115,6 +117,13 @@ instructions: |
   percentages with two decimals.
   Always aggregate value using the *_usd / amount columns, and say that
   amounts are normalised to US dollars.
+  When summarizing evidence for one application, SELECT detail rows from
+  aa_credit_application_evidence filtered by application_id. Treat
+  verification_status = 'unverified' as still missing or outstanding. Do not
+  invent a required-checklist table that is not in the Domain.
+  SingleStore SQL constraints: never use GROUP_CONCAT; never mix DISTINCT
+  aggregates with ORDER BY in the same query (error 1706). Prefer detail-row
+  SELECTs and summarize in prose.
   When evidence is incomplete, say what is missing.
   Never reveal or request secrets or direct identifiers.
   Prefer a concise answer with a supporting table or chart.

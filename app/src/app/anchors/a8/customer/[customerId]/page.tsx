@@ -123,6 +123,7 @@ export default function CustomerMoneyPage() {
           "Aura Analyst explains this customer's own transaction history. It does not provide financial or investment advice."
         }
         humanOwnership={overview?.anchor.humanOwnership ?? null}
+        pageContext={{ entityType: "customer", entityId: customerId }}
       />
     </div>
   );
