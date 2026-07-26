@@ -4,6 +4,7 @@
 
 import Link from "next/link";
 import { useDemoState } from "@/components/DemoStateProvider";
+import { PresenterCard } from "@/components/PresenterCard";
 import { Banner, Pill, Skeleton } from "@/components/ui";
 import { count, logicalTime } from "@/lib/format";
 import type { AnchorSummaryPayload } from "@/lib/apiTypes";
@@ -77,6 +78,8 @@ export default function LaunchpadPage() {
           The payments environment is not connected. Open Demo controls for operator details.
         </Banner>
       )}
+
+      <PresenterCard />
 
       <section className="business-hero grid min-h-[360px] gap-8 px-8 py-9 lg:grid-cols-[1.25fr_.75fr] lg:px-12 lg:py-12">
         <div className="relative z-10 flex max-w-[720px] flex-col items-start justify-center">

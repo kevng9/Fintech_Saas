@@ -44,19 +44,19 @@ const SOURCE_TONE: Record<string, Tone> = { live: "good", fixture: "warn" };
 function fixtureSourceCaption(reason: string | null, fixtureId: string | null): string {
   const id = fixtureId && fixtureId !== "none" ? ` (${fixtureId})` : "";
   if (!reason || reason === "fixture mode selected") {
-    return `Reviewed fixture${id}`;
+    return `Reviewed stored answer${id}`;
   }
   if (reason.startsWith("live call failed")) {
     const detail = reason.slice("live call failed: ".length);
     if (/cookie not found|session not found|unknown session/i.test(detail)) {
-      return `Reviewed fixture · live session expired${id}`;
+      return `Reviewed stored answer · live session expired${id}`;
     }
-    return `Reviewed fixture after live unavailable: ${detail}${id}`;
+    return `Reviewed stored answer after live unavailable: ${detail}${id}`;
   }
   if (reason.includes("not keyed") || reason.includes("not configured")) {
-    return `Reviewed fixture · live Domain not keyed${id}`;
+    return `Reviewed stored answer · live Domain not keyed${id}`;
   }
-  return `Reviewed fixture · ${reason}${id}`;
+  return `Reviewed stored answer · ${reason}${id}`;
 }
 
 function SqlBlock({ sql }: { sql: string }) {
@@ -138,7 +138,8 @@ export function AnalystWorkspace({
   pageContext?: AnalystPageContext | null;
 }) {
   const { analystMode, envelope, config, tabId, persona } = useDemoState();
-  const [starters, setStarters] = useState<string[]>([]);
+  const [curatedStarters, setCuratedStarters] = useState<string[]>([]);
+  const [additionalStarters, setAdditionalStarters] = useState<string[]>([]);
   const [question, setQuestion] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [pending, setPending] = useState(false);
@@ -151,9 +152,16 @@ export function AnalystWorkspace({
   const configured = anchorSummary?.analyst_configured ?? false;
   const contextKey = pageContext ? `${pageContext.entityType}:${pageContext.entityId}` : "";
 
-  const displayStarters = useMemo(
-    () => starters.map((starter) => contextualizeStarter(starter, pageContext)),
-    [starters, pageContext]
+  const displayCuratedStarters = useMemo(
+    () =>
+      (curatedStarters.length ? curatedStarters : (anchorSummary?.starterPrompts ?? []))
+        .slice(0, 3)
+        .map((starter) => contextualizeStarter(starter, pageContext)),
+    [anchorSummary?.starterPrompts, curatedStarters, pageContext]
+  );
+  const displayAdditionalStarters = useMemo(
+    () => additionalStarters.map((starter) => contextualizeStarter(starter, pageContext)),
+    [additionalStarters, pageContext]
   );
 
   const pinTranscript = useCallback((force = false) => {
@@ -173,7 +181,12 @@ export function AnalystWorkspace({
         if (!response.ok) return;
         const body = (await response.json()) as { curated: string[]; live: string[] };
         if (cancelled) return;
-        setStarters([...new Set([...(body.curated ?? []), ...(body.live ?? [])])].slice(0, 6));
+        const curated = [...new Set(body.curated ?? [])].slice(0, 3);
+        const curatedSet = new Set(curated);
+        setCuratedStarters(curated);
+        setAdditionalStarters(
+          [...new Set(body.live ?? [])].filter((starter) => !curatedSet.has(starter)).slice(0, 3)
+        );
       } catch {
         // Curated prompts are also rendered from the anchor definition below.
       }
@@ -383,23 +396,56 @@ export function AnalystWorkspace({
 
         {persona === "risk" && (
           <Banner tone="accent">
-            Analyst reads only the curated views in this anchor&apos;s Domain. It cannot see raw
-            control tables, and it cannot write.
+            Use a reviewed question below for the clearest regulatory story. Analyst reads only
+            curated views, cannot write, and never makes the human decision.
           </Banner>
         )}
 
-        <div className="flex flex-wrap gap-2">
-          {displayStarters.map((starter) => (
-            <button
-              key={starter}
-              type="button"
-              className="rounded-[10px] border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-left text-[11px] font-medium leading-4 text-[var(--ink-soft)] transition-colors hover:border-[#adddca] hover:bg-[var(--accent-soft)]"
-              disabled={pending}
-              onClick={() => void ask(starter)}
-            >
-              {starter} <span className="text-[var(--accent)]">↗</span>
-            </button>
-          ))}
+        <div className="rounded-[14px] border border-[#bde5d6] bg-[var(--accent-soft)] p-3">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-bold text-[var(--accent-dark)]">
+                Presenter-safe questions
+              </p>
+              <p className="mt-0.5 text-[10px] leading-4 text-[var(--ink-muted)]">
+                Reviewed for this story and its decision boundaries.
+              </p>
+            </div>
+            <Pill tone="good">Recommended</Pill>
+          </div>
+          <div className="grid gap-2">
+            {displayCuratedStarters.map((starter) => (
+              <button
+                key={starter}
+                type="button"
+                className="min-h-11 rounded-[10px] border border-[#cde5da] bg-[var(--surface)] px-3 py-2.5 text-left text-[12px] font-semibold leading-5 text-[var(--ink-soft)] shadow-sm transition-colors hover:border-[#8bcdb5] hover:text-[var(--accent-dark)]"
+                disabled={pending}
+                onClick={() => void ask(starter)}
+              >
+                {starter} <span className="text-[var(--accent)]">↗</span>
+              </button>
+            ))}
+          </div>
+          {displayAdditionalStarters.length > 0 && (
+            <details className="mt-2">
+              <summary className="cursor-pointer text-[10px] font-semibold text-[var(--ink-muted)]">
+                More suggested questions
+              </summary>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {displayAdditionalStarters.map((starter) => (
+                  <button
+                    key={starter}
+                    type="button"
+                    className="rounded-[9px] border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-left text-[11px] leading-4 text-[var(--ink-soft)]"
+                    disabled={pending}
+                    onClick={() => void ask(starter)}
+                  >
+                    {starter}
+                  </button>
+                ))}
+              </div>
+            </details>
+          )}
         </div>
 
         <div
@@ -413,7 +459,7 @@ export function AnalystWorkspace({
         >
           {turns.length === 0 && (
             <p className="rounded-[12px] border border-dashed border-[var(--line)] px-4 py-8 text-center text-[12px] text-[var(--ink-muted)]">
-              Ask a starter or type a question. New answers stay pinned to the bottom of this panel.
+              Choose a reviewed question above. New answers stay pinned to the bottom of this panel.
             </p>
           )}
           {turns.map((turn) => (
@@ -422,7 +468,9 @@ export function AnalystWorkspace({
                 <p className="text-[13px] font-semibold">{turn.question}</p>
                 <div className="flex items-center gap-1.5">
                   {turn.source && (
-                    <Pill tone={SOURCE_TONE[turn.source] ?? "neutral"}>{turn.source}</Pill>
+                    <Pill tone={SOURCE_TONE[turn.source] ?? "neutral"}>
+                      {turn.source === "fixture" ? "reviewed answer" : "live Analyst"}
+                    </Pill>
                   )}
                   {turn.latencyMs !== null && (
                     <Pill tone="neutral">{turn.latencyMs.toLocaleString()} ms</Pill>
@@ -453,24 +501,33 @@ export function AnalystWorkspace({
           ))}
         </div>
 
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            void ask(question);
-          }}
-          className="sticky bottom-0 z-[1] flex gap-2 rounded-[14px] border border-[#cde5da] bg-[var(--accent-soft)] p-2 shadow-[0_-8px_24px_rgba(7,28,23,.04)]"
-        >
-          <input
-            value={question}
-            onChange={(event) => setQuestion(event.target.value)}
-            placeholder={`Ask a question about ${anchorSummary?.name ?? "this anchor"}…`}
-            maxLength={config?.analyst.max_message_chars ?? 2000}
-            className="flex-1 rounded-[10px] border border-transparent bg-[var(--surface)] px-4 py-3 text-[13px] shadow-sm outline-none focus:border-[var(--accent)]"
-          />
-          <button type="submit" className="btn btn-dark px-5" disabled={pending || !question.trim()}>
-            {pending ? "Analyzing…" : "Ask"}
-          </button>
-        </form>
+        <details className="sticky bottom-0 z-[1] rounded-[14px] border border-[var(--line)] bg-[var(--surface)] shadow-[0_-8px_24px_rgba(7,28,23,.04)]">
+          <summary className="cursor-pointer px-4 py-3 text-[11px] font-semibold text-[var(--ink-soft)]">
+            Ask your own question
+          </summary>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void ask(question);
+            }}
+            className="flex gap-2 border-t border-[var(--line)] bg-[var(--surface-raised)] p-2"
+          >
+            <input
+              value={question}
+              onChange={(event) => setQuestion(event.target.value)}
+              placeholder={`Ask about ${anchorSummary?.name ?? "this story"}…`}
+              maxLength={config?.analyst.max_message_chars ?? 2000}
+              className="min-w-0 flex-1 rounded-[10px] border border-[var(--line-strong)] bg-[var(--surface)] px-3 py-3 text-[13px] shadow-sm outline-none focus:border-[var(--accent)]"
+            />
+            <button
+              type="submit"
+              className="btn btn-dark px-5"
+              disabled={pending || !question.trim()}
+            >
+              {pending ? "Analyzing…" : "Ask"}
+            </button>
+          </form>
+        </details>
       </div>
     </Card>
   );

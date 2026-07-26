@@ -77,7 +77,12 @@ export function DemoStateProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setTabId(readStoredTabId());
     setPersonaState(readStored<PersonaId>("demo-persona", "business"));
-    setAnalystModeState(readStored<AnalystModeChoice>("demo-analyst-mode", "auto"));
+    // Start every browser tab on the safest presenter setting. Advanced mode
+    // choices remain useful during a session, but must not surprise the next
+    // salesperson who opens the demo.
+    setAnalystModeState(
+      (window.sessionStorage.getItem("demo-analyst-mode") as AnalystModeChoice) || "auto"
+    );
     setPresentationModeState(window.localStorage.getItem("demo-presentation") === "1");
   }, []);
 
@@ -145,10 +150,14 @@ export function DemoStateProvider({ children }: { children: React.ReactNode }) {
         const body = (await response.json().catch(() => ({}))) as Record<string, unknown>;
         await refresh();
         const errorBody = body.error as { message?: string } | undefined;
+        const confirmed = body.status !== "pending";
         return {
-          ok: response.ok,
+          ok: response.ok && confirmed,
           status: response.status,
-          message: errorBody?.message ?? (body.message as string | undefined),
+          message:
+            errorBody?.message ??
+            (body.message as string | undefined) ??
+            (!confirmed ? "The demo is still applying that change. Wait for the status to update." : undefined),
           body,
         };
       } catch {
@@ -174,7 +183,7 @@ export function DemoStateProvider({ children }: { children: React.ReactNode }) {
       analystMode,
       setAnalystMode: (next) => {
         setAnalystModeState(next);
-        window.localStorage.setItem("demo-analyst-mode", next);
+        window.sessionStorage.setItem("demo-analyst-mode", next);
       },
       presentationMode,
       setPresentationMode: (next) => {

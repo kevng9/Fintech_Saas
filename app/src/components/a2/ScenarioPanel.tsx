@@ -98,9 +98,9 @@ export function ScenarioPanel({ anchorId }: { anchorId: string }) {
 
   return (
     <Card
-      title="Run an operational drill"
-      subtitle="Introduce a controlled processor disruption and watch the impact propagate"
-      footnote="The event is deterministic and isolated to this synthetic environment. Reset restores normal operations."
+      title="Create the visible story"
+      subtitle="Choose a controlled event, say what the audience will see, then run it"
+      footnote="Every event is deterministic and isolated to synthetic data. Restore clean demo returns to normal operations."
     >
       <div className="space-y-4">
         {message && <Banner tone={message.tone}>{message.text}</Banner>}
@@ -112,43 +112,49 @@ export function ScenarioPanel({ anchorId }: { anchorId: string }) {
           const last = history[0];
           const busy = busyAction === `inject:${scenario.scenario_id}`;
           return (
-            <div key={scenario.scenario_id} className="space-y-2">
-              <div className="flex flex-wrap items-start justify-between gap-2">
+            <div
+              key={scenario.scenario_id}
+              className="rounded-[16px] border border-[var(--line-strong)] bg-[var(--surface-raised)] p-4 sm:p-5"
+            >
+              <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
                 <div className="min-w-0">
-                  <h3 className="text-[13px] font-semibold">{scenario.name}</h3>
-                  <p className="mt-0.5 max-w-[70ch] text-[12px] leading-5 text-[var(--ink-soft)]">
-                    {scenario.description}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-[16px] font-semibold tracking-[-0.02em]">
+                      {scenario.name}
+                    </h3>
+                    {history.length > 0 && <Pill tone="warn">already shown</Pill>}
+                  </div>
+                  <p className="mt-2 text-[10px] font-bold tracking-[0.09em] text-[var(--accent-dark)] uppercase">
+                    What the audience will see
                   </p>
-                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                  <p className="mt-1 max-w-[78ch] text-[13px] leading-6 text-[var(--ink-soft)]">
+                    {scenario.expected_deltas?.narrative ?? scenario.description}
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-1.5">
                     <Pill tone="neutral">{scenario.metric_window}</Pill>
                     {scenario.expected_deltas?.segment && (
                       <Pill tone="accent">
                         {Object.values(scenario.expected_deltas.segment).join(" / ")}
                       </Pill>
                     )}
-                    {history.length > 0 && <Pill tone="warn">active in this environment</Pill>}
                   </div>
                 </div>
                 <button
                   type="button"
-                  className="btn btn-primary shrink-0"
+                  className="btn btn-primary min-h-12 w-full justify-center px-6 text-[14px] lg:w-auto"
                   disabled={!isAdmin || busyAction !== null || !scenario.enabled}
                   onClick={() => void fire(scenario.scenario_id)}
                 >
-                  {busy ? "Starting drill…" : history.length ? "Drill complete" : "Start drill"}
+                  {busy ? "Starting story…" : history.length ? "Story already shown" : "Run this story"}
                 </button>
               </div>
 
-              {scenario.expected_deltas?.narrative && (
-                <p className="text-[12px] leading-5 text-[var(--ink-soft)]">
-                  {scenario.expected_deltas.narrative}
-                </p>
-              )}
-
-              <ExpectedTable scenario={scenario} />
+              <div className="mt-3">
+                <ExpectedTable scenario={scenario} />
+              </div>
 
               {last && (
-                <p className="text-[11px] text-[var(--ink-muted)]">
+                <p className="mt-2 text-[11px] text-[var(--ink-muted)]">
                   Impact window{" "}
                   <span className="mono">
                     {logicalTime(last.window_start)} → {logicalTime(last.window_end)}

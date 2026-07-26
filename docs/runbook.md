@@ -7,6 +7,27 @@ scenario contract, evidence path, and talk track for A1 through A8, use the
 [`fintech anchor catalog`](anchor-catalog.md). Assumes setup is complete and
 [`troubleshooting.md`](troubleshooting.md) is open in another tab.
 
+## Salesperson quick start
+
+The launchpad now carries the presenter workflow. A **Green light** means the
+data, stream, verified baseline, and reviewed Analyst answers are ready.
+
+1. Open the recommended story: **A2 Payment Pulse** for a general business or
+   technical audience, or **A7 Credit Risk Pulse** for a risk or regulatory
+   audience.
+2. Use **Run this story** and read the visible outcome before clicking. Point to
+   the before-and-after evidence when the page refreshes.
+3. Open Analyst and choose a **Presenter-safe question**. Analyst starts in
+   Auto: it tries live Analyst first and labels a reviewed stored answer if it
+   needs the fallback.
+4. Keep Live-only mode, stream speed, run metadata, and other operator detail
+   under **Demo controls → Advanced**.
+
+For mid-demo recovery, use **Restore clean demo** or **Use reviewed answers**.
+They are intentionally separate: restoring data is a server-confirmed
+operation, while answer mode applies immediately to the current browser tab.
+Do not claim the baseline is restored until the green confirmation appears.
+
 ## Pre-flight, 10 minutes before
 
 Run these in order. Do not skip the last one; it is the only check that proves
@@ -30,10 +51,10 @@ python -m fintech_demo status     # is a run active, is the stream advancing
    For A2, approval should be flat near 95.9% and p95 latency near 229 ms.
    If any scenario badge is showing, reset again.
 
-If a check is red and you cannot fix it in two minutes, switch the Analyst
-selector to **Fixture**. The dashboard stays fully live; only the Analyst
-answers are replayed, and the UI labels them as such. That is a far better
-outcome than a failed live call in front of an audience.
+If a check is red and you cannot fix it in two minutes, choose **Use reviewed
+answers**. The dashboard stays fully live; only Analyst answers use reviewed
+stored responses, and the UI labels them as such. That is a far better outcome
+than a failed live call in front of an audience.
 
 ## Anchor coverage and status
 
@@ -143,12 +164,20 @@ rooms.
 
 ## Recovering mid-demo
 
+The launchpad and Demo controls provide the two recovery actions without CLI
+work:
+
+- **Use reviewed answers** when a live Analyst call is slow or unavailable.
+- **Restore clean demo** when the story has already run or the numbers need to
+  return to baseline. Wait for confirmed success; a timeout or rejection is
+  shown as a failure.
+
 | Symptom | Do this |
 | --- | --- |
 | Clock frozen, unintentionally | Check the simulator terminal; `python -m fintech_demo run` |
-| Analyst call fails | Switch the selector to Fixture and carry on |
-| Numbers look wrong | Reset; if it still looks wrong, `verify` after the session |
-| Scenario already fired | Reset, then re-inject |
+| Analyst call fails | Choose **Use reviewed answers** and carry on |
+| Numbers look wrong | Choose **Restore clean demo**; if it still looks wrong, verify after the session |
+| Scenario already fired | Choose **Restore clean demo**, then run the story again |
 | Reset rejected | The clone did not match the checksum. Re-seed after the session; see troubleshooting |
 
 Never re-seed mid-demo. It takes minutes and the audience is watching. Reset is

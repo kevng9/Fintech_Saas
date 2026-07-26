@@ -129,7 +129,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="mx-2 h-5 w-px bg-white/10" />
             <div
               className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-[11px] font-semibold"
-              title={healthy ? "Payment stream is live" : "Payment stream needs attention"}
+              title={healthy ? "Demo is ready to present" : "Demo needs attention"}
             >
               <span
                 className="h-2 w-2 rounded-full"
@@ -138,7 +138,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   boxShadow: healthy ? "0 0 0 3px rgba(199,243,107,.12)" : undefined,
                 }}
               />
-              {healthy ? "Payments live" : "Demo ready"}
+              {healthy ? "Ready to present" : "Needs attention"}
             </div>
           </div>
         </div>
