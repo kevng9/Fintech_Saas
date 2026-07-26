@@ -132,7 +132,7 @@ export function DualAxisChart({
         <path d={ratePath} fill="none" stroke="var(--accent)" strokeWidth="2" />
 
         {points.map((point, index) => (
-          <g key={point.label}>
+          <g key={`${index}-${point.label}`}>
             <circle cx={x(index)} cy={yRate(point.rate)} r="2.2" fill="var(--accent)" />
             <title>
               {point.label} · approval {percent(point.rate)} · p95 {milliseconds(point.latency)} ·{" "}
@@ -144,7 +144,7 @@ export function DualAxisChart({
         {points.map((point, index) =>
           index % labelEvery === 0 ? (
             <text
-              key={`label-${point.label}`}
+              key={`label-${index}-${point.label}`}
               x={x(index)}
               y={height - 6}
               textAnchor="middle"
