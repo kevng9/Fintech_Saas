@@ -1,0 +1,45 @@
+{
+  "anchor": "a6",
+  "fixture_version": "1.0.0",
+  "id": "starter_buffer_baseline",
+  "latency_ms": 1800,
+  "match": [
+    "policy liquidity buffer",
+    "above the buffer",
+    "shortfall entity currency",
+    "headroom"
+  ],
+  "prompt": "Are we above the policy liquidity buffer, and which entity and currency explain any shortfall?",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Available 24-hour liquidity is **USD 77.16 million**, **USD 17.16 million** above the USD 60 million illustrative policy buffer. Amounts are normalized to US dollars.\n\n- There is no shortfall to explain.\n- The largest single dependency is Synthetic Entity 01 in USD, which counts on **USD 26.42 million** of expected inbound settlements.\n\nHeadroom is comfortable, but a delay to Synthetic Entity 01's inbound settlements would consume most of it.",
+      "sql": {
+        "command": "SELECT SUM(available_liquidity_24h_usd) AS available_liquidity_24h_usd, SUM(available_liquidity_24h_usd) - 60000000 AS headroom_to_buffer_usd\nFROM aa_liquidity_position",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_liquidity_position"
+        ]
+      },
+      "table": {
+        "columns": [
+          "available_liquidity_24h_usd",
+          "policy_buffer_usd",
+          "headroom_to_buffer_usd"
+        ],
+        "rows": [
+          [
+            77163043.06,
+            60000000,
+            17163043.06
+          ]
+        ],
+        "row_count": 1,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "baseline"
+}

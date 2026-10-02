@@ -1,9 +1,9 @@
-"""A5 Dispute Resolution Lens baseline: a small open dispute queue.
+"""A5 Dispute Operations Performance baseline: a small open dispute queue.
 
 Each dispute links to a real background ``payment_event`` row, the same
 pattern the A3 and A4 baselines use, so the amount and customer on the
 dispute trace back to a synthetic authorization. ``A5_CASE_SURGE`` adds 20
-more disputes tagged ``MERCHANT_OUTAGE`` on top of this baseline.
+more disputes tagged ``PAID_BY_OTHER_MEANS`` on top of this baseline.
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-# Aura Analyst Domain manifest for A3 Trace the Loss (Fraud Strategy).
+# Aura Analyst Domain manifest for A3 Fraud Strategy Optimization (Fraud Strategy).
 #
 # This file is the source of INTENT. The SingleStore Cloud Portal remains the
 # source of DEPLOYED state: public context-management APIs are not documented,
@@ -8,7 +8,7 @@
 
 anchor: a3
 domain_name: a3_fraud_strategy
-context_version: 1.0.0
+context_version: 1.4.0
 fixture_version: 1.0.0
 validated_at: null
 database: fintech_demo
@@ -27,13 +27,13 @@ tables:
       and false-positive questions.
     grain: channel x fraud type
     columns:
-      channel: Transaction channel, for example card_not_present, ach, wire.
-      fraud_type: Fraud typology, for example account_takeover, card_testing.
+      channel: Transaction channel. One of card_not_present, card_present, atm, online_banking.
+      fraud_type: Fraud typology. One of account_takeover, card_testing, synthetic_identity, first_party.
       cases_total: All cases opened for the group, regardless of disposition.
       confirmed_fraud_cases: Cases with human_disposition = confirmed_fraud.
       legitimate_cases: Cases with human_disposition = legitimate.
       open_cases: Cases with human_disposition = open, awaiting investigator disposition.
-      confirmed_loss_usd: Sum of confirmed_loss for confirmed_fraud cases, normalised to US dollars.
+      confirmed_loss_usd: Sum of confirmed_loss for confirmed_fraud cases, normalized to US dollars.
       false_positive_rate: >-
         Cases with human_disposition = legitimate divided by cases with a
         disposition of confirmed_fraud or legitimate. Already a ratio.
@@ -52,7 +52,7 @@ tables:
       opened_at: Logical time the case was opened.
       closed_at: Logical time the case was closed, or null if still open.
       human_disposition: One of open, confirmed_fraud, legitimate.
-      confirmed_loss_usd: Confirmed loss on the case, normalised to US dollars. Zero unless confirmed_fraud.
+      confirmed_loss_usd: Confirmed loss on the case, normalized to US dollars. Zero unless confirmed_fraud.
       investigator_id: Synthetic identifier of the assigned fraud investigator.
       evidence_count: Number of evidence items attached to the case.
       latest_evidence_at: Logical time the most recent evidence item was observed.
@@ -60,8 +60,10 @@ tables:
 
   - name: aa_fraud_segment_evidence
     description: >-
-      Case-level evidence used to explain a loss cluster: device, account,
-      and merchant context for the transaction behind the case.
+      Case-level evidence used to explain a loss cluster: alert reason codes,
+      device, account, and merchant context for the transaction behind the
+      case. Primary table for questions about what separates confirmed fraud
+      from false positives.
     grain: one row per fraud case
     columns:
       case_id: Synthetic case identifier.
@@ -69,6 +71,14 @@ tables:
       channel: Transaction channel.
       fraud_type: Fraud typology.
       score: Alert risk score at case creation. Already a ratio between 0 and 1.
+      reason_codes: >-
+        JSON array of the reasons the alert fired, for example
+        ["velocity_breach", "cvv_retry"]. Values are velocity_breach (many
+        attempts in a short window from the same card, device, or account),
+        device_mismatch, geo_anomaly (location unusual for the customer),
+        cvv_retry (repeated security-code failures), and known_bad_device.
+        Filter with JSON_ARRAY_CONTAINS_STRING(reason_codes, 'velocity_breach').
+        Count by code with JOIN TABLE(JSON_TO_ARRAY(reason_codes)).
       merchant_id: Synthetic merchant identifier on the flagged transaction.
       merchant_name: Merchant on the flagged transaction.
       merchant_category: Merchant category.
@@ -78,18 +88,20 @@ tables:
       device_id: Synthetic device identifier used on the flagged transaction.
       device_type: Device type used, when known.
       device_risk_band: Risk band of the device, when known.
-      device_alert_count: Prior alerts linked to this device.
-      customer_alert_count: Prior alerts linked to this customer.
-      amount_usd: Flagged transaction amount, normalised to US dollars.
+      device_alert_count: >-
+        Alerts in the active run linked to this device, including this one.
+        Above 1 means the device is reused across alerts.
+      customer_alert_count: Alerts in the active run linked to this customer, including this one.
+      amount_usd: Flagged transaction amount, normalized to US dollars.
       human_disposition: One of open, confirmed_fraud, legitimate.
-      confirmed_loss_usd: Confirmed loss on the case, normalised to US dollars. Zero unless confirmed_fraud.
+      confirmed_loss_usd: Confirmed loss on the case, normalized to US dollars. Zero unless confirmed_fraud.
 
 relationships:
   - from: aa_fraud_case_review
     to: aa_fraud_loss_summary
     join: fraud_type, channel
     cardinality: many-to-one
-    note: Each case belongs to the channel/fraud-type group summarised in the loss table.
+    note: Each case belongs to the channel/fraud-type group summarized in the loss table.
   - from: aa_fraud_segment_evidence
     to: aa_fraud_case_review
     join: case_id
@@ -97,10 +109,21 @@ relationships:
     note: The evidence row is the supporting detail for exactly one case.
 
 metric_definitions:
-  confirmed_loss: Sum of confirmed_loss_usd across cases with human_disposition = confirmed_fraud, for the selected period.
+  confirmed_loss: >-
+    Sum of confirmed_loss_usd across cases with human_disposition =
+    confirmed_fraud, for the selected period. This is investigator-confirmed
+    loss at case disposition. Chargeback-settled loss arrives 30 to 90 days
+    later and is not in this Domain; say so when a user asks about total or
+    final fraud loss.
   false_positive_rate: >-
     Legitimate share of dispositioned alerts: legitimate cases divided by
     (confirmed_fraud + legitimate) cases.
+  reason_code_pattern: >-
+    For a segment, the number of confirmed_fraud cases and legitimate cases
+    whose reason_codes contain each code. A code found on confirmed fraud but
+    not on legitimate cases is a candidate fraud signal; a code found only on
+    legitimate cases is a candidate source of false positives. Both are
+    candidates for the fraud strategy team to test, not conclusions.
   baseline_comparison: >-
     Unless the user names a period, compare the selected window against the
     same channel/fraud-type group over the preceding seven logical days.
@@ -111,6 +134,12 @@ instructions: |
   Use the demo logical clock exposed by the views. Never use wall-clock now().
   State the selected period, filters, and comparison baseline in the answer.
   Distinguish observed facts, calculated metrics, and interpretations.
+  With every table, chart, or other dataset, write the commentary in Markdown
+  using this shape: an opening sentence that states the main comparison and
+  bolds the key figure; a bullet list of the key figures, with each figure in
+  bold; and a closing sentence on what the pattern may mean, including any
+  material limitation or missing context. Do not put Markdown inside table cells.
+  In the commentary, round rates to two decimals and durations to one decimal.
   Do not infer causation from correlation. A correlated change is a candidate
   explanation for a human to confirm, not a cause.
   Do not determine or state that a customer committed fraud. Only report the
@@ -121,14 +150,17 @@ instructions: |
   score and false_positive_rate are already ratios between 0 and 1. Present
   them as percentages with two decimals.
   Always aggregate value using the *_usd columns, and say that amounts are
-  normalised to US dollars.
+  normalized to US dollars.
   When evidence is incomplete, say what is missing.
+  When asked what to change, suggest candidate rule adjustments for the fraud
+  strategy team to review and test, state how many cases the pattern rests
+  on, and never present a suggestion as a decision or as a rule change made.
   Never reveal or request secrets or direct identifiers.
   Prefer a concise answer with a supporting table or chart.
 
 starter_prompts:
   - Show confirmed fraud loss and false-positive rate by channel and fraud type.
-  - For the highest-loss segment, compare device reuse, account age, merchant, and velocity.
+  - For the highest-loss segment, compare reason codes, device reuse, account age, and merchant for confirmed fraud versus false positives.
   - List supporting cases for human investigator review.
 
 known_questions:

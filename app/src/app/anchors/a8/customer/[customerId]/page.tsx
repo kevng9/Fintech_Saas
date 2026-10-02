@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * A8 Explain My Money: the embedded, customer-facing experience.
+ * A8 Embedded Insights Strategy: the embedded, customer-facing experience.
  *
  * This route is meant to sit inside a bank's own mobile or web app, not on
  * the presenter's stage, so `AppShell` renders it without the operator
@@ -33,13 +33,13 @@ export default function CustomerMoneyPage() {
 
   useEffect(() => {
     if (!supported) return;
-    let cancelled = false;
+    let canceled = false;
     (async () => {
       try {
         const response = await fetch(`/api/v1/anchors/${ANCHOR_ID}/overview?window=1440`, {
           cache: "no-store",
         });
-        if (cancelled) return;
+        if (canceled) return;
         if (!response.ok) {
           const body = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
           setError(body.error?.message ?? `Unavailable (${response.status}).`);
@@ -48,11 +48,11 @@ export default function CustomerMoneyPage() {
         setOverview((await response.json()) as SharedOverviewPayload);
         setError(null);
       } catch {
-        if (!cancelled) setError("Cannot reach the demo API.");
+        if (!canceled) setError("Cannot reach the demo API.");
       }
     })();
     return () => {
-      cancelled = true;
+      canceled = true;
     };
   }, [supported]);
 

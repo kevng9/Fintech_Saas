@@ -130,6 +130,40 @@ def test_a3_confirmed_loss_and_false_positive_rate(world: World) -> None:
         assert json.loads(row[reason_codes_index])  # valid JSON string, not a raw list/dict
 
 
+def test_a3_cluster_separates_fraud_from_false_positives(world: World) -> None:
+    from fintech_demo.generators.a3_fraud import CHANNELS, FRAUD_TYPES, REASON_CODE_POOL
+
+    batches = scenarios.build_rows("A3_LOSS_CLUSTER", world, run_id=1, start_minute=world.baseline_minutes)
+    alerts = {
+        row[_column_index("fraud_alert", "alert_id")]: row
+        for row in scenarios.rows_for_table(batches, "fraud_alert")
+    }
+    cases = scenarios.rows_for_table(batches, "fraud_case")
+
+    def alert_for(case: tuple) -> tuple:
+        return alerts[case[_column_index("fraud_case", "alert_id")]]
+
+    def field(alert: tuple, name: str):
+        return alert[_column_index("fraud_alert", name)]
+
+    disposition_index = _column_index("fraud_case", "human_disposition")
+    confirmed = [alert_for(c) for c in cases if c[disposition_index] == "confirmed_fraud"]
+    legitimate = [alert_for(c) for c in cases if c[disposition_index] == "legitimate"]
+
+    for alert in confirmed + legitimate:
+        assert field(alert, "channel") == "card_not_present" and field(alert, "channel") in CHANNELS
+        assert field(alert, "fraud_type") == "card_testing" and field(alert, "fraud_type") in FRAUD_TYPES
+        assert set(json.loads(field(alert, "reason_codes"))) <= set(REASON_CODE_POOL)
+
+    assert len({field(a, "device_id") for a in confirmed}) == 1
+    assert all("velocity_breach" in json.loads(field(a, "reason_codes")) for a in confirmed)
+
+    legitimate_devices = {field(a, "device_id") for a in legitimate}
+    assert len(legitimate_devices) == len(legitimate)
+    assert field(confirmed[0], "device_id") not in legitimate_devices
+    assert all(json.loads(field(a, "reason_codes")) == ["geo_anomaly"] for a in legitimate)
+
+
 # --- A4_CORRESPONDENT_SPIKE --------------------------------------------------
 
 
@@ -170,12 +204,39 @@ def test_a5_queue_depth_and_sla_risk(world: World) -> None:
 
     expected = definition.expected_deltas["after"]
     assert len(disputes) == expected["queue_depth_delta"]
-    assert all(row[reason_index] == "MERCHANT_OUTAGE" for row in disputes)
+    assert all(row[reason_index] == "PAID_BY_OTHER_MEANS" for row in disputes)
 
-    within_hour = sum(
-        1 for row in disputes if row[due_index] - row[opened_index] <= timedelta(minutes=60)
+    window_start = world.minute_start(world.baseline_minutes)
+    due_within_24h = sum(
+        1 for row in disputes if row[due_index] <= window_start + timedelta(hours=24)
     )
-    assert within_hour == expected["sla_risk_delta"]
+    assert due_within_24h == expected["sla_risk_delta"]
+
+    # Disputes take days to come due; none is born already at risk.
+    assert all(row[due_index] - row[opened_index] >= timedelta(days=5) for row in disputes)
+    assert all(row[opened_index] <= window_start + timedelta(minutes=15) for row in disputes)
+
+
+def test_a5_disputes_trace_to_one_merchant_outage(world: World) -> None:
+    batches = scenarios.build_rows("A5_CASE_SURGE", world, run_id=1, start_minute=world.baseline_minutes)
+    disputes = scenarios.rows_for_table(batches, "dispute_case")
+    payment_index = _column_index("dispute_case", "payment_id")
+    amount_index = _column_index("dispute_case", "disputed_amount")
+    opened_index = _column_index("dispute_case", "opened_at")
+
+    outage_start = world.baseline_minutes - 7 * 1440
+    payments = {
+        row[1]: row
+        for minute in range(outage_start, outage_start + 60)
+        for row in world.generate_minute(1, minute)
+    }
+    linked = [payments.get(row[payment_index]) for row in disputes]
+    assert all(payment is not None for payment in linked), "every dispute links to a real payment"
+    assert len({payment[5] for payment in linked}) == 1, "all disputes trace to one merchant"
+    assert all(payment[13] == 1 for payment in linked), "only approved payments are disputed"
+    for row, payment in zip(disputes, linked):
+        assert row[amount_index] == pytest.approx(float(payment[10]))
+        assert row[opened_index] > payment[3]
 
 
 # --- A6_SETTLEMENT_DELAY ------------------------------------------------------

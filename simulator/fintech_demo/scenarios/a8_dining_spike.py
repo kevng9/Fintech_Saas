@@ -42,11 +42,13 @@ DEFINITION = ScenarioDefinition(
             "dining_spend_delta_usd": TOTAL_AMOUNT,
             "outflow_delta_usd": TOTAL_AMOUNT,
             "net_flow_delta_usd": -TOTAL_AMOUNT,
+            "transactions_explained": len(AMOUNTS),
         },
         "tolerance": {"dining_spend_delta_usd": 0.005},
         "narrative": (
-            "Three dining transactions totaling USD 300 land for CUST-0001: "
-            "outflows rise by USD 300 and net cash flow falls by USD 300."
+            "One embedded explanation traces a USD 300 dining change to three "
+            "transactions. The proof is a trusted self-service evidence path that "
+            "can be reused across digital customers, not the USD 300 itself."
         ),
     },
 )

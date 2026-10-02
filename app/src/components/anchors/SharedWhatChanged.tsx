@@ -15,8 +15,8 @@ export function SharedWhatChanged({ comparison }: { comparison: SharedChangePayl
   if (!comparison) {
     return (
       <Empty>
-        No operational event is active yet. Run the scenario injection to compare this anchor before
-        and during the event.
+        No decision moment is active yet. Reveal it to compare this operation before and during the
+        change.
       </Empty>
     );
   }

@@ -8,23 +8,23 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "Confirmed fraud loss is $6,100 and the false-positive rate is 21.0% over the last 24 logical hours.",
+      "text": "In the last 24 logical hours, investigator-confirmed fraud loss is **$3,518.01** and the false-positive rate is **60.00%**.\n\n- **15** cases opened: **6** confirmed fraud and **9** legitimate.\n- **$2,500** of the loss comes from the card-testing burst on card-not-present.\n\nThe window runs back 24 hours from the latest case. Amounts are normalized to US dollars, and chargeback-settled loss arrives later and is not included.",
       "sql": {
-        "command": "SELECT SUM(confirmed_loss_usd) AS confirmed_loss, AVG(false_positive_rate) AS false_positive_rate FROM aa_fraud_loss_summary",
+        "command": "SELECT SUM(confirmed_loss_usd) AS confirmed_loss_usd,\n  SUM(human_disposition = 'legitimate')\n    / NULLIF(SUM(human_disposition IN ('confirmed_fraud', 'legitimate')), 0) AS false_positive_rate\nFROM aa_fraud_case_review\nWHERE opened_at > (SELECT MAX(opened_at) FROM aa_fraud_case_review) - INTERVAL 24 HOUR",
         "confidence_score": 0.9,
         "tables_used": [
-          "aa_fraud_loss_summary"
+          "aa_fraud_case_review"
         ]
       },
       "table": {
         "columns": [
-          "confirmed_loss",
+          "confirmed_loss_usd",
           "false_positive_rate"
         ],
         "rows": [
           [
-            6100,
-            0.21
+            3518.01,
+            0.6
           ]
         ],
         "row_count": 1,

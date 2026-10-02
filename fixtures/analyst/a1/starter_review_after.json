@@ -1,0 +1,54 @@
+{
+  "anchor": "a1",
+  "fixture_version": "1.0.0",
+  "id": "starter_review_after",
+  "latency_ms": 1800,
+  "match": [
+    "manual review vs straight through",
+    "review path comparison"
+  ],
+  "prompt": "Compare manual review with straight-through applications.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Straight-through applications approve at **70.16%** against **46.43%** for manual review, a gap of **23.73** points.\n\n- Straight-through: **258** applications, **181** approved, **26.4** minutes to decision on average.\n- Manual review: **84** applications, **39** approved, **47.5** minutes to decision.\n- Manual-review volume doubled from **42** this morning, and straight-through approval fell from **82.95%** because **40** new straight-through applications were all declined.\n\nBoth review paths are deciding more applications against the same customers, which points to one cohort rather than a change in review policy. Confirm with the onboarding team.",
+      "sql": {
+        "command": "SELECT review_path, SUM(applications) AS applications, SUM(approved) AS approved, SUM(approved) / SUM(applications) AS approval_rate, SUM(avg_minutes_to_decision * applications) / SUM(applications) AS avg_minutes_to_decision\nFROM aa_digital_review_comparison\nGROUP BY review_path",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_digital_review_comparison"
+        ]
+      },
+      "table": {
+        "columns": [
+          "review_path",
+          "applications",
+          "approved",
+          "approval_rate",
+          "avg_minutes_to_decision"
+        ],
+        "rows": [
+          [
+            "straight_through",
+            258,
+            181,
+            0.7016,
+            26.4
+          ],
+          [
+            "manual_review",
+            84,
+            39,
+            0.4643,
+            47.5
+          ]
+        ],
+        "row_count": 2,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "after_injection"
+}

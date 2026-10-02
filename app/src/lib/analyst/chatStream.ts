@@ -66,9 +66,12 @@ const MAX_ROWS = 500;
 
 function toTable(block: Unknown): StreamTable | null {
   const raw = block.table_data ?? block.rows ?? block.data;
-  if (!Array.isArray(raw) || !raw.length) return null;
+  if (!Array.isArray(raw)) return null;
 
   let columns = columnNames(block.columns ?? block.fields);
+  if (!raw.length) {
+    return columns.length ? { columns, rows: [], truncated: false } : null;
+  }
   let rows: (string | number | null)[][];
 
   if (Array.isArray(raw[0])) {

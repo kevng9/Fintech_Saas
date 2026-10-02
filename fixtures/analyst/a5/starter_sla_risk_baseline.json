@@ -11,9 +11,9 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "312 disputes are open and 41 are at risk of an SLA breach in the next 24 hours, totalling $186,400 of disputed value at risk. The DUPLICATE_CHARGE reason code in the core_ops queue carries the most risk at 14 disputes.",
+      "text": "**5** disputes are open and **1** is at risk of an SLA breach in the next 24 logical hours, with **$174.81** of disputed value at risk. Amounts are normalized to US dollars.\n\n- queue_disputes_escalated holds the only at-risk dispute: **1** DUPLICATE_CHARGE case.\n- The other open disputes are due between 4 and 9 days out.\n\nThe queue is under control; nothing suggests a capacity problem.",
       "sql": {
-        "command": "SELECT queue_id, reason_code, priority, open_dispute_count, sla_risk_count, sla_risk_amount_total\nFROM aa_dispute_sla_risk\nORDER BY sla_risk_count DESC, sla_risk_amount_total DESC",
+        "command": "SELECT queue_id, reason_code, SUM(open_dispute_count) AS open_dispute_count, SUM(sla_risk_count) AS sla_risk_count, SUM(sla_risk_amount_total) AS sla_risk_amount_total\nFROM aa_dispute_sla_risk\nGROUP BY queue_id, reason_code\nORDER BY sla_risk_count DESC, sla_risk_amount_total DESC",
         "confidence_score": 0.9,
         "tables_used": [
           "aa_dispute_sla_risk"
@@ -29,28 +29,35 @@
         ],
         "rows": [
           [
-            "core_ops",
+            "queue_disputes_escalated",
             "DUPLICATE_CHARGE",
-            58,
-            14,
-            41200
+            2,
+            1,
+            174.81
           ],
           [
-            "core_ops",
-            "SERVICE_NOT_RECEIVED",
-            44,
-            9,
-            28600
+            "queue_disputes_1",
+            "BILLING_ERROR",
+            1,
+            0,
+            0
           ],
           [
-            "escalations",
-            "FRIENDLY_FRAUD",
-            22,
-            6,
-            19800
+            "queue_disputes_2",
+            "GOODS_NOT_RECEIVED",
+            1,
+            0,
+            0
+          ],
+          [
+            "queue_disputes_2",
+            "FRAUD_CLAIM",
+            1,
+            0,
+            0
           ]
         ],
-        "row_count": 3,
+        "row_count": 4,
         "truncated": false
       },
       "chart": null,

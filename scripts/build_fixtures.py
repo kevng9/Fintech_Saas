@@ -73,7 +73,7 @@ class Dataset:
         for row in window:
             buckets[hour_key(field(row, "event_time"))].append(row)
         return [
-            {"hour_start": hour, **summarise(rows)}
+            {"hour_start": hour, **summarize(rows)}
             for hour, rows in sorted(buckets.items())
         ]
 
@@ -81,7 +81,18 @@ class Dataset:
         groups: dict[str, list[tuple]] = defaultdict(list)
         for row in self.within(start, end):
             groups[field(row, "processor_id")].append(row)
-        return {code: summarise(rows) for code, rows in groups.items()}
+        return {code: summarize(rows) for code, rows in groups.items()}
+
+    def by_lane(self, start: datetime, end: datetime) -> dict[tuple[str, str, str], dict]:
+        groups: dict[tuple[str, str, str], list[tuple]] = defaultdict(list)
+        for row in self.within(start, end):
+            key = (
+                field(row, "processor_id"),
+                field(row, "card_network"),
+                field(row, "issuer_country"),
+            )
+            groups[key].append(row)
+        return {key: summarize(rows) for key, rows in groups.items()}
 
     def decline_mix(
         self, start: datetime, end: datetime, *, card_network: str | None = None
@@ -109,7 +120,7 @@ class Dataset:
         return mix
 
 
-def summarise(rows: list[tuple]) -> dict:
+def summarize(rows: list[tuple]) -> dict:
     attempts = len(rows)
     if not attempts:
         return {
@@ -207,7 +218,7 @@ def line_chart(points: list[dict]) -> dict:
 
 def hourly_answer(dataset: Dataset, *, injected: bool) -> list[dict]:
     points = dataset.hourly(24)
-    overall = summarise(
+    overall = summarize(
         dataset.within(dataset.logical_time - timedelta(hours=24), dataset.logical_time)
     )
     worst = min(points, key=lambda point: point["approval_rate"])
@@ -271,13 +282,14 @@ ORDER BY hour_start
 def processor_comparison_answer(dataset: Dataset, *, injected: bool) -> list[dict]:
     recent_end = dataset.logical_time
     recent_start = recent_end - timedelta(hours=1)
-    recent = dataset.by_processor(recent_start, recent_end)
-    baseline = dataset.by_processor(recent_end - timedelta(days=7), recent_start)
+    recent = dataset.by_lane(recent_start, recent_end)
+    baseline = dataset.by_lane(recent_end - timedelta(days=7), recent_start)
 
     rows = []
-    for code in sorted(set(recent) | set(baseline)):
-        current = recent.get(code, summarise([]))
-        prior = baseline.get(code, summarise([]))
+    for lane in sorted(set(recent) | set(baseline)):
+        code, card_network, issuer_country = lane
+        current = recent.get(lane, summarize([]))
+        prior = baseline.get(lane, summarize([]))
         delta = (
             round(current["approval_rate"] - prior["approval_rate"], 6)
             if current["approval_rate"] is not None and prior["approval_rate"] is not None
@@ -288,6 +300,8 @@ def processor_comparison_answer(dataset: Dataset, *, injected: bool) -> list[dic
                 code,
                 PROCESSOR_NAME[code],
                 PROCESSOR_RAIL[code],
+                card_network,
+                issuer_country,
                 current["attempts"],
                 round(current["approval_rate"], 4) if current["approval_rate"] else None,
                 round(prior["approval_rate"], 4) if prior["approval_rate"] else None,
@@ -297,25 +311,23 @@ def processor_comparison_answer(dataset: Dataset, *, injected: bool) -> list[dic
             ]
         )
 
-    moved = sorted(
-        [row for row in rows if row[6] is not None], key=lambda row: row[6]
-    )
+    moved = sorted([row for row in rows if row[8] is not None], key=lambda row: row[8])
     lead = moved[0] if moved else None
 
     if injected and lead:
         text = (
-            f"Comparing the most recent logical hour against the preceding seven logical days, "
-            f"{lead[1]} ({lead[0]}, {lead[2]}) has moved furthest: "
-            f"{lead[4] * 100:.2f}% against a baseline of {lead[5] * 100:.2f}%, a change of "
-            f"{lead[6] * 100:.2f} points, with p95 latency at {lead[7]:,} ms against "
-            f"{lead[8]:,} ms. The other processors are within a fraction of a point of their "
-            "own baselines, so the movement is specific to one processor rather than systemic."
+            "Comparing processor, network, and issuer-country lanes in the most recent logical "
+            f"hour against the preceding seven logical days, {lead[0]} / {lead[3]} / {lead[4]} "
+            f"has moved furthest: {lead[6] * 100:.2f}% against a baseline of "
+            f"{lead[7] * 100:.2f}%, a change of {lead[8] * 100:.2f} points, with p95 latency "
+            f"at {lead[9]:,} ms against {lead[10]:,} ms. The evidence identifies the lane; "
+            "payments operations retains the routing decision."
         )
     else:
         text = (
-            "Comparing the most recent logical hour against the preceding seven logical days, "
-            "every processor is within a fraction of a point of its own baseline approval rate, "
-            "and p95 latency is unchanged. There is no processor-level deviation in this period."
+            "Comparing processor, network, and issuer-country lanes in the most recent logical "
+            "hour against the preceding seven logical days, every lane remains close to its own "
+            "baseline. There is no material lane-level deviation in this period."
         )
 
     return [
@@ -323,28 +335,35 @@ def processor_comparison_answer(dataset: Dataset, *, injected: bool) -> list[dic
             "text": text,
             "sql": sql(
                 """
-WITH recent AS (
-  SELECT processor_id, processor_name, rail,
+WITH bounds AS (
+  SELECT MAX(hour_start) AS weak_hour
+  FROM aa_payment_performance_hourly
+),
+recent AS (
+  SELECT p.processor_id, p.processor_name, p.rail, p.card_network, p.issuer_country,
          SUM(attempts) AS attempts,
          SUM(approvals) / SUM(attempts) AS approval_rate,
          MAX(p95_latency_ms) AS p95_latency_ms
-  FROM aa_payment_performance_hourly
-  WHERE hour_start >= (SELECT MAX(hour_start) FROM aa_payment_performance_hourly)
-  GROUP BY processor_id, processor_name, rail
+  FROM aa_payment_performance_hourly p CROSS JOIN bounds b
+  WHERE p.hour_start = b.weak_hour
+  GROUP BY p.processor_id, p.processor_name, p.rail, p.card_network, p.issuer_country
 ),
 baseline AS (
-  SELECT processor_id,
+  SELECT p.processor_id, p.card_network, p.issuer_country,
          SUM(approvals) / SUM(attempts) AS approval_rate,
          MAX(p95_latency_ms) AS p95_latency_ms
-  FROM aa_payment_performance_hourly
-  WHERE hour_start < (SELECT MAX(hour_start) FROM aa_payment_performance_hourly)
-  GROUP BY processor_id
+  FROM aa_payment_performance_hourly p CROSS JOIN bounds b
+  WHERE p.hour_start < b.weak_hour
+  GROUP BY p.processor_id, p.card_network, p.issuer_country
 )
-SELECT r.processor_id, r.processor_name, r.rail, r.attempts,
+SELECT r.processor_id, r.processor_name, r.rail, r.card_network, r.issuer_country, r.attempts,
        r.approval_rate, b.approval_rate AS baseline_approval_rate,
        r.approval_rate - b.approval_rate AS approval_rate_change,
        r.p95_latency_ms, b.p95_latency_ms AS baseline_p95_latency_ms
-FROM recent r JOIN baseline b ON b.processor_id = r.processor_id
+FROM recent r JOIN baseline b
+  ON b.processor_id = r.processor_id
+ AND b.card_network = r.card_network
+ AND b.issuer_country = r.issuer_country
 ORDER BY approval_rate_change
                 """,
                 ["aa_payment_performance_hourly"],
@@ -354,6 +373,8 @@ ORDER BY approval_rate_change
                     "processor_id",
                     "processor_name",
                     "rail",
+                    "card_network",
+                    "issuer_country",
                     "attempts",
                     "approval_rate",
                     "baseline_approval_rate",
@@ -587,16 +608,20 @@ def fixtures(baseline: Dataset, injected: Dataset) -> list[dict]:
         ),
         record(
             "processor_comparison_baseline",
-            "During the weakest window, rank processors and rails against the prior seven-day baseline.",
-            ["rank processors", "compare processor", "against baseline", "processor rail comparison"],
+            "During the weakest window, rank payment lanes against the prior seven-day baseline.",
+            # Stored ranking fallback only. The buyer starter is the incident-window
+            # comparison and is answered live; do not relabel this fixture as that answer.
+            ["rank payment lanes", "compare processor network country", "against baseline", "lane comparison"],
             "baseline",
             processor_comparison_answer(baseline, injected=False),
             3100,
         ),
         record(
             "processor_comparison_after",
-            "During the weakest window, rank processors and rails against the prior seven-day baseline.",
-            ["rank processors", "compare processor", "against baseline", "processor rail comparison"],
+            "During the weakest window, rank payment lanes against the prior seven-day baseline.",
+            # Stored ranking fallback only. The buyer starter is the incident-window
+            # comparison and is answered live; do not relabel this fixture as that answer.
+            ["rank payment lanes", "compare processor network country", "against baseline", "lane comparison"],
             "after_injection",
             processor_comparison_answer(injected, injected=True),
             3300,

@@ -10,6 +10,9 @@ import { analystConfig, type AnalystMode } from "../env";
 import { isAnchorConfigured } from "./client";
 
 export function resolveMode(requested: string | undefined): AnalystMode {
+  // Live is fail-closed: a browser cannot request a stored answer or an
+  // automatic fixture fallback while the server is configured for live Aura.
+  if (analystConfig.mode === "live") return "live";
   const candidate = (requested ?? "").toLowerCase();
   if (candidate === "live" || candidate === "fixture" || candidate === "auto") {
     return candidate;

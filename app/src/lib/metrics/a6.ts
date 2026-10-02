@@ -1,5 +1,5 @@
 /**
- * Deterministic A6 Liquidity Command Center queries.
+ * Deterministic A6 Liquidity and Funding Management queries.
  *
  * Positions and forecasts can be denominated in any synthetic currency, so
  * every aggregate reads the *_usd columns (database/migrations/010_a6_liquidity.sql).
@@ -13,6 +13,23 @@ import type {
   SharedOverviewData,
 } from "../apiTypes";
 import { buildChangePayload, scenarioExecution, scenarioExpectedDeltas } from "./shared";
+/** Illustrative group policy minimum for 24-hour liquidity. Mirrors domains/a6-liquidity/manifest.yaml. */
+export const LIQUIDITY_BUFFER_USD = 60_000_000;
+
+const usdMillions = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+
+function bufferDetail(liquidity: number): string {
+  const headroom = liquidity - LIQUIDITY_BUFFER_USD;
+  const buffer = usdMillions.format(LIQUIDITY_BUFFER_USD);
+  return headroom >= 0
+    ? `${usdMillions.format(headroom)} above the ${buffer} policy buffer`
+    : `${usdMillions.format(-headroom)} below the ${buffer} policy buffer`;
+}
 
 interface LiquidityPositionRow {
   entity_id: string;
@@ -58,7 +75,11 @@ async function fundingWindow(limit = 20): Promise<FundingWindowRow[]> {
 }
 
 export async function overview(): Promise<SharedOverviewData> {
-  const [positionRows, funding] = await Promise.all([positions(), fundingWindow(20)]);
+  const [positionRows, funding, changePayload] = await Promise.all([
+    positions(),
+    fundingWindow(20),
+    change(),
+  ]);
 
   const totalLiquidity = positionRows.reduce(
     (sum, row) => sum + Number(row.available_liquidity_24h_usd),
@@ -74,17 +95,25 @@ export async function overview(): Promise<SharedOverviewData> {
     0
   );
   const fundingValue = funding.reduce((sum, row) => sum + Number(row.amount_usd), 0);
+  const liquidityImpact =
+    changePayload?.rows.find((row) => row.key === "liquidity_delta_usd")?.after ?? null;
+  const liquidityBefore =
+    liquidityImpact === null ? null : totalLiquidity - Number(liquidityImpact);
 
   const kpis: SharedOverviewData["kpis"] = [
     {
       id: "available_liquidity_24h_usd",
       title: "Available 24-hour liquidity",
-      subtitle: "Across every entity and currency, normalised to USD",
+      subtitle:
+        liquidityImpact === null
+          ? "Across every entity and currency, normalized to USD"
+          : "After the delayed inbound settlement",
       value: totalLiquidity,
-      baseline: null,
-      delta: null,
+      baseline: liquidityBefore,
+      delta: liquidityImpact,
       format: "currency",
       higherIsBetter: true,
+      detail: bufferDetail(totalLiquidity),
     },
     {
       id: "queued_payments_usd",
@@ -169,7 +198,7 @@ export async function overview(): Promise<SharedOverviewData> {
     kpis,
     series: null,
     drivers,
-    change: await change(),
+    change: changePayload,
     tables,
     meta: {},
   };
@@ -186,29 +215,31 @@ async function change(): Promise<SharedChangePayload | null> {
   if (!execution?.window_start || !execution?.window_end) return null;
 
   const expected = await scenarioExpectedDeltas(scenarioId);
-  const segment = (expected.segment as Record<string, string> | undefined) ?? {};
-  const label = segment.entity_id ?? "Treasury entity";
-
-  const positionRows = await positions();
-  const totalLiquidity = positionRows.reduce(
+  const delayed = await query<{ amount_usd: number }>(
+    `SELECT ABS(SUM(amount_usd)) AS amount_usd
+     FROM settlement
+     WHERE run_id = ? AND scenario_id = ?`,
+    [runId, scenarioId]
+  );
+  const amount = Number(delayed[0]?.amount_usd ?? 0);
+  const liquidityNow = (await positions()).reduce(
     (sum, row) => sum + Number(row.available_liquidity_24h_usd),
     0
   );
+  const headroomNow = liquidityNow - LIQUIDITY_BUFFER_USD;
 
   return buildChangePayload({
     scenarioId,
     execution,
     expected,
-    segmentLabel: String(label),
+    segmentLabel: "Delayed inbound settlement",
     specs: [
-      { label: "Projected 24-hour liquidity", key: "available_liquidity_24h_usd", format: "currency" },
       { label: "Settlement at risk", key: "settlement_at_risk_usd", format: "currency" },
+      { label: "Liquidity impact", key: "liquidity_delta_usd", format: "currency" },
+      { label: "Headroom to policy buffer", key: "buffer_headroom_usd", format: "currency" },
     ],
-    before: { available_liquidity_24h_usd: null, settlement_at_risk_usd: null },
-    after: {
-      available_liquidity_24h_usd: totalLiquidity,
-      settlement_at_risk_usd: null,
-    },
+    before: { settlement_at_risk_usd: 0, liquidity_delta_usd: 0, buffer_headroom_usd: headroomNow + amount },
+    after: { settlement_at_risk_usd: amount, liquidity_delta_usd: -amount, buffer_headroom_usd: headroomNow },
   });
 }
 

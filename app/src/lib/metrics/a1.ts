@@ -1,5 +1,5 @@
 /**
- * Deterministic A1 Digital Journey Intelligence queries.
+ * Deterministic A1 Digital Funnel Performance queries.
  *
  * Every number is SQL against SingleStore, filtered through demo_active_run
  * so pausing the simulator freezes the funnel. `digital_session`,
@@ -35,6 +35,8 @@ interface FunnelMetrics {
   referred_to_review: number;
   applications_approved: number;
   applications_declined: number;
+  submitted_value_usd: number;
+  opened_value_usd: number;
 }
 
 const EMPTY_FUNNEL: FunnelMetrics = {
@@ -43,6 +45,8 @@ const EMPTY_FUNNEL: FunnelMetrics = {
   referred_to_review: 0,
   applications_approved: 0,
   applications_declined: 0,
+  submitted_value_usd: 0,
+  opened_value_usd: 0,
 };
 
 const FUNNEL_COLUMNS = `
@@ -50,7 +54,10 @@ const FUNNEL_COLUMNS = `
     COUNT(DISTINCT a.application_id) AS applications_submitted,
     COUNT(DISTINCT mr.review_id) AS referred_to_review,
     SUM(CASE WHEN a.outcome_status = 'approved' THEN 1 ELSE 0 END) AS applications_approved,
-    SUM(CASE WHEN a.outcome_status = 'declined' THEN 1 ELSE 0 END) AS applications_declined`;
+    SUM(CASE WHEN a.outcome_status = 'declined' THEN 1 ELSE 0 END) AS applications_declined,
+    COALESCE(SUM(dp.annual_value_usd), 0) AS submitted_value_usd,
+    COALESCE(SUM(CASE WHEN a.outcome_status = 'approved' THEN dp.annual_value_usd ELSE 0 END), 0)
+      AS opened_value_usd`;
 
 const FUNNEL_JOINS = `
      FROM digital_session ds
@@ -58,7 +65,23 @@ const FUNNEL_JOINS = `
      LEFT JOIN application a
        ON a.run_id = ds.run_id AND a.session_id = ds.session_id AND a.submitted_at <= ar.logical_time
      LEFT JOIN manual_review mr
-       ON mr.run_id = a.run_id AND mr.application_id = a.application_id AND mr.referred_at <= ar.logical_time`;
+       ON mr.run_id = a.run_id AND mr.application_id = a.application_id AND mr.referred_at <= ar.logical_time
+     LEFT JOIN dim_product dp ON dp.run_id = a.run_id AND dp.product_id = a.product_id`;
+
+async function funnelBefore(until: string, cohort?: string): Promise<FunnelMetrics> {
+  const params: unknown[] = [until, until];
+  let cohortFilter = "";
+  if (cohort) {
+    cohortFilter = " AND ds.intent_cohort = ?";
+    params.push(cohort);
+  }
+  const rows = await query<FunnelMetrics>(
+    `SELECT ${FUNNEL_COLUMNS} ${FUNNEL_JOINS}
+     WHERE ds.started_at > DATE_SUB(?, INTERVAL 7 DAY) AND ds.started_at < ?${cohortFilter}`,
+    params
+  );
+  return rows[0] ?? EMPTY_FUNNEL;
+}
 
 async function funnelBetween(from: string, to: string, cohort?: string): Promise<FunnelMetrics> {
   const params: unknown[] = [from, to];
@@ -69,7 +92,7 @@ async function funnelBetween(from: string, to: string, cohort?: string): Promise
   }
   const rows = await query<FunnelMetrics>(
     `SELECT ${FUNNEL_COLUMNS} ${FUNNEL_JOINS}
-     WHERE ds.started_at > ? AND ds.started_at <= ?${cohortFilter}`,
+     WHERE ds.started_at >= ? AND ds.started_at <= ?${cohortFilter}`,
     params
   );
   return rows[0] ?? EMPTY_FUNNEL;
@@ -147,6 +170,12 @@ async function reviewComparison(): Promise<
 
 export async function overview(windowMinutes: number): Promise<SharedOverviewData> {
   const span = minutes(windowMinutes);
+  const periodLabel =
+    span === 7 * 24 * 60
+      ? "Full seven-day baseline"
+      : span === 24 * 60
+        ? "Last 24 hours"
+        : `Last ${span} minutes`;
   const [recentRows, baselineRows, series, cohorts, review] = await Promise.all([
     query<FunnelMetrics & { as_of: string }>(
       `SELECT ${FUNNEL_COLUMNS}, ar.logical_time AS as_of ${FUNNEL_JOINS}
@@ -164,6 +193,7 @@ export async function overview(windowMinutes: number): Promise<SharedOverviewDat
   ]);
   const recent = recentRows[0] ?? EMPTY_FUNNEL;
   const baseline = baselineRows[0] ?? EMPTY_FUNNEL;
+  const lowSample = Number(recent.sessions_started) < 30;
 
   const manualReview = review.find((row) => row.review_path === "manual_review") ?? null;
 
@@ -171,12 +201,14 @@ export async function overview(windowMinutes: number): Promise<SharedOverviewDat
     {
       id: "sessions_started",
       title: "Sessions started",
-      subtitle: `Last ${span} minutes`,
+      subtitle: periodLabel,
       value: recent.sessions_started,
       baseline: null,
       delta: null,
       format: "count",
       higherIsBetter: true,
+      statusLabel: lowSample ? "Low sample" : "Observed",
+      statusTone: lowSample ? "warn" : "neutral",
     },
     {
       id: "completion_rate",
@@ -190,6 +222,7 @@ export async function overview(windowMinutes: number): Promise<SharedOverviewDat
           : null,
       format: "percent",
       higherIsBetter: true,
+      ...(lowSample ? { statusLabel: "Low sample", statusTone: "warn" as const } : {}),
     },
     {
       id: "referral_rate",
@@ -203,6 +236,7 @@ export async function overview(windowMinutes: number): Promise<SharedOverviewDat
           : null,
       format: "percent",
       higherIsBetter: false,
+      ...(lowSample ? { statusLabel: "Low sample", statusTone: "warn" as const } : {}),
     },
     {
       id: "manual_review_minutes",
@@ -299,42 +333,62 @@ async function change(): Promise<SharedChangePayload | null> {
   const cohort = segment.intent_cohort ?? DEFAULT_COHORT;
 
   const [before, after] = await Promise.all([
-    funnelBetween(
-      String(
-        new Date(
-          new Date(execution.window_start).getTime() - 7 * 24 * 60 * 60 * 1000
-        ).toISOString()
-      ),
-      execution.window_start,
-      cohort
-    ),
+    funnelBefore(execution.window_start, cohort),
     funnelBetween(execution.window_start, execution.window_end, cohort),
   ]);
+  const lost = lostOpenings(before, after);
 
   return buildChangePayload({
     scenarioId,
     execution,
     expected,
-    segmentLabel: `Intent cohort: ${cohort}`,
+    segmentLabel: cohort === "high_mobile" ? "High-intent mobile cohort" : `Intent cohort: ${cohort}`,
     specs: [
       { label: "Sessions started", key: "sessions_started", format: "count" },
       { label: "Applications submitted", key: "applications_submitted", format: "count" },
       { label: "Referred to review", key: "referred_to_review", format: "count" },
-      { label: "Applications approved", key: "applications_opened", format: "count" },
+      { label: "Applications approved", key: "applications_approved", format: "count" },
+      { label: "Openings lost vs. cohort baseline", key: "openings_lost", format: "count" },
+      { label: "Annual value of lost openings", key: "lost_value_usd", format: "currency" },
     ],
     before: {
       sessions_started: before.sessions_started,
       applications_submitted: before.applications_submitted,
       referred_to_review: before.referred_to_review,
-      applications_opened: before.applications_approved,
+      applications_approved: before.applications_approved,
+      openings_lost: null,
+      lost_value_usd: null,
     },
     after: {
       sessions_started: after.sessions_started,
       applications_submitted: after.applications_submitted,
       referred_to_review: after.referred_to_review,
-      applications_opened: after.applications_approved,
+      applications_approved: after.applications_approved,
+      openings_lost: lost?.openings ?? null,
+      lost_value_usd: lost?.valueUsd ?? null,
     },
   });
+}
+
+/**
+ * Openings the window would have produced at the cohort's own baseline
+ * submit-to-open rate, minus the openings it did produce. Value prices each
+ * application at its product's illustrative first-year value
+ * (dim_product.annual_value_usd), so it reflects the product mix.
+ */
+function lostOpenings(
+  before: FunnelMetrics,
+  after: FunnelMetrics
+): { openings: number; valueUsd: number } | null {
+  const baselineSubmitted = Number(before.applications_submitted);
+  if (!baselineSubmitted) return null;
+  const rate = Number(before.applications_approved) / baselineSubmitted;
+  const openings = Number(after.applications_submitted) * rate - Number(after.applications_approved);
+  const valueUsd = Number(after.submitted_value_usd) * rate - Number(after.opened_value_usd);
+  return {
+    openings: Math.max(0, Math.round(openings * 10) / 10),
+    valueUsd: Math.max(0, Math.round(valueUsd * 100) / 100),
+  };
 }
 
 export async function entity(

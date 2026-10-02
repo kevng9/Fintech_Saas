@@ -1,14 +1,15 @@
 import type { AnchorDefinition } from "./types";
 
 /**
- * A4 Alert-to-Evidence (AML Operations). No predicted disposition is ever
+ * A4 Financial Crime Operations (AML Operations). No predicted disposition is ever
  * generated: this anchor reports backlog age, priority, and evidence
  * completeness only.
  */
 export const a4: AnchorDefinition = {
   id: "a4",
-  name: "Alert-to-Evidence",
+  name: "Financial Crime Operations",
   jobTitle: "Head of AML Operations",
+  businessDecision: "Financial Crime Operations",
   criticalBusinessIssue:
     "Clear alerts within policy while improving review quality and preserving human disposition.",
   takeaway: "Assemble Evidence Faster",

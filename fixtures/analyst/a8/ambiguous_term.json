@@ -8,9 +8,45 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "I cannot tell you whether you are spending too much; that is your call to make. I can show you how your spending in any category compares with a prior period, so you can decide for yourself. Which category or period would you like to compare?",
-      "sql": null,
-      "table": null,
+      "text": "Whether it is too much is your call, but here is how this month compares with your own history. Your dining spending is **$710** this month against **$410** last month, up **$300**, and it is the category that changed most. Groceries are steady at **$340** against **$355**. Want me to compare another category or a longer period?",
+      "sql": {
+        "command": "SELECT category, spend_month, category_spend_usd FROM aa_customer_spend_change WHERE category IN ('dining', 'groceries') ORDER BY category, spend_month DESC",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_customer_spend_change"
+        ]
+      },
+      "table": {
+        "columns": [
+          "category",
+          "spend_month",
+          "category_spend_usd"
+        ],
+        "rows": [
+          [
+            "dining",
+            "2026-07-01",
+            710.0
+          ],
+          [
+            "dining",
+            "2026-06-01",
+            410.0
+          ],
+          [
+            "groceries",
+            "2026-07-01",
+            340.0
+          ],
+          [
+            "groceries",
+            "2026-06-01",
+            355.0
+          ]
+        ],
+        "row_count": 4,
+        "truncated": false
+      },
       "chart": null,
       "error": null
     }

@@ -1,13 +1,14 @@
 import type { AnchorDefinition } from "./types";
 
 /**
- * A5 Dispute Resolution Lens (Disputes Operations). SLA risk is always
+ * A5 Dispute Operations Performance (Disputes Operations). SLA risk is always
  * computed against the demo logical clock, never wall-clock time.
  */
 export const a5: AnchorDefinition = {
   id: "a5",
-  name: "Dispute Resolution Lens",
+  name: "Dispute Operations Performance",
   jobTitle: "VP of Disputes Operations",
+  businessDecision: "Dispute Operations Performance",
   criticalBusinessIssue:
     "Resolve disputes within SLA at lower cost while protecting customer trust.",
   takeaway: "Resolve Cases Earlier",
@@ -21,10 +22,10 @@ export const a5: AnchorDefinition = {
   entityTypes: ["dispute"],
   guardrailText:
     "Aura Analyst assembles and explains evidence. It does not adjudicate a dispute or issue a credit.",
-  humanOwnership: "Adjudication and provisional credit stay with authorised agents.",
+  humanOwnership: "Adjudication and provisional credit stay with authorized agents.",
   starterPrompts: [
     "Show disputes at risk of SLA breach in the next 24 logical hours.",
-    "What explains the largest at-risk queue compared with the prior 30 days?",
+    "Which reason code and merchant are driving the largest at-risk queue, and when did those disputes arrive?",
     "Show the timeline for the selected dispute.",
   ],
   overviewWidgets: [
@@ -69,7 +70,7 @@ export const a5: AnchorDefinition = {
       backendRoute: "/api/v1/anchors/a5/overview",
       visualization: "kpi",
       expectedBaseline: "Consistent with the seeded baseline",
-      expectedScenarioDelta: "Rises with the disputes due within 60 minutes",
+      expectedScenarioDelta: "Rises with the 12 disputes whose provisional-credit target falls within 24 hours",
       proofMode: "deterministic",
       sourceTables: ["dispute_case"],
     },
@@ -80,7 +81,7 @@ export const a5: AnchorDefinition = {
       backendRoute: "/api/v1/anchors/a5/overview",
       visualization: "timeseries",
       expectedBaseline: "Flat with a normal daily shape",
-      expectedScenarioDelta: "Visible bump on the injection day",
+      expectedScenarioDelta: "A wave a week ago, right after the outage, and a second wave on the injection day",
       proofMode: "deterministic",
       sourceTables: ["aa_dispute_queue_driver"],
     },
@@ -91,7 +92,7 @@ export const a5: AnchorDefinition = {
       backendRoute: "/api/v1/anchors/a5/overview",
       visualization: "ranked-bar",
       expectedBaseline: "Distributed across queues and reasons",
-      expectedScenarioDelta: "MERCHANT_OUTAGE reason code leads the ranking",
+      expectedScenarioDelta: "PAID_BY_OTHER_MEANS at one merchant leads the ranking",
       proofMode: "analyst-optional",
       sourceTables: ["aa_dispute_sla_risk"],
     },

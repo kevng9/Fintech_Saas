@@ -255,7 +255,7 @@ export interface DeclineMixRow {
   avg_latency_ms: number;
 }
 
-export async function declineMix(windowMinutes: number, limit = 12): Promise<DeclineMixRow[]> {
+export async function declineMix(windowMinutes: number, limit = 100): Promise<DeclineMixRow[]> {
   const span = minutes(windowMinutes);
   const cap = Math.min(Math.max(Math.trunc(limit), 1), 100);
   return query<DeclineMixRow>(
@@ -304,10 +304,28 @@ async function laneBaselineBefore(
      FROM payment_event pe ${ACTIVE_RUN_JOIN}
      WHERE pe.processor_id = ? AND pe.card_network = ? AND pe.issuer_country = ?
        AND pe.scenario_id IS NULL
+       AND pe.event_time >= DATE_SUB(?, INTERVAL 7 DAY)
        AND pe.event_time < ?`,
-    [lane.processorId, lane.cardNetwork, lane.issuerCountry, before]
+    [lane.processorId, lane.cardNetwork, lane.issuerCountry, before, before]
   );
   return rows[0]?.attempts ? rows[0] : EMPTY_METRICS;
+}
+
+function normalizeBaselineVolume(
+  baseline: WindowMetrics,
+  targetAttempts: number
+): WindowMetrics {
+  if (!baseline.attempts || !targetAttempts) return baseline;
+  const factor = targetAttempts / Number(baseline.attempts);
+  return {
+    ...baseline,
+    attempts: targetAttempts,
+    approvals: Math.round(Number(baseline.approvals) * factor),
+    declines: Math.round(Number(baseline.declines) * factor),
+    timeout_declines: Math.round(Number(baseline.timeout_declines) * factor),
+    declined_amount: Number(baseline.declined_amount) * factor,
+    approved_amount: Number(baseline.approved_amount) * factor,
+  };
 }
 
 export interface WhatChanged {
@@ -346,10 +364,11 @@ export async function whatChanged(
     issuerCountry: segment.issuer_country ?? AFFECTED_LANE.issuerCountry,
   };
 
-  const [baseline, after] = await Promise.all([
+  const [rawBaseline, after] = await Promise.all([
     laneBaselineBefore(lane, execution.window_start),
     laneMetricsBetween(lane, execution.window_start, execution.window_end),
   ]);
+  const baseline = normalizeBaselineVolume(rawBaseline, Number(after.attempts));
 
   return {
     scenarioId,

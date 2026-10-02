@@ -46,7 +46,8 @@ DEFINITION = ScenarioDefinition(
         "tolerance": {"settlement_at_risk_usd": 0.005},
         "narrative": (
             "A USD 25,000,000 inbound settlement is delayed: projected 24-hour "
-            "liquidity for the entity falls by USD 25,000,000."
+            "liquidity for the entity falls by USD 25,000,000, taking the group "
+            "below its illustrative USD 60,000,000 policy buffer."
         ),
     },
 )

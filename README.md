@@ -17,9 +17,30 @@ scenario, curated views, evidence path, Analyst fixtures, and Domain manifest.
 | `domains/` | Aura Domain manifests: the source of intent for Creator Mode |
 | `fixtures/analyst/` | Reviewed Analyst answers used when Aura is unreachable |
 | `fixtures/baseline/` | Versioned expected baseline fingerprint and checksum |
-| `scripts/` | Fixture builder and client-bundle secret scanner |
-| `docs/` | Setup, runbook, troubleshooting, Domain checklist |
+| `scripts/` | Fixture builder, client-bundle secret scanner, and demo start/stop |
+| `docs/` | Setup, runbook, troubleshooting, Domain checklist, [proof modules P9/P10](docs/proof-modules.md) |
 | `deploy/` | Docker Compose for app plus simulator |
+
+## Start and stop
+
+From the repository root, after `app/.env.local` exists:
+
+```bash
+scripts/startup.sh     # baseline, simulator, and app at http://127.0.0.1:3000
+scripts/shutdown.sh    # stop both processes and restore that same baseline
+```
+
+`startup.sh` installs local dependencies when they are missing, bootstraps the
+database the first time, clones the verified template into a clean run, then
+starts the simulator and the app and resumes the stream at 1x. It then stays
+attached and streams both logs. Press Ctrl+C in that terminal to run
+`shutdown.sh`. Use `scripts/startup.sh --detach` to return to the prompt
+instead. Closing the window leaves the demo running. `shutdown.sh`
+stops those processes and resets only after the simulator lease has expired, so
+the next startup begins from the same seed, epoch, and scenario-free baseline.
+Logs and process ids are in `.demo/`.
+
+The manual steps below are the same sequence, one command at a time.
 
 ## Quick start
 
@@ -58,8 +79,25 @@ python -m fintech_demo run
 cd app && npm install && npm run dev
 ```
 
-Then open <http://localhost:3000>, and check `/admin` shows every pre-flight
-check passing before you present.
+Then open <http://localhost:3000>. The app opens in the customer view. Check
+`/admin` before you present, reset to a clean baseline, and resume the stream
+once so the overview shows **Operating normally**.
+
+## Buyer flow
+
+1. On **Overview**, confirm approval is near 95.9% and the status is
+   **Operating normally**.
+2. Choose **See a revenue-risk incident**, or open another use case. The page
+   injects that role's event and pauses the logical clock.
+3. Read the decision card. For payments, the decision is P2 / Mastercard / GB
+   at 88% approval, −8 points, 680 ms, and 200 attempts. The hour-wide lane
+   chart is diluted context and stays still while the clock is paused.
+4. Ask the guided question for that incident window. With `ANALYST_MODE=live`,
+   Aura should return the same lane, 200 attempts, about 88% versus 96%, and
+   680 ms versus 180 ms.
+5. Press **Esc** for operator controls. Resume the stream only when you want
+   the clock to move again, and restore the clean baseline before the next
+   story.
 
 ## How the demo runs
 
@@ -83,16 +121,20 @@ pacing or restarts. `python -m fintech_demo seed` records a fingerprint and a
 SHA-256 checksum; a reset clones the template run and is **rejected** unless the
 clone reproduces that checksum exactly.
 
-Widgets and views filter on `demo_active_run.logical_time`, not the wall clock,
-so pausing the simulator genuinely freezes every number on screen.
+Widgets and views filter on `demo_active_run.logical_time`, not the wall clock.
+Pausing the simulator freezes every number on screen. A customer story does
+that automatically and holds the clock at the end of the event until an
+operator resumes.
 
 ## Live and fixture modes
 
-`ANALYST_MODE` and the in-app Analyst selector control where answers come from:
+The customer demo uses `ANALYST_MODE=live`. In that mode the server calls Aura
+and ignores a browser request for a stored answer.
 
 - `live` calls Aura Analyst and surfaces a failure rather than hiding it.
 - `fixture` always replays a reviewed stored answer.
-- `auto` tries live first and falls back to a fixture, labelled on screen.
+- `auto` tries live first and falls back to a fixture, labeled on screen.
+  This is a development option, not the buyer path.
 
 Fixtures are generated from the same generator that produces the database rows,
 so their numbers agree with the dashboard:

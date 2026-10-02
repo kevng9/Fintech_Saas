@@ -11,8 +11,8 @@ from playwright.sync_api import Locator, Page, sync_playwright
 
 VIEWPORT = {"width": 1440, "height": 900}
 QUESTION = (
-    "During the weakest window, rank processors and rails against the prior "
-    "seven-day baseline."
+    "For P2 / Mastercard / GB in the incident window, compare approval and p95 "
+    "latency with its prior seven-day baseline."
 )
 
 
@@ -168,52 +168,37 @@ def record(base_url: str, output: Path) -> None:
         )
         caption(page, "Monitor authorization health against your own operating baseline")
 
-        open_operations = page.get_by_role("link", name="Open payment operations")
-        click(page, open_operations)
-        page.wait_for_url("**/anchors/a2")
-        page.wait_for_load_state("networkidle")
+        open_incident = page.get_by_role("link", name="See a revenue-risk incident")
+        click(page, open_incident)
+        page.wait_for_url("**/anchors/a2**")
+        page.get_by_text("Revenue-risk incident detected", exact=True).wait_for(timeout=45_000)
         install_tour_ui(page)
-        caption(page, "A single operating view for approval, latency, timeouts, and declined value")
+        caption(page, "The two-minute incident pauses the clock so the card and Aura share one window")
 
-        signals = page.get_by_text("Key operating signals", exact=True)
-        point_to(page, signals)
+        incident = page.get_by_text("Revenue-risk incident detected", exact=True)
+        point_to(page, incident)
         pause(page, 2200)
+        caption(page, "P2, Mastercard, and GB: 88 percent approval, 680 milliseconds, 200 attempts")
+
         lane_movement = page.get_by_text("Lane movement", exact=True)
         point_to(page, lane_movement)
-        caption(page, "Every payment route is compared with its own seven-day baseline")
-
-        drill = page.get_by_text("Run an operational drill", exact=True)
-        point_to(page, drill)
-        caption(page, "Introduce a controlled timeout burst on one processor route")
-        start = page.get_by_role("button", name="Start drill")
-        click(page, start, 500)
-        page.get_by_role("button", name="Drill complete").wait_for(timeout=45_000)
-        caption(page, "The complete disruption lands atomically—no half-loaded incident")
-
-        status = page.get_by_text("Operational change detected", exact=True)
-        point_to(page, status)
-        caption(page, "A portfolio-level movement is detected immediately")
-
-        signals.scroll_into_view_if_needed()
-        pause(page, 1100)
-        caption(page, "The overall movement is modest, but the affected lane separates clearly")
-        point_to(page, lane_movement)
+        caption(page, "The hour-wide lane chart is diluted context and stays still while the clock is paused")
         pause(page, 2100)
 
         impact = page.get_by_text("Change impact", exact=True)
         point_to(page, impact)
-        caption(page, "Before-and-during evidence confirms the expected operating signature")
+        caption(page, "Change impact confirms 96 to 88 percent, timeouts 1 to 7 percent, and 180 to 680 milliseconds")
 
-        analyst = page.get_by_text("Ask your payment data", exact=True)
+        analyst = page.get_by_text("Ask about Payment Performance Management", exact=True)
         point_to(page, analyst)
-        caption(page, "Continue the investigation in natural language over governed payment views")
+        caption(page, "Ask Aura about that same incident window over governed payment views")
 
         starter = page.get_by_role("button", name=QUESTION + " ↗")
         if starter.count() == 0:
             starter = page.get_by_role("button", name=QUESTION)
         click(page, starter, 600)
-        page.get_by_role("button", name="Show generated SQL").wait_for(timeout=45_000)
-        caption(page, "Aura Analyst ranks the largest deterioration and preserves inspectable evidence", 3500)
+        page.get_by_role("button", name="Show generated SQL").wait_for(timeout=120_000)
+        caption(page, "Live Aura returns 200 attempts, 88 percent versus about 96, and 680 versus 180 milliseconds", 3500)
         pause(page, 1800)
 
         title_card(

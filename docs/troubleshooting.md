@@ -54,7 +54,13 @@ run `bootstrap`.
 
 ### The logical clock is not advancing
 
-The simulator process is not running, or it is not the leader. Start it:
+If a story has already been revealed, a paused clock is the designed state.
+The customer view holds the logical clock at the end of the event so the
+decision card and Aura inspect the same window. Resume from the operator view
+(press **Esc**, then **Demo controls**) only when you want time to move again.
+
+If no story has been started, the simulator is not running, it is not the
+leader, or a reset left the stream paused. Start it, then resume:
 
 ```bash
 python -m fintech_demo run
@@ -65,9 +71,10 @@ contend for the same commands and the clock will appear to stutter.
 
 ### Widgets show data but the clock is frozen
 
-That is a pause, and it is deliberate. Widgets read
-`demo_active_run.logical_time`, so a paused stream freezes every number rather
-than showing a moving wall-clock window. Resume from the control strip.
+That is a pause. Widgets read `demo_active_run.logical_time`, so a paused
+stream freezes every number rather than showing a moving wall-clock window.
+A revealed story pauses on purpose. An operator pause does the same thing.
+Resume from the operator view when the bounded story is finished.
 
 ## Reset problems
 
@@ -111,9 +118,10 @@ Scenarios are injected once per run. Reset, then inject again.
 
 ### The scenario fired but the numbers did not move
 
-Check the window. The scenario is a two-minute burst on one processor and one
-lane, so an hour-grain view dilutes it. The lane table and **What changed** panel
-isolate it; the 24-hour overview intentionally does not.
+Check the window. The payment scenario is a two-minute burst on one processor
+and one lane, so the hour-wide lane chart dilutes it. The incident card and
+**Change impact** are the decision. Because the story pauses the clock, that
+diluted hour context stays put instead of drifting back toward the baseline.
 
 If **What changed** shows measured values that do not match the published
 expectation, stop trusting the environment and run `verify` after the session.
@@ -126,7 +134,7 @@ The generated data does not match its published contract. Confirm
 `DEMO_DEFAULT_SEED`, `DEMO_DEFAULT_EPOCH`, and `DEMO_BASELINE_DAYS` match what the
 baseline fingerprint in
 `fixtures/baseline/` was recorded with. If they do and it still fails, the
-generator changed: run `python -m pytest simulator/tests -q`, which localises the
+generator changed: run `python -m pytest simulator/tests -q`, which localizes the
 break far better than the database round trip.
 
 ## Analyst problems
@@ -139,7 +147,7 @@ That is expected when:
 - `auto` mode has no Domain key for the anchor (`ANALYST_A{N}_API_KEY` empty), or
 - a live call failed and auto fell back.
 
-Fixtures are real reviewed answers. The turn is labelled **Reviewed fixture**
+Fixtures are real reviewed answers. The turn is labeled **Reviewed fixture**
 (with `live Domain not keyed` or the live error when relevant). Only **live**
 mode fails hard when Aura is missing.
 
@@ -149,10 +157,11 @@ Domains must be **published** in Portal, then each Domain-scoped key stored only
 in ignored `app/.env.local` as `ANALYST_A1_API_KEY` … `ANALYST_A8_API_KEY`.
 Never paste key values into chat, logs, screenshots, or commits.
 
-Until keys exist, keep `ANALYST_MODE=auto` or `fixture` and present with
-reviewed fixtures. `all_live_domains` stays incomplete until every available
-anchor is published and keyed — that check is accurate by design and does not
-block fixture/auto demo readiness.
+The customer demo is configured with `ANALYST_MODE=live`. In that mode the
+server ignores a browser request for a stored answer. `auto` and `fixture`
+remain available for a build that has no Domain key. `all_live_domains` stays
+incomplete until every available anchor is published and keyed — that check is
+accurate by design and does not block fixture or auto development.
 
 ### Live calls fail with 401 or 403
 

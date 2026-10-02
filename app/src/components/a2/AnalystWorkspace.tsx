@@ -13,6 +13,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnalystChart } from "@/components/AnalystChart";
 import { AnalystTable } from "@/components/AnalystTable";
+import { AnalystMarkdown } from "@/components/a2/AnalystMarkdown";
+import { presentAnalystAnswer } from "@/lib/analyst/commentary";
 import { useDemoState } from "@/components/DemoStateProvider";
 import { Banner, Card, Pill, type Tone } from "@/components/ui";
 import { readChatStream, type StreamItem } from "@/lib/analyst/chatStream";
@@ -85,14 +87,15 @@ function TurnBody({ turn }: { turn: Turn }) {
   const tables = turn.items.filter((item) => item.kind === "table" && item.table);
   const charts = turn.items.filter((item) => item.kind === "chart" && item.chart);
   const sql = turn.items.find((item) => item.sql)?.sql ?? null;
+  const presented = presentAnalystAnswer({
+    texts: prose.map((item) => item.text),
+    tables: tables.map((item) => item.table!),
+    streaming: turn.streaming,
+  });
 
   return (
     <div className="space-y-3">
-      {prose.map((item) => (
-        <p key={item.id} className="whitespace-pre-wrap text-[13px] leading-6">
-          {item.text}
-        </p>
-      ))}
+      {presented.prose && <AnalystMarkdown text={presented.prose} />}
 
       {charts.map((item) => (
         <div key={item.id} className="rounded-[8px] border border-[var(--line)] p-2">
@@ -100,12 +103,12 @@ function TurnBody({ turn }: { turn: Turn }) {
         </div>
       ))}
 
-      {tables.map((item) => (
+      {presented.tables.map((table, index) => (
         <AnalystTable
-          key={item.id}
-          columns={item.table!.columns}
-          rows={item.table!.rows}
-          truncated={item.table!.truncated}
+          key={`${table.columns.join("|")}-${index}`}
+          columns={table.columns}
+          rows={table.rows}
+          truncated={table.truncated}
         />
       ))}
 
@@ -172,7 +175,7 @@ export function AnalystWorkspace({
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
+    let canceled = false;
     (async () => {
       try {
         const response = await fetch(`/api/v1/analyst/starters/${anchorId}`, {
@@ -180,7 +183,7 @@ export function AnalystWorkspace({
         });
         if (!response.ok) return;
         const body = (await response.json()) as { curated: string[]; live: string[] };
-        if (cancelled) return;
+        if (canceled) return;
         const curated = [...new Set(body.curated ?? [])].slice(0, 3);
         const curatedSet = new Set(curated);
         setCuratedStarters(curated);
@@ -192,7 +195,7 @@ export function AnalystWorkspace({
       }
     })();
     return () => {
-      cancelled = true;
+      canceled = true;
     };
   }, [anchorId]);
 
@@ -251,28 +254,61 @@ export function AnalystWorkspace({
           current.map((turn) => (turn.id === turnId ? { ...turn, ...changes } : turn))
         );
 
-      const runOnce = async (outbound: string) => {
-        const response = await fetch("/api/v1/analyst/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "x-demo-tab-id": tabId },
-          body: JSON.stringify({
-            anchor: anchorId,
-            message: outbound,
-            mode: analystMode,
-            page_context: pageContext,
-          }),
-          signal: controller.signal,
-        });
+      const runOnce = async (
+        outbound: string,
+        modeOverride: "live" | "fixture" | "auto" = analystMode,
+        timeoutMs = 0
+      ) => {
+        const attemptController = new AbortController();
+        const abortAttempt = () => attemptController.abort();
+        controller.signal.addEventListener("abort", abortAttempt, { once: true });
+        const timeout = timeoutMs
+          ? window.setTimeout(() => attemptController.abort("analyst-timeout"), timeoutMs)
+          : null;
+        const cleanupAttempt = () => {
+          if (timeout !== null) window.clearTimeout(timeout);
+          controller.signal.removeEventListener("abort", abortAttempt);
+        };
+        let response: Response;
+        try {
+          response = await fetch("/api/v1/analyst/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-demo-tab-id": tabId },
+            body: JSON.stringify({
+              anchor: anchorId,
+              message: outbound,
+              mode: modeOverride,
+              page_context: pageContext,
+            }),
+            signal: attemptController.signal,
+          });
+        } catch (error) {
+          const timedOut = timeoutMs > 0 && !controller.signal.aborted;
+          cleanupAttempt();
+          return {
+            ok: false as const,
+            source: null as "live" | "fixture" | null,
+            error: timedOut
+              ? "Aura Analyst exceeded the 30-second response budget."
+              : error instanceof Error
+                ? error.message
+                : "The Analyst call failed.",
+            items: [] as StreamItem[],
+            timedOut,
+          };
+        }
 
         if (!response.ok || !response.body) {
           const body = (await response.json().catch(() => ({}))) as {
             error?: { message?: string };
           };
+          cleanupAttempt();
           return {
             ok: false as const,
             source: null as "live" | "fixture" | null,
             error: body.error?.message ?? `Analyst request failed (${response.status}).`,
             items: [] as StreamItem[],
+            timedOut: false,
           };
         }
 
@@ -284,21 +320,55 @@ export function AnalystWorkspace({
           degradedReason: response.headers.get("x-analyst-degraded-reason"),
         });
 
-        const final = await readChatStream(
-          response.body,
-          (state) => patch({ items: state.items, error: state.error }),
-          controller.signal
-        );
+        let final;
+        try {
+          final = await readChatStream(
+            response.body,
+            (state) => patch({ items: state.items, error: state.error }),
+            attemptController.signal
+          );
+        } catch (error) {
+          const timedOut = timeoutMs > 0 && !controller.signal.aborted;
+          cleanupAttempt();
+          return {
+            ok: false as const,
+            source,
+            error: timedOut
+              ? "Aura Analyst exceeded the 30-second response budget."
+              : error instanceof Error
+                ? error.message
+                : "The Analyst stream failed.",
+            items: [] as StreamItem[],
+            timedOut,
+          };
+        }
+        const timedOut = timeoutMs > 0 && attemptController.signal.aborted && !controller.signal.aborted;
+        cleanupAttempt();
+        if (timedOut) {
+          return {
+            ok: false as const,
+            source,
+            error: "Aura Analyst exceeded the 30-second response budget.",
+            items: [] as StreamItem[],
+            timedOut: true,
+          };
+        }
         return {
           ok: true as const,
           source,
           error: final.error,
           items: final.items,
+          timedOut: false,
         };
       };
 
       try {
-        let result = await runOnce(trimmed);
+        const liveOnly = analystMode === "live" || config?.analyst.mode === "live";
+        let result = await runOnce(trimmed, liveOnly ? "live" : analystMode, !liveOnly && analystMode === "auto" ? 30_000 : 0);
+        if (!result.ok && result.timedOut && !liveOnly && analystMode === "auto") {
+          result = await runOnce(trimmed, "fixture");
+          patch({ degradedReason: "live answer exceeded 30 seconds; showing reviewed answer" });
+        }
         if (!result.ok) {
           patch({
             streaming: false,
@@ -312,7 +382,15 @@ export function AnalystWorkspace({
         // (error 1706). Retry once on the same turn with an explicit SQL constraint.
         if (result.source === "live" && turnLooksLikeDialectError(result.items, result.error)) {
           patch({ items: [], error: null, streaming: true });
-          result = await runOnce(`${trimmed}\n\n${SINGLESTORE_SQL_RETRY_HINT}`);
+          result = await runOnce(
+            `${trimmed}\n\n${SINGLESTORE_SQL_RETRY_HINT}`,
+            liveOnly ? "live" : analystMode,
+            !liveOnly && analystMode === "auto" ? 30_000 : 0
+          );
+          if (!result.ok && result.timedOut && !liveOnly && analystMode === "auto") {
+            result = await runOnce(trimmed, "fixture");
+            patch({ degradedReason: "live retry exceeded 30 seconds; showing reviewed answer" });
+          }
           if (!result.ok) {
             patch({
               streaming: false,
@@ -340,7 +418,7 @@ export function AnalystWorkspace({
         setPending(false);
       }
     },
-    [analystMode, anchorId, pageContext, pending, pinTranscript, tabId]
+    [analystMode, anchorId, config, pageContext, pending, pinTranscript, tabId]
   );
 
   const modeNote = useMemo(() => {
@@ -353,7 +431,7 @@ export function AnalystWorkspace({
     if (analystMode === "live") {
       return "Live mode: answers come from Aura Analyst, and a failure is shown rather than hidden.";
     }
-    return "Auto mode: Aura Analyst is called first; if unavailable, a reviewed fixture is labelled on screen.";
+    return "Auto mode: Aura Analyst is called first; if unavailable, a reviewed fixture is labeled on screen.";
   }, [analystMode, configured]);
 
   return (
@@ -401,52 +479,39 @@ export function AnalystWorkspace({
           </Banner>
         )}
 
-        <div className="rounded-[14px] border border-[#bde5d6] bg-[var(--accent-soft)] p-3">
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-bold text-[var(--accent-dark)]">
-                Presenter-safe questions
-              </p>
-              <p className="mt-0.5 text-[10px] leading-4 text-[var(--ink-muted)]">
-                Reviewed for this story and its decision boundaries.
-              </p>
-            </div>
-            <Pill tone="good">Recommended</Pill>
-          </div>
-          <div className="grid gap-2">
-            {displayCuratedStarters.map((starter) => (
-              <button
-                key={starter}
-                type="button"
-                className="min-h-11 rounded-[10px] border border-[#cde5da] bg-[var(--surface)] px-3 py-2.5 text-left text-[12px] font-semibold leading-5 text-[var(--ink-soft)] shadow-sm transition-colors hover:border-[#8bcdb5] hover:text-[var(--accent-dark)]"
-                disabled={pending}
-                onClick={() => void ask(starter)}
-              >
-                {starter} <span className="text-[var(--accent)]">↗</span>
-              </button>
-            ))}
-          </div>
-          {displayAdditionalStarters.length > 0 && (
-            <details className="mt-2">
-              <summary className="cursor-pointer text-[10px] font-semibold text-[var(--ink-muted)]">
-                More suggested questions
-              </summary>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {displayAdditionalStarters.map((starter) => (
-                  <button
-                    key={starter}
-                    type="button"
-                    className="rounded-[9px] border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-left text-[11px] leading-4 text-[var(--ink-soft)]"
-                    disabled={pending}
-                    onClick={() => void ask(starter)}
-                  >
-                    {starter}
-                  </button>
-                ))}
-              </div>
-            </details>
-          )}
+        <div className="grid gap-2">
+          {displayCuratedStarters.map((starter) => (
+            <button
+              key={starter}
+              type="button"
+              className="min-h-11 rounded-[10px] border border-[#cde5da] bg-[var(--surface)] px-3 py-2.5 text-left text-[12px] font-semibold leading-5 text-[var(--ink-soft)] shadow-sm transition-colors hover:border-[#8bcdb5] hover:text-[var(--accent-dark)]"
+              disabled={pending}
+              onClick={() => void ask(starter)}
+            >
+              {starter} <span className="text-[var(--accent)]">↗</span>
+            </button>
+          ))}
         </div>
+        {displayAdditionalStarters.length > 0 && (
+          <details>
+            <summary className="cursor-pointer text-[10px] font-semibold text-[var(--ink-muted)]">
+              More suggested questions
+            </summary>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {displayAdditionalStarters.map((starter) => (
+                <button
+                  key={starter}
+                  type="button"
+                  className="rounded-[9px] border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-left text-[11px] leading-4 text-[var(--ink-soft)]"
+                  disabled={pending}
+                  onClick={() => void ask(starter)}
+                >
+                  {starter}
+                </button>
+              ))}
+            </div>
+          </details>
+        )}
 
         <div
           ref={transcriptRef}

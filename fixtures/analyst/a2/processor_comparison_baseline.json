@@ -4,19 +4,19 @@
   "id": "processor_comparison_baseline",
   "latency_ms": 3100,
   "match": [
-    "rank processors",
-    "compare processor",
+    "rank payment lanes",
+    "compare processor network country",
     "against baseline",
-    "processor rail comparison"
+    "lane comparison"
   ],
-  "prompt": "During the weakest window, rank processors and rails against the prior seven-day baseline.",
+  "prompt": "During the weakest window, rank payment lanes against the prior seven-day baseline.",
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
       "chart": null,
       "error": null,
       "sql": {
-        "command": "WITH recent AS (\n  SELECT processor_id, processor_name, rail,\n         SUM(attempts) AS attempts,\n         SUM(approvals) / SUM(attempts) AS approval_rate,\n         MAX(p95_latency_ms) AS p95_latency_ms\n  FROM aa_payment_performance_hourly\n  WHERE hour_start >= (SELECT MAX(hour_start) FROM aa_payment_performance_hourly)\n  GROUP BY processor_id, processor_name, rail\n),\nbaseline AS (\n  SELECT processor_id,\n         SUM(approvals) / SUM(attempts) AS approval_rate,\n         MAX(p95_latency_ms) AS p95_latency_ms\n  FROM aa_payment_performance_hourly\n  WHERE hour_start < (SELECT MAX(hour_start) FROM aa_payment_performance_hourly)\n  GROUP BY processor_id\n)\nSELECT r.processor_id, r.processor_name, r.rail, r.attempts,\n       r.approval_rate, b.approval_rate AS baseline_approval_rate,\n       r.approval_rate - b.approval_rate AS approval_rate_change,\n       r.p95_latency_ms, b.p95_latency_ms AS baseline_p95_latency_ms\nFROM recent r JOIN baseline b ON b.processor_id = r.processor_id\nORDER BY approval_rate_change",
+        "command": "WITH bounds AS (\n  SELECT MAX(hour_start) AS weak_hour\n  FROM aa_payment_performance_hourly\n),\nrecent AS (\n  SELECT p.processor_id, p.processor_name, p.rail, p.card_network, p.issuer_country,\n         SUM(attempts) AS attempts,\n         SUM(approvals) / SUM(attempts) AS approval_rate,\n         MAX(p95_latency_ms) AS p95_latency_ms\n  FROM aa_payment_performance_hourly p CROSS JOIN bounds b\n  WHERE p.hour_start = b.weak_hour\n  GROUP BY p.processor_id, p.processor_name, p.rail, p.card_network, p.issuer_country\n),\nbaseline AS (\n  SELECT p.processor_id, p.card_network, p.issuer_country,\n         SUM(approvals) / SUM(attempts) AS approval_rate,\n         MAX(p95_latency_ms) AS p95_latency_ms\n  FROM aa_payment_performance_hourly p CROSS JOIN bounds b\n  WHERE p.hour_start < b.weak_hour\n  GROUP BY p.processor_id, p.card_network, p.issuer_country\n)\nSELECT r.processor_id, r.processor_name, r.rail, r.card_network, r.issuer_country, r.attempts,\n       r.approval_rate, b.approval_rate AS baseline_approval_rate,\n       r.approval_rate - b.approval_rate AS approval_rate_change,\n       r.p95_latency_ms, b.p95_latency_ms AS baseline_p95_latency_ms\nFROM recent r JOIN baseline b\n  ON b.processor_id = r.processor_id\n AND b.card_network = r.card_network\n AND b.issuer_country = r.issuer_country\nORDER BY approval_rate_change",
         "confidence_score": 0.95,
         "tables_used": [
           "aa_payment_performance_hourly"
@@ -27,6 +27,8 @@
           "processor_id",
           "processor_name",
           "rail",
+          "card_network",
+          "issuer_country",
           "attempts",
           "approval_rate",
           "baseline_approval_rate",
@@ -34,16 +36,31 @@
           "p95_latency_ms",
           "baseline_p95_latency_ms"
         ],
-        "row_count": 4,
+        "row_count": 8,
         "rows": [
           [
             "P1",
             "Northwind Pay",
             "card_ecommerce",
-            598,
+            "Mastercard",
+            "US",
+            199,
+            0.9698,
+            0.97,
+            -0.000151,
+            150,
+            150
+          ],
+          [
+            "P1",
+            "Northwind Pay",
+            "card_ecommerce",
+            "Visa",
+            "US",
+            399,
             0.9699,
             0.97,
-            -0.0001,
+            -7.5e-05,
             150,
             150
           ],
@@ -51,10 +68,38 @@
             "P2",
             "Cardinal Rails",
             "card_ecommerce",
-            797,
+            "Mastercard",
+            "GB",
+            399,
+            0.9599,
+            0.96,
+            -0.0001,
+            180,
+            180
+          ],
+          [
+            "P2",
+            "Cardinal Rails",
+            "card_ecommerce",
+            "Mastercard",
+            "US",
+            199,
             0.9598,
             0.96,
-            -0.000151,
+            -0.000201,
+            180,
+            180
+          ],
+          [
+            "P2",
+            "Cardinal Rails",
+            "card_ecommerce",
+            "Visa",
+            "GB",
+            199,
+            0.9598,
+            0.96,
+            -0.000201,
             180,
             180
           ],
@@ -62,7 +107,22 @@
             "P3",
             "Vantage Gateway",
             "card_present",
-            398,
+            "Amex",
+            "US",
+            199,
+            0.9497,
+            0.95,
+            -0.000251,
+            200,
+            200
+          ],
+          [
+            "P3",
+            "Vantage Gateway",
+            "card_present",
+            "Visa",
+            "US",
+            199,
             0.9497,
             0.95,
             -0.000251,
@@ -73,6 +133,8 @@
             "P4",
             "Meridian Direct",
             "account_to_account",
+            "Visa",
+            "DE",
             199,
             0.9397,
             0.94,
@@ -83,7 +145,7 @@
         ],
         "truncated": false
       },
-      "text": "Comparing the most recent logical hour against the preceding seven logical days, every processor is within a fraction of a point of its own baseline approval rate, and p95 latency is unchanged. There is no processor-level deviation in this period."
+      "text": "Comparing processor, network, and issuer-country lanes in the most recent logical hour against the preceding seven logical days, every lane remains close to its own baseline. There is no material lane-level deviation in this period."
     }
   ],
   "scenario_state": "baseline"

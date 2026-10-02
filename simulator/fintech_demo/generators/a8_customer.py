@@ -1,4 +1,4 @@
-"""A8 Explain My Money baseline: one customer's transaction history.
+"""A8 Embedded Insights Strategy baseline: one customer's transaction history.
 
 Every view migration 012 creates is physically filtered to ``CUST-0001``
 (spec section 12.3), so this baseline only needs to be rich for that one

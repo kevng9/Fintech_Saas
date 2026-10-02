@@ -86,6 +86,7 @@ SELECT
     fa.channel AS channel,
     fa.fraud_type AS fraud_type,
     fa.score AS score,
+    fa.reason_codes AS reason_codes,
     pe.merchant_id AS merchant_id,
     dm.merchant_name AS merchant_name,
     dm.merchant_category AS merchant_category,

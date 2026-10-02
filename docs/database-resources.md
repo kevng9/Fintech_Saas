@@ -74,8 +74,9 @@ All dimensions except `dim_geography` are template-seeded and cloned per run.
   run-scoped, one row per processor. **Primary key:** `(run_id, processor_id)`.
 - **`dim_geography`** — country, region, and risk-band lookup; global rather
   than run-scoped, one row per geography. **Primary key:** `(geography_id)`.
-- **`dim_product`** — product name, family, and channel; run-scoped, one row per
-  product. **Primary key:** `(run_id, product_id)`.
+- **`dim_product`** — product name, family, channel, and an illustrative
+  first-year value per opened account (`annual_value_usd`, set per family);
+  run-scoped, one row per product. **Primary key:** `(run_id, product_id)`.
 - **`dim_device`** — device type, OS family, and risk band; run-scoped, one row
   per device. **Primary key:** `(run_id, device_id)`.
 - **`dim_entity`** — legal/treasury entity and currency; run-scoped, one row per
@@ -90,7 +91,7 @@ All 25 fact tables are run-scoped, template/reset cloned, and columnstore tables
 with explicit shard and sort keys. The keys below are the complete physical-key
 inventory for these tables.
 
-### A1 — Digital Journey
+### A1 — Digital Funnel Performance
 
 - **`digital_session`** — one account-opening session/customer/channel/intent
   cohort. **Shard:** `(run_id, session_id)`; **sort:** `(run_id, started_at)`.
@@ -101,13 +102,13 @@ inventory for these tables.
 - **`manual_review`** — one manual-review referral and resolution for an
   application. **Shard:** `(run_id, review_id)`; **sort:** `(run_id, referred_at)`.
 
-### A2 — Payment Pulse
+### A2 — Payment Performance Management
 
 - **`payment_event`** — one synthetic authorization attempt, including response,
   latency, processor, merchant, customer, and normalized amount.
   **Shard:** `(run_id, payment_id)`; **sort:** `(run_id, event_time)`.
 
-### A3 — Fraud Strategy
+### A3 — Fraud Strategy Optimization
 
 - **`fraud_alert`** — one scored alert linked to a payment and optional device;
   an alert is not a fraud disposition. **Shard:** `(run_id, alert_id)`;
@@ -117,7 +118,7 @@ inventory for these tables.
 - **`fraud_evidence`** — one observed evidence item attached to a case.
   **Shard:** `(run_id, evidence_id)`; **sort:** `(run_id, observed_at)`.
 
-### A4 — AML Operations
+### A4 — Financial Crime Operations
 
 - **`aml_alert`** — one AML alert with rule, risk, queue, status, and SLA.
   **Shard:** `(run_id, alert_id)`; **sort:** `(run_id, created_at)`.
@@ -128,7 +129,7 @@ inventory for these tables.
 - **`aml_case_history`** — one previously closed human-dispositioned AML case.
   **Shard:** `(run_id, prior_case_id)`; **sort:** `(run_id, opened_at)`.
 
-### A5 — Disputes Operations
+### A5 — Dispute Operations Performance
 
 - **`dispute_case`** — one payment dispute with queue, owner, due time, status,
   priority, and amount. **Shard:** `(run_id, dispute_id)`;
@@ -140,7 +141,7 @@ inventory for these tables.
 - **`provisional_credit`** — one provisional-credit event and status.
   **Shard:** `(run_id, credit_id)`; **sort:** `(run_id, event_time)`.
 
-### A6 — Liquidity
+### A6 — Liquidity and Funding Management
 
 - **`cash_position_snapshot`** — one balance snapshot per entity/account/currency.
   **Shard:** `(run_id, entity_id, account_id)`; **sort:** `(run_id, snapshot_time)`.
@@ -151,7 +152,7 @@ inventory for these tables.
 - **`cash_flow_forecast`** — one forecast bucket per entity/currency/model.
   **Shard:** `(run_id, entity_id, bucket_time)`; **sort:** `(run_id, bucket_time)`.
 
-### A7 — Credit Risk
+### A7 — Credit and Exposure Management
 
 - **`credit_application`** — one credit request and operational review state;
   it does not encode an Aura decision. **Shard:** `(run_id, application_id)`;
@@ -162,7 +163,7 @@ inventory for these tables.
   portfolio snapshot time. **Shard:** `(run_id, facility_id)`;
   **sort:** `(run_id, as_of_time)`.
 
-### A8 — Customer Money
+### A8 — Embedded Insights Strategy
 
 - **`customer_transaction`** — one synthetic account transaction across all
   customers in the run; Domain views later isolate one demo customer.
@@ -177,16 +178,17 @@ Every view joins `demo_active_run` on `run_id` and applies the active logical
 clock. The Domain manifests expose these views only; control and base tables are
 not attached to Domains.
 
-### A1 — Digital Journey
+### A1 — Digital Funnel Performance
 
 - **`aa_digital_funnel`** — daily/channel funnel volume and conversion;
   logical-time filters sessions, applications, and referrals.
 - **`aa_digital_review_comparison`** — review-path × product outcomes over the
   active run; applications are visible only through logical time.
-- **`aa_digital_intent_cohort`** — daily intent-cohort × channel conversion and
-  scenario activity; all contributing events are logically time-bounded.
+- **`aa_digital_intent_cohort`** — daily intent-cohort × channel conversion,
+  submitted and opened value at illustrative product values, and scenario
+  activity; all contributing events are logically time-bounded.
 
-### A2 — Payment Pulse
+### A2 — Payment Performance Management
 
 - **`aa_payment_performance_hourly`** — logical hour × processor × rail × network
   × issuer-country authorization performance through logical time.
@@ -195,16 +197,17 @@ not attached to Domains.
 - **`aa_payment_event_sample`** — one authorization attempt, limited to the last
   six logical hours and enriched with processor, merchant, and geography.
 
-### A3 — Fraud Strategy
+### A3 — Fraud Strategy Optimization
 
 - **`aa_fraud_loss_summary`** — channel × fraud-type case outcomes and
   human-confirmed loss through logical time.
-- **`aa_fraud_segment_evidence`** — one case with payment, merchant, customer,
-  account-age, and device evidence; cases are visible through logical time.
+- **`aa_fraud_segment_evidence`** — one case with alert reason codes (a JSON
+  array), payment, merchant, customer, account-age, and device evidence; cases
+  are visible through logical time.
 - **`aa_fraud_case_review`** — one case with alert and evidence counts for human
   review; cases are visible through logical time.
 
-### A4 — AML Operations
+### A4 — Financial Crime Operations
 
 - **`aa_aml_backlog`** — open backlog at rule × risk × queue × priority grain,
   with age and SLA risk computed from logical time.
@@ -214,16 +217,17 @@ not attached to Domains.
 - **`aa_aml_entity_activity`** — customer/account-level linked transaction and
   prior-case activity; alerts and linked payments are logically time-bounded.
 
-### A5 — Disputes Operations
+### A5 — Dispute Operations Performance
 
-- **`aa_dispute_sla_risk`** — opened day × queue × reason × priority open
-  disputes and SLA risk, evaluated against logical time.
-- **`aa_dispute_queue_driver`** — opened day × queue × reason volume/value
-  through logical time.
+- **`aa_dispute_sla_risk`** — opened day × queue × reason × priority × merchant
+  open disputes and SLA risk, evaluated against logical time. The merchant
+  comes from the disputed payment.
+- **`aa_dispute_queue_driver`** — opened day × queue × reason × merchant
+  volume/value through logical time.
 - **`aa_dispute_timeline`** — one unioned case, contact, or provisional-credit
   timeline event per dispute, each source filtered through logical time.
 
-### A6 — Liquidity
+### A6 — Liquidity and Funding Management
 
 - **`aa_liquidity_position`** — latest logical-time position per
   entity/account/currency plus pending settlements and queued payments.
@@ -232,7 +236,7 @@ not attached to Domains.
 - **`aa_funding_window`** — one queued payment created by logical time and due
   within seven logical days, with a next-24-hours flag.
 
-### A7 — Credit Risk
+### A7 — Credit and Exposure Management
 
 - **`aa_credit_operations`** — submitted day × product × channel application
   volume and operational review metrics through logical time.
@@ -242,7 +246,7 @@ not attached to Domains.
   industry × geography × risk-grade grain, with explicitly illustrative pending
   application pro forma amounts.
 
-### A8 — Customer Money
+### A8 — Embedded Insights Strategy
 
 All three A8 views have defense-in-depth customer isolation: in addition to
 active-run and logical-time filtering, SQL physically enforces

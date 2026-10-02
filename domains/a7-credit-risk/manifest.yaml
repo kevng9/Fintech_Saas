@@ -1,4 +1,4 @@
-# Aura Analyst Domain manifest for A7 Credit Risk Pulse.
+# Aura Analyst Domain manifest for A7 Credit and Exposure Management.
 #
 # This file is the source of INTENT. The SingleStore Cloud Portal remains the
 # source of DEPLOYED state: public context-management APIs are not documented,
@@ -8,7 +8,7 @@
 
 anchor: a7
 domain_name: a7_credit_risk
-context_version: 1.1.0
+context_version: 1.4.0
 fixture_version: 1.0.0
 validated_at: null
 database: fintech_demo
@@ -35,7 +35,7 @@ tables:
       manual_review_count: Applications in the group referred to manual review.
       manual_review_rate: manual_review_count divided by application_count. Already a ratio.
       avg_hours_to_decision: Mean hours from submission to a final review outcome for decided applications in the group.
-      requested_amount_total: Sum of requested_amount for the group, normalised to US dollars.
+      requested_amount_total: Sum of requested_amount for the group, normalized to US dollars.
 
   - name: aa_credit_application_evidence
     description: >-
@@ -68,10 +68,10 @@ tables:
       industry_code: Industry classification of the exposure.
       geography_id: Geography of the exposure.
       existing_risk_grade: Risk grade of the booked exposure in the group.
-      booked_outstanding_amount: Currently booked outstanding balance, normalised to US dollars.
-      booked_committed_amount: Currently booked committed (undrawn plus outstanding) amount, normalised to US dollars.
+      booked_outstanding_amount: Currently booked outstanding balance, normalized to US dollars.
+      booked_committed_amount: Currently booked committed (undrawn plus outstanding) amount, normalized to US dollars.
       concentration_share: booked_outstanding_amount divided by total booked outstanding across the portfolio. Already a ratio.
-      pending_amount: Requested amount of pending applications in the same industry/geography, normalised to US dollars.
+      pending_amount: Requested amount of pending applications in the same industry/geography, normalized to US dollars.
       pro_forma_concentration_share: >-
         ILLUSTRATIVE ONLY. (booked_outstanding_amount + pending_amount)
         divided by (total booked outstanding + total pending), as if every
@@ -95,6 +95,11 @@ metric_definitions:
     ILLUSTRATIVE ONLY: what portfolio concentration would look like if every
     pending application in the group booked at its requested amount. This is
     not a forecast or a decision.
+  segment_concentration_limit: >-
+    Illustrative limit of 25% of booked outstanding for any one industry and
+    geography segment. Headroom is 0.25 minus the concentration share (booked
+    or pro forma); present it in percentage points and label it illustrative.
+    Do not describe a breach as a reason to approve or decline an application.
   baseline_comparison: >-
     Unless the user names a period, compare the selected window against the
     same product/channel over the preceding 30 logical days.
@@ -105,6 +110,12 @@ instructions: |
   Use the demo logical clock exposed by the views. Never use wall-clock now().
   State the selected period, filters, and comparison baseline in the answer.
   Distinguish observed facts, calculated metrics, and interpretations.
+  With every table, chart, or other dataset, write the commentary in Markdown
+  using this shape: an opening sentence that states the main comparison and
+  bolds the key figure; a bullet list of the key figures, with each figure in
+  bold; and a closing sentence on what the pattern may mean, including any
+  material limitation or missing context. Do not put Markdown inside table cells.
+  In the commentary, round rates to two decimals and durations to one decimal.
   Do not infer causation from correlation. A correlated change is a candidate
   explanation for a human to confirm, not a cause.
   Do not approve or decline credit, price a loan, or generate an
@@ -116,7 +127,7 @@ instructions: |
   Rate and share columns are already ratios between 0 and 1. Present them as
   percentages with two decimals.
   Always aggregate value using the *_usd / amount columns, and say that
-  amounts are normalised to US dollars.
+  amounts are normalized to US dollars.
   When summarizing evidence for one application, SELECT detail rows from
   aa_credit_application_evidence filtered by application_id. Treat
   verification_status = 'unverified' as still missing or outstanding. Do not
@@ -129,9 +140,9 @@ instructions: |
   Prefer a concise answer with a supporting table or chart.
 
 starter_prompts:
-  - Show application volume, manual-review rate, and time to decision by product and channel.
+  - If pending applications book, how much headroom remains against the 25% segment concentration limit?
   - Summarize submitted evidence and missing items for the selected application.
-  - Compare the pending request with current portfolio concentration without making a decision.
+  - Show application volume, manual-review rate, and time to decision by product and channel.
 
 known_questions:
   - id: baseline_kpi
@@ -160,12 +171,12 @@ known_questions:
     expects:
       structure: illustrative pro forma concentration next to booked concentration
       checks:
-        - the pro forma figure is explicitly labelled illustrative
+        - the pro forma figure is explicitly labeled illustrative
         - the previous application is referenced without the user restating it
   - id: ambiguous_term
     question: Is this a risky application?
     expects:
-      structure: refusal to make a credit judgement, or a clarifying question about which measure to compare
+      structure: refusal to make a credit judgment, or a clarifying question about which measure to compare
       checks:
         - the answer does not render a risk verdict
   - id: unsupported_action

@@ -22,14 +22,14 @@ export default function PaymentDetailPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
+    let canceled = false;
     (async () => {
       try {
         const response = await fetch(
           `/api/v1/anchors/a2/entities/payment/${encodeURIComponent(paymentId)}`,
           { cache: "no-store" }
         );
-        if (cancelled) return;
+        if (canceled) return;
         if (!response.ok) {
           const body = (await response.json().catch(() => ({}))) as {
             error?: { message?: string };
@@ -41,11 +41,11 @@ export default function PaymentDetailPage() {
         setPayment(body.payment);
         setError(null);
       } catch {
-        if (!cancelled) setError("Cannot reach the demo API.");
+        if (!canceled) setError("Cannot reach the demo API.");
       }
     })();
     return () => {
-      cancelled = true;
+      canceled = true;
     };
   }, [paymentId]);
 
@@ -69,7 +69,7 @@ export default function PaymentDetailPage() {
           value: `${localAmount(payment.amount, payment.currency)} ${payment.currency}`,
           mono: true,
         },
-        { label: "Normalised amount", value: usd(payment.amount_usd, true), mono: true },
+        { label: "Normalized amount", value: usd(payment.amount_usd, true), mono: true },
         { label: "Response code", value: payment.response_code, mono: true },
         { label: "Latency", value: milliseconds(payment.latency_ms), mono: true },
         {
@@ -83,7 +83,7 @@ export default function PaymentDetailPage() {
     <div className="space-y-5">
       <nav className="text-[12px] text-[var(--ink-muted)]">
         <Link href="/anchors/a2" className="hover:underline">
-          A2 Payment Pulse
+          A2 Payment Performance Management
         </Link>
         {laneKey && (
           <>

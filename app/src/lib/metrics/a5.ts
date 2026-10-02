@@ -1,9 +1,9 @@
 /**
- * Deterministic A5 Dispute Resolution Lens (Disputes Operations) queries.
+ * Deterministic A5 Dispute Operations Performance (Disputes Operations) queries.
  *
  * SLA risk is computed from `due_at` against the demo logical clock, never
  * wall-clock time (database/migrations/009_a5_disputes.sql). Adjudication and
- * provisional credit stay with authorised agents.
+ * provisional credit stay with authorized agents.
  */
 
 import { query } from "../db";
@@ -41,22 +41,24 @@ async function slaTotals(): Promise<SlaRiskTotals> {
 }
 
 interface SlaRiskRow {
-  opened_date: string;
   queue_id: string;
   reason_code: string;
-  priority: string;
+  merchant_name: string | null;
   open_dispute_count: number;
   sla_risk_count: number;
   sla_risk_amount_total: number;
-  disputed_amount_total: number;
   nearest_due_at: string;
 }
 
 async function riskByQueue(limit = 20): Promise<SlaRiskRow[]> {
   return query<SlaRiskRow>(
-    `SELECT opened_date, queue_id, reason_code, priority, open_dispute_count,
-            sla_risk_count, sla_risk_amount_total, disputed_amount_total, nearest_due_at
+    `SELECT queue_id, reason_code, merchant_name,
+            SUM(open_dispute_count) AS open_dispute_count,
+            SUM(sla_risk_count) AS sla_risk_count,
+            SUM(sla_risk_amount_total) AS sla_risk_amount_total,
+            MIN(nearest_due_at) AS nearest_due_at
      FROM aa_dispute_sla_risk
+     GROUP BY queue_id, reason_code, merchant_name
      ORDER BY sla_risk_count DESC, sla_risk_amount_total DESC
      LIMIT ${Math.max(1, Math.min(Math.trunc(limit), 200))}`
   );
@@ -154,12 +156,12 @@ export async function overview(): Promise<SharedOverviewData> {
 
   const driverTable: SharedOverviewData["drivers"] = {
     title: "Disputes at risk of SLA breach",
-    subtitle: "Ranked by count, then value at risk",
+    subtitle: "By queue, reason, and merchant; ranked by count, then value at risk",
     entityType: "dispute",
     columns: [
       { key: "queue_id", label: "Queue" },
       { key: "reason_code", label: "Reason" },
-      { key: "priority", label: "Priority" },
+      { key: "merchant_name", label: "Merchant" },
       { key: "open_dispute_count", label: "Open", format: "count" },
       { key: "sla_risk_count", label: "SLA risk", format: "count" },
       { key: "sla_risk_amount_total", label: "Value at risk", format: "currency" },
@@ -168,7 +170,7 @@ export async function overview(): Promise<SharedOverviewData> {
     rows: riskRows.map((row) => ({
       queue_id: row.queue_id,
       reason_code: row.reason_code,
-      priority: row.priority,
+      merchant_name: row.merchant_name ?? "Unknown",
       open_dispute_count: Number(row.open_dispute_count),
       sla_risk_count: Number(row.sla_risk_count),
       sla_risk_amount_total: Number(row.sla_risk_amount_total),
@@ -197,24 +199,42 @@ async function change(): Promise<SharedChangePayload | null> {
   if (!execution?.window_start || !execution?.window_end) return null;
 
   const expected = await scenarioExpectedDeltas(scenarioId);
-  const segment = (expected.segment as Record<string, string> | undefined) ?? {};
-  const label = segment.reason_code ?? "MERCHANT_OUTAGE";
-
-  const totals = await slaTotals();
+  const injected = await query<{
+    opened: number;
+    sla_risk: number;
+    merchant_count: number;
+    merchant_name: string | null;
+  }>(
+    `SELECT
+        COUNT(*) AS opened,
+        SUM(CASE WHEN dc.due_at <= DATE_ADD(?, INTERVAL 24 HOUR) THEN 1 ELSE 0 END) AS sla_risk,
+        COUNT(DISTINCT pe.merchant_id) AS merchant_count,
+        MIN(dm.merchant_name) AS merchant_name
+     FROM dispute_case dc
+     LEFT JOIN payment_event pe ON pe.run_id = dc.run_id AND pe.payment_id = dc.payment_id
+     LEFT JOIN dim_merchant dm ON dm.run_id = pe.run_id AND dm.merchant_id = pe.merchant_id
+     WHERE dc.run_id = ? AND dc.scenario_id = ?`,
+    [execution.window_start, runId, scenarioId]
+  );
+  const row = injected[0];
+  const merchantLabel =
+    Number(row?.merchant_count) === 1 && row?.merchant_name
+      ? `Outage disputes at ${row.merchant_name}`
+      : "Merchant-outage dispute wave";
 
   return buildChangePayload({
     scenarioId,
     execution,
     expected,
-    segmentLabel: String(label),
+    segmentLabel: `${merchantLabel} (PAID_BY_OTHER_MEANS)`,
     specs: [
-      { label: "Queue depth", key: "open_dispute_count", format: "count" },
-      { label: "SLA-risk count", key: "sla_risk_count", format: "count" },
+      { label: "Outage disputes in queue", key: "queue_depth_delta", format: "count" },
+      { label: "Credit target within 24 hours", key: "sla_risk_delta", format: "count" },
     ],
-    before: { open_dispute_count: null, sla_risk_count: null },
+    before: { queue_depth_delta: 0, sla_risk_delta: 0 },
     after: {
-      open_dispute_count: totals.open_dispute_count,
-      sla_risk_count: totals.sla_risk_count,
+      queue_depth_delta: Number(row?.opened ?? 0),
+      sla_risk_delta: Number(row?.sla_risk ?? 0),
     },
   });
 }
@@ -238,11 +258,16 @@ export async function entity(
     queue_id: string;
     owner_id: string;
     disputed_amount: number;
+    merchant_id: string | null;
+    merchant_name: string | null;
   }>(
     `SELECT dc.dispute_id, dc.payment_id, dc.customer_id, dc.opened_at, dc.due_at, dc.status,
-            dc.reason_code, dc.priority, dc.queue_id, dc.owner_id, dc.disputed_amount
+            dc.reason_code, dc.priority, dc.queue_id, dc.owner_id, dc.disputed_amount,
+            pe.merchant_id, dm.merchant_name
      FROM dispute_case dc
      JOIN demo_active_run ar ON ar.singleton_id = 1 AND ar.run_id = dc.run_id
+     LEFT JOIN payment_event pe ON pe.run_id = dc.run_id AND pe.payment_id = dc.payment_id
+     LEFT JOIN dim_merchant dm ON dm.run_id = pe.run_id AND dm.merchant_id = pe.merchant_id
      WHERE dc.dispute_id = ?
      LIMIT 1`,
     [disputeId]
@@ -293,6 +318,10 @@ export async function entity(
         title: "Case summary",
         fields: [
           { label: "Payment", value: row.payment_id, mono: true },
+          {
+            label: "Merchant",
+            value: row.merchant_name ? `${row.merchant_name} (${row.merchant_id})` : "Unknown",
+          },
           { label: "Customer", value: row.customer_id, mono: true },
           { label: "Opened", value: row.opened_at },
           { label: "Due", value: row.due_at },

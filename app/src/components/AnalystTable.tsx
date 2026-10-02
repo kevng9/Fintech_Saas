@@ -1,6 +1,6 @@
 "use client";
 
-import { count } from "@/lib/format";
+import { analystColumnIsNumeric, count, formatAnalystCell } from "@/lib/format";
 
 /** Result grid for Analyst answers, with numeric columns right-aligned. */
 export function AnalystTable({
@@ -18,8 +18,11 @@ export function AnalystTable({
     return <p className="py-3 text-[12px] text-[var(--ink-muted)]">No rows returned.</p>;
   }
 
-  const numericColumn = columns.map((_, index) =>
-    rows.every((row) => row[index] === null || typeof row[index] === "number")
+  const numericColumn = columns.map((column, index) =>
+    analystColumnIsNumeric(
+      column,
+      rows.map((row) => row[index] ?? null)
+    )
   );
 
   return (
@@ -40,11 +43,7 @@ export function AnalystTable({
               <tr key={rowIndex}>
                 {row.map((value, columnIndex) => (
                   <td key={columnIndex} className={numericColumn[columnIndex] ? "num mono" : ""}>
-                    {value === null
-                      ? "—"
-                      : typeof value === "number"
-                        ? count(value)
-                        : String(value)}
+                    {formatAnalystCell(value, columns[columnIndex] ?? "")}
                   </td>
                 ))}
               </tr>

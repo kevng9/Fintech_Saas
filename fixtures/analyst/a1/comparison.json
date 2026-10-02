@@ -8,9 +8,9 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "Manual review approves at 61.0% versus 88.0% for straight-through applications, a 27-point gap that is consistent with review existing to catch the harder cases.",
+      "text": "Straight-through applications approve at **70.16%** against **46.43%** for manual review, so straight-through is higher by **23.73** points.",
       "sql": {
-        "command": "SELECT review_path, approval_rate FROM aa_digital_review_comparison",
+        "command": "SELECT review_path, SUM(approved) / SUM(applications) AS approval_rate FROM aa_digital_review_comparison GROUP BY review_path",
         "confidence_score": 0.9,
         "tables_used": [
           "aa_digital_review_comparison"
@@ -23,12 +23,12 @@
         ],
         "rows": [
           [
-            "manual_review",
-            0.61
+            "straight_through",
+            0.7016
           ],
           [
-            "straight_through",
-            0.88
+            "manual_review",
+            0.4643
           ]
         ],
         "row_count": 2,

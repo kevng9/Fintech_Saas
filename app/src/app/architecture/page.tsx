@@ -8,6 +8,7 @@
  * reproducible.
  */
 
+import Link from "next/link";
 import { useDemoState } from "@/components/DemoStateProvider";
 import { Card, Pill } from "@/components/ui";
 import { count } from "@/lib/format";
@@ -86,11 +87,17 @@ export default function ArchitecturePage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-[22px] font-semibold tracking-tight">Architecture</h1>
+        <p className="label">Analytics Governance · Analytics Integration Architecture</p>
+        <h1 className="mt-1 text-[22px] font-semibold tracking-tight">Architecture</h1>
         <p className="mt-1 max-w-[85ch] text-[13px] leading-6 text-[var(--ink-soft)]">
           One engine, one Analyst deployment, one deterministic data generator. The demo is modular
           in the sense that matters: adding an anchor means adding views, a generator segment, a
-          scenario and a Domain, and nothing else changes.
+          scenario and a Domain, and nothing else changes. For buyer-facing differentiation and AI
+          cost talk tracks, open{" "}
+          <Link href="/value" className="font-semibold text-[var(--accent-dark)] hover:underline">
+            Value stories
+          </Link>
+          .
         </p>
       </header>
 

@@ -8,7 +8,7 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "312 disputes are open, and 41 are at risk of an SLA breach in the next 24 logical hours.",
+      "text": "**25** disputes are open, and **13** are at risk of an SLA breach in the next 24 logical hours, measured against the demo logical clock.",
       "sql": {
         "command": "SELECT SUM(open_dispute_count) AS open_dispute_count, SUM(sla_risk_count) AS sla_risk_count FROM aa_dispute_sla_risk",
         "confidence_score": 0.9,
@@ -23,8 +23,8 @@
         ],
         "rows": [
           [
-            312,
-            41
+            25,
+            13
           ]
         ],
         "row_count": 1,

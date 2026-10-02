@@ -48,7 +48,7 @@ anchors:
   # both true and fill `known_questions_passed_at` only after /admin/domain-check
   # passes for that anchor.
   - id: a1
-    name: Digital Journey Intelligence
+    name: Digital Funnel Performance
     status: available
     domain_name: a1_digital_journey
     manifest: domains/a1-digital-journey/manifest.yaml
@@ -60,7 +60,7 @@ anchors:
     scenario: A1_REVIEW_SPIKE
 
   - id: a2
-    name: Payment Pulse
+    name: Payment Performance Management
     status: available
     domain_name: a2_payment_pulse
     manifest: domains/a2-payment-pulse/manifest.yaml
@@ -74,7 +74,7 @@ anchors:
     scenario: A2_PROCESSOR_TIMEOUT
 
   - id: a3
-    name: Trace the Loss
+    name: Fraud Strategy Optimization
     status: available
     domain_name: a3_fraud_strategy
     manifest: domains/a3-fraud-strategy/manifest.yaml
@@ -86,7 +86,7 @@ anchors:
     scenario: A3_LOSS_CLUSTER
 
   - id: a4
-    name: Alert-to-Evidence
+    name: Financial Crime Operations
     status: available
     domain_name: a4_aml_operations
     manifest: domains/a4-aml-operations/manifest.yaml
@@ -98,7 +98,7 @@ anchors:
     scenario: A4_CORRESPONDENT_SPIKE
 
   - id: a5
-    name: Dispute Resolution Lens
+    name: Dispute Operations Performance
     status: available
     domain_name: a5_disputes_ops
     manifest: domains/a5-disputes-operations/manifest.yaml
@@ -110,7 +110,7 @@ anchors:
     scenario: A5_CASE_SURGE
 
   - id: a6
-    name: Liquidity Command Center
+    name: Liquidity and Funding Management
     status: available
     domain_name: a6_liquidity
     manifest: domains/a6-liquidity/manifest.yaml
@@ -122,7 +122,7 @@ anchors:
     scenario: A6_SETTLEMENT_DELAY
 
   - id: a7
-    name: Credit Risk Pulse
+    name: Credit and Exposure Management
     status: available
     domain_name: a7_credit_risk
     manifest: domains/a7-credit-risk/manifest.yaml
@@ -134,7 +134,7 @@ anchors:
     scenario: A7_PENDING_EXPOSURE
 
   - id: a8
-    name: Explain My Money
+    name: Embedded Insights Strategy
     status: available
     domain_name: a8_customer_money
     manifest: domains/a8-customer-money/manifest.yaml

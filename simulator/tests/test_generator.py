@@ -122,7 +122,7 @@ def test_baseline_rows_carry_no_scenario_tag(world: World, column: Columns) -> N
     assert all(column(row, "scenario_id") is None for row in world.generate_minute(1, 42))
 
 
-def test_amounts_are_normalised_to_usd(world: World, column: Columns) -> None:
+def test_amounts_are_normalized_to_usd(world: World, column: Columns) -> None:
     """Value widgets sum across currencies, so every row carries a USD amount."""
     rows = rows_for_hour(world, 12)
     assert rows

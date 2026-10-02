@@ -135,6 +135,7 @@ body {
 }
 
 table.grid {
+  display: table !important;
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
@@ -148,6 +149,11 @@ table.grid th {
   padding: 10px 12px;
   border-bottom: 1px solid var(--line);
   white-space: nowrap;
+}
+
+table.grid th.num,
+table.grid td.num {
+  text-align: right;
 }
 
 table.grid td {

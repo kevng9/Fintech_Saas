@@ -28,7 +28,14 @@ export function KpiTile({
   const improved = delta === null ? null : higherIsBetter ? delta >= 0 : delta <= 0;
   const material = delta !== null && Math.abs(delta) > (format === "percent" ? 0.0005 : 1);
   const statusTone = material ? (improved ? "good" : "bad") : "neutral";
-  const statusLabel = material ? (improved ? "Improving" : "Needs attention") : "Within baseline";
+  const statusLabel =
+    widget.baseline === null
+      ? "Observed"
+      : material
+        ? improved
+          ? "Improving"
+          : "Needs attention"
+        : "Within baseline";
 
   return (
     <section className="card relative overflow-hidden px-5 py-5">

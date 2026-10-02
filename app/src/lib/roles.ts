@@ -1,5 +1,5 @@
 /**
- * Server-side authorisation for demo controls.
+ * Server-side authorization for demo controls.
  *
  * Persona switching in the UI changes language and emphasis only. It never
  * grants a privilege. Injecting a scenario, pausing, changing speed, changing

@@ -1,0 +1,54 @@
+{
+  "anchor": "a3",
+  "fixture_version": "1.0.0",
+  "id": "rule_change_candidates",
+  "latency_ms": 1800,
+  "match": [
+    "what rule change should we review",
+    "how would you optimize this",
+    "what would you change"
+  ],
+  "prompt": "What rule change should the fraud strategy team review for this segment?",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "In card testing on card-not-present, **velocity_breach** appears on all **5** confirmed fraud cases and none of the 7 false positives, while **geo_anomaly** flagged all **7** false positives and no confirmed fraud.\n\n- velocity_breach: **5** confirmed fraud, **0** false positives.\n- cvv_retry: **5** confirmed fraud, **0** false positives.\n- geo_anomaly: **0** confirmed fraud, **7** false positives.\n\nTwo candidates for your fraud strategy team to test: raise case priority when velocity_breach fires on a device already linked to other alerts, and test whether a geo_anomaly alert with no other reason code could go to step-up authentication instead of a case. This rests on 12 cases from one burst, so back-test both against a longer window before changing a rule. I have not changed any rule.",
+      "sql": {
+        "command": "SELECT TRIM(BOTH '\"' FROM rc.table_col) AS reason_code,\n  SUM(e.human_disposition = 'confirmed_fraud') AS confirmed_fraud_cases,\n  SUM(e.human_disposition = 'legitimate') AS false_positive_cases\nFROM aa_fraud_segment_evidence e\nJOIN TABLE(JSON_TO_ARRAY(e.reason_codes)) rc\nWHERE e.channel = 'card_not_present' AND e.fraud_type = 'card_testing'\nGROUP BY reason_code\nORDER BY confirmed_fraud_cases DESC, false_positive_cases DESC",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_fraud_segment_evidence"
+        ]
+      },
+      "table": {
+        "columns": [
+          "reason_code",
+          "confirmed_fraud_cases",
+          "false_positive_cases"
+        ],
+        "rows": [
+          [
+            "velocity_breach",
+            5,
+            0
+          ],
+          [
+            "cvv_retry",
+            5,
+            0
+          ],
+          [
+            "geo_anomaly",
+            0,
+            7
+          ]
+        ],
+        "row_count": 3,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "after_injection"
+}

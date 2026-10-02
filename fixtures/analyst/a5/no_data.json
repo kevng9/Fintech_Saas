@@ -8,7 +8,7 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "There is no data for reason_code = 'COUNTERFEIT_GOODS' in this dataset. Reason codes present include DUPLICATE_CHARGE, SERVICE_NOT_RECEIVED, FRIENDLY_FRAUD, and MERCHANT_OUTAGE, so the filter returns no rows rather than a low value.",
+      "text": "There is no data for reason_code = 'COUNTERFEIT_GOODS' in this dataset. Reason codes present include DUPLICATE_CHARGE, GOODS_NOT_RECEIVED, FRAUD_CLAIM, BILLING_ERROR, and PAID_BY_OTHER_MEANS, so the filter returns no rows rather than a low value.",
       "sql": {
         "command": "SELECT * FROM aa_dispute_sla_risk WHERE reason_code = 'COUNTERFEIT_GOODS'",
         "confidence_score": 0.9,

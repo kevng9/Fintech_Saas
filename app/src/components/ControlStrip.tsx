@@ -88,6 +88,7 @@ export function ControlStrip() {
     setPresentationMode,
     pause,
     resume,
+    startUpdates,
     setSpeed,
     reset,
   } = useDemoState();
@@ -131,8 +132,23 @@ export function ControlStrip() {
       <div className="mx-auto flex min-h-10 max-w-[1480px] items-center gap-3 px-6 py-1.5">
         <span className="flex items-center gap-2 text-[11px] font-semibold text-[var(--ink-soft)]">
           <Dot tone={STREAM_TONE[state?.stream_status ?? "PREPARING"] ?? "neutral"} />
-          {state?.leader_alive ? "Live payment environment" : "Payment environment paused"}
+          {state?.leader_alive && running ? "Live payment environment" : "Payment environment paused"}
         </span>
+        {state && (!state.leader_alive || !running) && (
+          <button
+            type="button"
+            className="btn px-2.5 py-1 text-[11px]"
+            disabled={!isAdmin || busyAction !== null}
+            onClick={() =>
+              void act(
+                startUpdates,
+                "Live updates are running."
+              )
+            }
+          >
+            {busyAction === "start" ? "Starting…" : "Start live updates"}
+          </button>
+        )}
         <span className="h-3 w-px bg-[var(--line-strong)]" />
         <span className="text-[11px] text-[var(--ink-muted)]">
           Business time{" "}

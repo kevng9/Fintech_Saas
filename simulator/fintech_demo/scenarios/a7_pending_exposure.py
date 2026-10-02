@@ -57,8 +57,9 @@ DEFINITION = ScenarioDefinition(
         "tolerance": {"pro_forma_concentration_share": 0.0005, "booked_concentration_share": 0.0005},
         "narrative": (
             "Pending amount rises by USD 5,000,000; illustrative concentration "
-            "moves from 20.00 percent to 23.81 percent; booked exposure does not "
-            "change."
+            "moves from 20.00 percent to 23.81 percent, leaving 1.19 points of "
+            "headroom against the illustrative 25 percent segment limit; booked "
+            "exposure does not change."
         ),
     },
 )

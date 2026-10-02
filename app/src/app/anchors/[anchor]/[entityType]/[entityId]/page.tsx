@@ -43,14 +43,14 @@ export default function SharedEntityDetailPage() {
 
   useEffect(() => {
     if (!anchorId || !entityType || !entityId) return;
-    let cancelled = false;
+    let canceled = false;
     (async () => {
       try {
         const response = await fetch(
           `/api/v1/anchors/${anchorId}/entities/${entityType}/${encodeURIComponent(entityId)}?window=60`,
           { cache: "no-store" }
         );
-        if (cancelled) return;
+        if (canceled) return;
         if (!response.ok) {
           const body = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
           setError(body.error?.message ?? `Entity detail unavailable (${response.status}).`);
@@ -59,11 +59,11 @@ export default function SharedEntityDetailPage() {
         setData((await response.json()) as SharedEntityPayload);
         setError(null);
       } catch {
-        if (!cancelled) setError("Cannot reach the demo API.");
+        if (!canceled) setError("Cannot reach the demo API.");
       }
     })();
     return () => {
-      cancelled = true;
+      canceled = true;
     };
   }, [anchorId, entityType, entityId, stateSignature]);
 

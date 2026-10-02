@@ -11,7 +11,7 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "Confirmed fraud loss over the run totals $184,200 across five fraud types. account_takeover on card_not_present carries the most loss at $61,400, with a false-positive rate of 22.0%.",
+      "text": "Over the seven baseline days, **ATM first-party fraud** leads investigator-confirmed loss at **$1,519.75** from 2 confirmed cases.\n\n- Total confirmed loss: **$3,792.91** across **21** cases.\n- Overall false-positive rate: **66.67%** (12 legitimate of 18 dispositioned cases).\n- No segment has more than **2** confirmed cases.\n\nLoss is spread thinly across segments, so no single cluster stands out yet. Amounts are normalized to US dollars.",
       "sql": {
         "command": "SELECT channel, fraud_type, cases_total, confirmed_fraud_cases, confirmed_loss_usd, false_positive_rate\nFROM aa_fraud_loss_summary\nORDER BY confirmed_loss_usd DESC",
         "confidence_score": 0.9,
@@ -30,39 +30,47 @@
         ],
         "rows": [
           [
+            "atm",
+            "first_party",
+            2,
+            2,
+            1519.75,
+            0.0
+          ],
+          [
+            "card_present",
+            "card_testing",
+            1,
+            1,
+            840.84,
+            0.0
+          ],
+          [
             "card_not_present",
             "account_takeover",
-            58,
-            22,
-            61400,
-            0.22
-          ],
-          [
-            "ach",
-            "synthetic_identity",
-            41,
-            15,
-            48900,
-            0.19
+            1,
+            1,
+            526.16,
+            0.0
           ],
           [
             "card_not_present",
-            "card_testing",
-            63,
-            18,
-            39800,
-            0.31
+            "first_party",
+            3,
+            1,
+            524.86,
+            0.6667
           ],
           [
-            "wire",
-            "authorized_push_payment",
-            24,
-            9,
-            34100,
-            0.12
+            "atm",
+            "card_testing",
+            1,
+            1,
+            381.3,
+            0.0
           ]
         ],
-        "row_count": 4,
+        "row_count": 5,
         "truncated": false
       },
       "chart": null,

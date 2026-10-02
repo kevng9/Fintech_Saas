@@ -5,15 +5,16 @@
   "latency_ms": 1800,
   "match": [
     "pending request portfolio concentration",
-    "pro forma concentration"
+    "pro forma concentration",
+    "segment concentration limit headroom"
   ],
-  "prompt": "Compare the pending request with current portfolio concentration without making a decision.",
+  "prompt": "If pending applications book, how much headroom remains against the 25% segment concentration limit?",
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "Booked Transportation/CA concentration is 20.00% of the portfolio today. If the pending USD 5 million application booked at its requested amount, illustrative pro forma concentration would move to 23.81%. Booked exposure has not changed and this is not a forecast of what will book.",
+      "text": "Transportation in California would have **1.19 points** of headroom against the illustrative 25% segment limit if its pending USD 5 million application booked as requested, down from **5.00 points** today. These pro forma figures are illustrative, and booked exposure has not changed.\n\n- Booked concentration: **20.00%** of USD 100 million outstanding.\n- Illustrative pro forma concentration: **23.81%**.\n- Pending amount in the segment: **USD 5,000,000**.\n\nOne more application of similar size in this segment would exceed the limit, which a credit officer may want to weigh alongside the application's evidence exceptions.",
       "sql": {
-        "command": "SELECT industry_code, geography_id, concentration_share, pending_amount, pro_forma_concentration_share\nFROM aa_portfolio_concentration\nWHERE industry_code = 'Transportation' AND geography_id = 'CA'",
+        "command": "SELECT industry_code, geography_id, concentration_share, pending_amount, pro_forma_concentration_share, 0.25 - pro_forma_concentration_share AS limit_headroom\nFROM aa_portfolio_concentration\nORDER BY pro_forma_concentration_share DESC",
         "confidence_score": 0.9,
         "tables_used": [
           "aa_portfolio_concentration"
@@ -24,14 +25,16 @@
           "industry_code",
           "geography_id",
           "concentration_share",
-          "pro_forma_concentration_share"
+          "pro_forma_concentration_share",
+          "limit_headroom"
         ],
         "rows": [
           [
-            "Transportation",
-            "CA",
+            "TRANSPORTATION",
+            "GEO-USCA",
             0.2,
-            0.2381
+            0.2381,
+            0.0119
           ]
         ],
         "row_count": 1,

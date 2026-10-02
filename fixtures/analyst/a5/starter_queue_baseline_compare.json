@@ -4,16 +4,18 @@
   "id": "starter_queue_baseline_compare",
   "latency_ms": 1800,
   "match": [
-    "largest at risk queue prior 30 days",
+    "reason code driving at risk queue",
+    "merchant concentration",
+    "when did disputes arrive",
     "queue driver trend"
   ],
-  "prompt": "What explains the largest at-risk queue compared with the prior 30 days?",
+  "prompt": "Which reason code and merchant are driving the largest at-risk queue, and when did those disputes arrive?",
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "core_ops is the largest at-risk queue and its daily dispute volume has been flat at roughly 12-15 disputes per day over the prior 30 days, so today's SLA risk is driven by the MERCHANT_OUTAGE reason code rather than a change in overall queue volume.",
+      "text": "queue_disputes_escalated has the most SLA risk, but only **1** dispute: a DUPLICATE_CHARGE case at Alder Digital Markets, opened 2026-07-22 and due 2026-07-25 19:02.\n\n- The queue receives about **1** dispute per day, spread across four reason codes.\n- Every dispute traces to a different merchant, so nothing is concentrated.\n- No reason code shows a wave over the seven logical days of history.\n\nThere is no concentrated driver to investigate right now.",
       "sql": {
-        "command": "SELECT opened_date, reason_code, dispute_count\nFROM aa_dispute_queue_driver\nWHERE queue_id = 'core_ops'\nORDER BY opened_date DESC LIMIT 10",
+        "command": "SELECT opened_date, reason_code, merchant_name, SUM(dispute_count) AS dispute_count, SUM(disputed_amount_total) AS disputed_amount_total\nFROM aa_dispute_queue_driver\nWHERE queue_id = 'queue_disputes_escalated'\nGROUP BY opened_date, reason_code, merchant_name\nORDER BY opened_date",
         "confidence_score": 0.9,
         "tables_used": [
           "aa_dispute_queue_driver"
@@ -23,31 +25,53 @@
         "columns": [
           "opened_date",
           "reason_code",
-          "dispute_count"
+          "merchant_name",
+          "dispute_count",
+          "disputed_amount_total"
         ],
         "rows": [
           [
-            "2026-07-25",
-            "MERCHANT_OUTAGE",
-            20
-          ],
-          [
-            "2026-07-24",
+            "2026-07-22",
             "DUPLICATE_CHARGE",
-            13
+            "Alder Digital Markets",
+            1,
+            174.81
           ],
           [
             "2026-07-23",
             "DUPLICATE_CHARGE",
-            12
+            "Harbor Streaming Direct",
+            1,
+            84.29
+          ],
+          [
+            "2026-07-23",
+            "FRAUD_CLAIM",
+            "Harbor Electronics Retail",
+            1,
+            271.03
+          ],
+          [
+            "2026-07-24",
+            "GOODS_NOT_RECEIVED",
+            "Redstone Digital Direct",
+            1,
+            254.41
+          ],
+          [
+            "2026-07-25",
+            "BILLING_ERROR",
+            "Brightside Streaming Markets",
+            1,
+            164.88
           ]
         ],
-        "row_count": 3,
+        "row_count": 5,
         "truncated": false
       },
       "chart": null,
       "error": null
     }
   ],
-  "scenario_state": "any"
+  "scenario_state": "baseline"
 }

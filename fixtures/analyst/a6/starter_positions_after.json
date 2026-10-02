@@ -10,7 +10,7 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "Available 24-hour liquidity falls to USD 387 million after the injected settlement delay: EMEA Funding Ltd.'s expected inbound settlement was delayed by USD 25 million, which now shows as settlement-at-risk in the next funding window rather than as available liquidity.",
+      "text": "Available 24-hour liquidity fell to **USD 52.16 million**, down **USD 25.00 million**. Amounts are normalized to US dollars.\n\n- Synthetic Entity 01 in USD dropped from **USD 30.38 million** to **USD 5.38 million** and is now the tightest position.\n- Its expected inbound settlements fell from **USD 26.42 million** to **USD 1.42 million**.\n- Every other entity and currency is unchanged.\n\nThe whole movement sits in one entity and currency, which points to a single delayed inbound settlement. Treasury should confirm the cause with the counterparty.",
       "sql": {
         "command": "SELECT entity_name, currency, available_balance_usd, expected_inbound_settlements_usd, expected_outbound_settlements_usd, queued_payments_usd, available_liquidity_24h_usd\nFROM aa_liquidity_position\nORDER BY available_liquidity_24h_usd ASC",
         "confidence_score": 0.9,
@@ -23,33 +23,61 @@
           "entity_name",
           "currency",
           "available_balance_usd",
+          "expected_inbound_settlements_usd",
           "queued_payments_usd",
           "available_liquidity_24h_usd"
         ],
         "rows": [
           [
-            "EMEA Funding Ltd.",
-            "EUR",
-            96000000,
-            21000000,
-            63000000
-          ],
-          [
-            "APAC Settlement Pte.",
-            "SGD",
-            61000000,
-            9000000,
-            62000000
-          ],
-          [
-            "NorthAm Treasury Co.",
+            "Synthetic Entity 01",
             "USD",
-            210000000,
-            28000000,
-            262000000
+            4847887.3,
+            1418844.75,
+            315489.74,
+            5376760.31
+          ],
+          [
+            "Synthetic Entity 04",
+            "CAD",
+            6281967.74,
+            0,
+            419990.53,
+            5861977.21
+          ],
+          [
+            "Synthetic Entity 02",
+            "GBP",
+            8076492.56,
+            2116108.61,
+            591294.14,
+            7894490.53
+          ],
+          [
+            "Synthetic Entity 03",
+            "EUR",
+            8282534.79,
+            1790353.61,
+            531489.08,
+            8460423.98
+          ],
+          [
+            "Synthetic Entity 05",
+            "USD",
+            10039382.02,
+            96359.25,
+            446509.56,
+            9689231.71
+          ],
+          [
+            "Synthetic Entity 06",
+            "GBP",
+            14032034.86,
+            2187294.33,
+            619721.22,
+            14880159.32
           ]
         ],
-        "row_count": 3,
+        "row_count": 6,
         "truncated": false
       },
       "chart": null,

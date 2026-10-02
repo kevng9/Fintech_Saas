@@ -1,13 +1,14 @@
 import type { AnchorDefinition } from "./types";
 
 /**
- * A6 Liquidity Command Center. Positions and forecasts can be denominated in
- * any synthetic currency; every widget aggregates the normalised USD columns.
+ * A6 Liquidity and Funding Management. Positions and forecasts can be denominated in
+ * any synthetic currency; every widget aggregates the normalized USD columns.
  */
 export const a6: AnchorDefinition = {
   id: "a6",
-  name: "Liquidity Command Center",
+  name: "Liquidity and Funding Management",
   jobTitle: "Corporate Treasurer",
+  businessDecision: "Liquidity and Funding Management",
   criticalBusinessIssue:
     "Maintain sufficient liquidity and meet settlement obligations at the lowest practical funding cost.",
   takeaway: "See Funding Pressure",
@@ -24,19 +25,20 @@ export const a6: AnchorDefinition = {
   humanOwnership: "Funding, release, and transfer decisions stay with treasury.",
   starterPrompts: [
     "Show current cash position, expected settlements, queued payments, and available liquidity by entity and currency.",
-    "Rank the drivers of the largest forecast variance.",
+    "Are we above the policy liquidity buffer, and which entity and currency explain any shortfall?",
     "Which queued payments fall inside the next funding window?",
   ],
   overviewWidgets: [
     {
       id: "available_liquidity_24h_usd",
       title: "Available 24-hour liquidity",
-      subtitle: "Across every entity and currency, normalised to USD",
+      subtitle: "Across every entity and currency, normalized to USD",
       metricFormat: "currency",
       backendRoute: "/api/v1/anchors/a6/overview",
       visualization: "kpi",
       expectedBaseline: "Consistent with the seeded baseline",
-      expectedScenarioDelta: "Falls by USD 25 million with the delayed settlement",
+      expectedScenarioDelta:
+        "Falls by USD 25 million with the delayed settlement, from USD 17.2 million above the USD 60 million illustrative policy buffer to USD 7.8 million below it",
       proofMode: "deterministic",
       sourceTables: ["aa_liquidity_position"],
     },

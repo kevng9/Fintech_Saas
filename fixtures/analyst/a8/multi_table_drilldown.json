@@ -8,9 +8,9 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "Six new dining transactions this period total $300 in new spending: Harbor Bistro ($52), Corner Cafe ($48), and Riverside Grill ($60) are the largest three.",
+      "text": "Three dining transactions explain the **$300** increase: three charges of **$100** each at Alder Digital Markets on the most recent logical day.",
       "sql": {
-        "command": "SELECT merchant_name, amount_usd FROM aa_customer_transaction_evidence WHERE category = 'dining' AND is_scenario_event = 1 ORDER BY amount_usd DESC",
+        "command": "SELECT transaction_id, merchant_name, amount_usd FROM aa_customer_transaction_evidence WHERE category = 'dining' AND is_scenario_event = 1 ORDER BY amount_usd DESC",
         "confidence_score": 0.9,
         "tables_used": [
           "aa_customer_transaction_evidence"
@@ -18,21 +18,25 @@
       },
       "table": {
         "columns": [
+          "transaction_id",
           "merchant_name",
           "amount_usd"
         ],
         "rows": [
           [
-            "Riverside Grill",
-            60.0
+            "TXN-A8DS-00",
+            "Alder Digital Markets",
+            100.0
           ],
           [
-            "Harbor Bistro",
-            52.0
+            "TXN-A8DS-01",
+            "Alder Digital Markets",
+            100.0
           ],
           [
-            "Corner Cafe",
-            48.0
+            "TXN-A8DS-02",
+            "Alder Digital Markets",
+            100.0
           ]
         ],
         "row_count": 3,

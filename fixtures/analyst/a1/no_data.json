@@ -8,7 +8,7 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "There is no digital-channel data for channel = 'branch' in this dataset: this anchor tracks organic, paid_search, and branch_referral. The filter returns no rows rather than a low value, and I have not substituted a nearby channel.",
+      "text": "There is no digital-channel data for channel = 'branch' in this dataset: this Domain tracks only mobile_app and web. The filter returns no rows rather than a low value, and I have not substituted a nearby channel.",
       "sql": {
         "command": "SELECT * FROM aa_digital_funnel WHERE channel = 'branch'",
         "confidence_score": 0.9,

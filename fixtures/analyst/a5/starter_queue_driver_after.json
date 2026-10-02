@@ -1,0 +1,98 @@
+{
+  "anchor": "a5",
+  "fixture_version": "1.0.0",
+  "id": "starter_queue_driver_after",
+  "latency_ms": 1800,
+  "match": [
+    "reason code driving at risk queue",
+    "merchant concentration",
+    "when did disputes arrive",
+    "queue driver trend"
+  ],
+  "prompt": "Which reason code and merchant are driving the largest at-risk queue, and when did those disputes arrive?",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "PAID_BY_OTHER_MEANS drives the queue_disputes_escalated risk, all **20** of those disputes trace to one merchant, **Copperfield Electronics Retail** (MERCH-029), and they arrived in **two waves**, a week apart.\n\n- Every disputed payment was made at that merchant between 09:00 and 09:12 on 2026-07-18.\n- **12** were opened on 2026-07-18 and 2026-07-19; all 12 reach their five-business-day provisional-credit target within the next 24 logical hours, with **$7,022.94** at risk.\n- **8** more were opened on 2026-07-25 and are due on 2026-08-01.\n- Before this pattern, the queue received about **1** dispute per day, each from a different merchant.\n\nOne merchant, one 12-minute window, and one reason code point to a single incident at that merchant. What happened there is for the operations team to confirm with the merchant.",
+      "sql": {
+        "command": "SELECT opened_date, reason_code, merchant_name, SUM(dispute_count) AS dispute_count, SUM(disputed_amount_total) AS disputed_amount_total\nFROM aa_dispute_queue_driver\nWHERE queue_id = 'queue_disputes_escalated'\nGROUP BY opened_date, reason_code, merchant_name\nORDER BY opened_date",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_dispute_queue_driver"
+        ]
+      },
+      "table": {
+        "columns": [
+          "opened_date",
+          "reason_code",
+          "merchant_name",
+          "dispute_count",
+          "disputed_amount_total"
+        ],
+        "rows": [
+          [
+            "2026-07-18",
+            "PAID_BY_OTHER_MEANS",
+            "Copperfield Electronics Retail",
+            9,
+            5813.63
+          ],
+          [
+            "2026-07-19",
+            "PAID_BY_OTHER_MEANS",
+            "Copperfield Electronics Retail",
+            3,
+            1209.31
+          ],
+          [
+            "2026-07-22",
+            "DUPLICATE_CHARGE",
+            "Alder Digital Markets",
+            1,
+            174.81
+          ],
+          [
+            "2026-07-23",
+            "DUPLICATE_CHARGE",
+            "Harbor Streaming Direct",
+            1,
+            84.29
+          ],
+          [
+            "2026-07-23",
+            "FRAUD_CLAIM",
+            "Harbor Electronics Retail",
+            1,
+            271.03
+          ],
+          [
+            "2026-07-24",
+            "GOODS_NOT_RECEIVED",
+            "Redstone Digital Direct",
+            1,
+            254.41
+          ],
+          [
+            "2026-07-25",
+            "BILLING_ERROR",
+            "Brightside Streaming Markets",
+            1,
+            164.88
+          ],
+          [
+            "2026-07-25",
+            "PAID_BY_OTHER_MEANS",
+            "Copperfield Electronics Retail",
+            8,
+            3118.01
+          ]
+        ],
+        "row_count": 8,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "after_injection"
+}

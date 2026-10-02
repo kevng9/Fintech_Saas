@@ -8,13 +8,13 @@
     "sessions applications referrals",
     "account opening funnel"
   ],
-  "prompt": "Show the account-opening funnel by step and channel for the last 30 logical days.",
+  "prompt": "Show the account-opening funnel by step and channel for the last 30 days, including completion and abandonment rates.",
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "Across the last 30 logical days, digital channels started 8,400 sessions, 5,460 applications were submitted (65.0% completion), 819 were referred to manual review (15.0% referral rate), and 4,368 were approved. Organic and paid_search behave similarly; branch_referral has a smaller volume but a slightly higher completion rate.",
+      "text": "Session-to-application completion is **68.52%** across both channels: **378** sessions started and **259** applications were submitted. Only seven logical days of history exist (2026-07-18 to 2026-07-25), so that is the period shown rather than 30 days.\n\n- mobile_app: **224** sessions, **155** applications (**69.20%** completion, **30.80%** abandonment), **24** referred to manual review, **120** opened.\n- web: **154** sessions, **104** applications (**67.53%** completion, **32.47%** abandonment), **18** referred, **78** opened.\n\nThe two channels convert within two points of each other, so neither stands out.",
       "sql": {
-        "command": "SELECT channel, SUM(sessions_started) AS sessions_started, SUM(applications_submitted) AS applications_submitted, SUM(referred_to_review) AS referred_to_review, SUM(applications_approved) AS applications_approved\nFROM aa_digital_funnel\nWHERE session_date > DATE_SUB((SELECT logical_time FROM demo_active_run WHERE singleton_id = 1), INTERVAL 30 DAY)\nGROUP BY channel",
+        "command": "SELECT channel, SUM(sessions_started) AS sessions_started, SUM(applications_submitted) AS applications_submitted, SUM(referred_to_review) AS referred_to_review, SUM(applications_approved) AS applications_approved, SUM(applications_submitted) / SUM(sessions_started) AS completion_rate\nFROM aa_digital_funnel\nWHERE session_date > DATE_SUB((SELECT logical_time FROM demo_active_run WHERE singleton_id = 1), INTERVAL 30 DAY)\nGROUP BY channel",
         "confidence_score": 0.9,
         "tables_used": [
           "aa_digital_funnel"
@@ -26,32 +26,28 @@
           "sessions_started",
           "applications_submitted",
           "referred_to_review",
-          "applications_approved"
+          "applications_approved",
+          "completion_rate"
         ],
         "rows": [
           [
-            "organic",
-            3600,
-            2340,
-            351,
-            1872
+            "mobile_app",
+            224,
+            155,
+            24,
+            120,
+            0.692
           ],
           [
-            "paid_search",
-            3200,
-            2080,
-            312,
-            1664
-          ],
-          [
-            "branch_referral",
-            1600,
-            1040,
-            156,
-            832
+            "web",
+            154,
+            104,
+            18,
+            78,
+            0.6753
           ]
         ],
-        "row_count": 3,
+        "row_count": 2,
         "truncated": false
       },
       "chart": null,

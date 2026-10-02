@@ -8,9 +8,9 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "account_takeover on card_not_present leads confirmed loss at $61,400 (33% of total), ahead of synthetic_identity on ach at $48,900 (27%).",
+      "text": "**Card testing on card-not-present** leads confirmed loss at **$2,500** (**39.73%** of the total), ahead of ATM first-party fraud at **$1,519.75** (24.15%).\n\n- Total confirmed loss: **$6,292.91**.\n- The top two segments hold **63.88%** of all confirmed loss.\n\nThe leading segment is new in the last few minutes, so its share reflects one burst rather than a long-run trend. Amounts are normalized to US dollars.",
       "sql": {
-        "command": "SELECT channel, fraud_type, confirmed_loss_usd FROM aa_fraud_loss_summary ORDER BY confirmed_loss_usd DESC",
+        "command": "SELECT channel, fraud_type, confirmed_loss_usd,\n  confirmed_loss_usd / SUM(confirmed_loss_usd) OVER () AS share_of_loss\nFROM aa_fraud_loss_summary\nWHERE confirmed_loss_usd > 0\nORDER BY confirmed_loss_usd DESC",
         "confidence_score": 0.9,
         "tables_used": [
           "aa_fraud_loss_summary"
@@ -20,21 +20,48 @@
         "columns": [
           "channel",
           "fraud_type",
-          "confirmed_loss_usd"
+          "confirmed_loss_usd",
+          "share_of_loss"
         ],
         "rows": [
           [
             "card_not_present",
-            "account_takeover",
-            61400
+            "card_testing",
+            2500.0,
+            0.3973
           ],
           [
-            "ach",
-            "synthetic_identity",
-            48900
+            "atm",
+            "first_party",
+            1519.75,
+            0.2415
+          ],
+          [
+            "card_present",
+            "card_testing",
+            840.84,
+            0.1336
+          ],
+          [
+            "card_not_present",
+            "account_takeover",
+            526.16,
+            0.0836
+          ],
+          [
+            "card_not_present",
+            "first_party",
+            524.86,
+            0.0834
+          ],
+          [
+            "atm",
+            "card_testing",
+            381.3,
+            0.0606
           ]
         ],
-        "row_count": 2,
+        "row_count": 6,
         "truncated": false
       },
       "chart": null,

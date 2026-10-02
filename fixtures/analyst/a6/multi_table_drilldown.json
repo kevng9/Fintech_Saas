@@ -8,9 +8,9 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "EMEA Funding Ltd. has the tightest position. It has 6 queued payments due in the next funding window totalling USD 14.8 million.",
+      "text": "Synthetic Entity 01 in USD has the tightest position at **USD 5.38 million**. It has **1** queued payment due in the next funding window: QP-A6B-01-01 for USD 166,763.98, due 2026-07-25 11:00.",
       "sql": {
-        "command": "SELECT queued_payment_id, amount_usd, due_at FROM aa_funding_window WHERE entity_id = 'ENT-EMEA' ORDER BY minutes_until_due ASC",
+        "command": "SELECT queued_payment_id, currency, amount_usd, due_at FROM aa_funding_window WHERE entity_id = 'ENT-01' AND in_next_funding_window = 1 ORDER BY minutes_until_due ASC",
         "confidence_score": 0.9,
         "tables_used": [
           "aa_liquidity_position",
@@ -20,22 +20,19 @@
       "table": {
         "columns": [
           "queued_payment_id",
+          "currency",
           "amount_usd",
           "due_at"
         ],
         "rows": [
           [
-            "QP-88117",
-            6100000,
-            "2026-07-25 12:30:00"
-          ],
-          [
-            "QP-88121",
-            3900000,
-            "2026-07-25 15:00:00"
+            "QP-A6B-01-01",
+            "USD",
+            166763.98,
+            "2026-07-25 11:00:00"
           ]
         ],
-        "row_count": 2,
+        "row_count": 1,
         "truncated": false
       },
       "chart": null,

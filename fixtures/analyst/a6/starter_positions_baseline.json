@@ -10,7 +10,7 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "Across every entity and currency, available 24-hour liquidity totals USD 412 million, against USD 58 million of queued outbound payments. NorthAm Treasury Co. in USD holds the largest single position at USD 210 million.",
+      "text": "Available 24-hour liquidity totals **USD 77.16 million** across six entities, against **USD 2.92 million** of queued outbound payments. Amounts are normalized to US dollars.\n\n- Synthetic Entity 01 in USD holds the largest position at **USD 30.38 million**, mostly from **USD 26.42 million** of expected inbound settlements.\n- Synthetic Entity 04 in CAD is the tightest at **USD 5.86 million**.\n\nSynthetic Entity 01's position depends heavily on settlements still pending, so its liquidity is more exposed to a late counterparty than the others.",
       "sql": {
         "command": "SELECT entity_name, currency, available_balance_usd, expected_inbound_settlements_usd, expected_outbound_settlements_usd, queued_payments_usd, available_liquidity_24h_usd\nFROM aa_liquidity_position\nORDER BY available_liquidity_24h_usd ASC",
         "confidence_score": 0.9,
@@ -23,33 +23,61 @@
           "entity_name",
           "currency",
           "available_balance_usd",
+          "expected_inbound_settlements_usd",
           "queued_payments_usd",
           "available_liquidity_24h_usd"
         ],
         "rows": [
           [
-            "EMEA Funding Ltd.",
+            "Synthetic Entity 04",
+            "CAD",
+            6281967.74,
+            0,
+            419990.53,
+            5861977.21
+          ],
+          [
+            "Synthetic Entity 02",
+            "GBP",
+            8076492.56,
+            2116108.61,
+            591294.14,
+            7894490.53
+          ],
+          [
+            "Synthetic Entity 03",
             "EUR",
-            96000000,
-            21000000,
-            88000000
+            8282534.79,
+            1790353.61,
+            531489.08,
+            8460423.98
           ],
           [
-            "APAC Settlement Pte.",
-            "SGD",
-            61000000,
-            9000000,
-            62000000
-          ],
-          [
-            "NorthAm Treasury Co.",
+            "Synthetic Entity 05",
             "USD",
-            210000000,
-            28000000,
-            262000000
+            10039382.02,
+            96359.25,
+            446509.56,
+            9689231.71
+          ],
+          [
+            "Synthetic Entity 06",
+            "GBP",
+            14032034.86,
+            2187294.33,
+            619721.22,
+            14880159.32
+          ],
+          [
+            "Synthetic Entity 01",
+            "USD",
+            4847887.3,
+            26418844.75,
+            315489.74,
+            30376760.31
           ]
         ],
-        "row_count": 3,
+        "row_count": 6,
         "truncated": false
       },
       "chart": null,

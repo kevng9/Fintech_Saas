@@ -4,6 +4,7 @@
     python -m fintech_demo doctor        check the workspace supports the required SQL
     python -m fintech_demo bootstrap     migrate, seed the template, activate a run
     python -m fintech_demo run           start the simulator leader
+    python -m fintech_demo resume        resume a paused stream through the leader
     python -m fintech_demo inject A2_PROCESSOR_TIMEOUT
     python -m fintech_demo verify --scenario A2_PROCESSOR_TIMEOUT --inject
 """
@@ -152,6 +153,34 @@ def cmd_inject(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_resume(args: argparse.Namespace) -> int:
+    """Ask the live simulator to run the stream.
+
+    Reset leaves the stream paused at the verified baseline. Resume goes through
+    the leader, the same way the control strip does, so startup does not write
+    demo state beside the process that owns the clock.
+    """
+    settings = _settings(args)
+    connection = connect(settings)
+    with connection.cursor() as cursor:
+        if not _leader_alive(cursor, settings):
+            connection.close()
+            log(
+                "error: no simulator leader is running.\n"
+                "  Start it with: python -m fintech_demo run"
+            )
+            return 1
+        command_id = _enqueue(cursor, "RESUME", {}, actor="cli")
+        log("simulator leader is live: resume queued")
+        row = _wait_for_command(cursor, command_id, timeout=30)
+    connection.close()
+    if row is None:
+        log("timed out waiting for the simulator to resume the stream")
+        return 1
+    log(f"{row['status']}: {row['result'] or row['error_text']}")
+    return 0 if row["status"] == "complete" else 1
+
+
 def cmd_status(args: argparse.Namespace) -> int:
     settings = _settings(args)
     connection = connect(settings)
@@ -232,7 +261,7 @@ def cmd_verify(args: argparse.Namespace) -> int:
         for check in checks:
             log(check.line())
             failures += 0 if check.passed else 1
-        passed, total = verify.summarise(checks)
+        passed, total = verify.summarize(checks)
 
         if injected_here:
             log("\nreturning the run to its verified baseline")
@@ -403,6 +432,9 @@ def build_parser() -> argparse.ArgumentParser:
         func=cmd_status
     )
     subparsers.add_parser("run", help="run the simulator leader loop").set_defaults(func=cmd_run)
+    subparsers.add_parser(
+        "resume", help="resume the stream when a simulator leader is running"
+    ).set_defaults(func=cmd_resume)
 
     verify_parser = subparsers.add_parser("verify", help="verify baseline and scenario deltas")
     verify_parser.add_argument("--scenario", default=None)

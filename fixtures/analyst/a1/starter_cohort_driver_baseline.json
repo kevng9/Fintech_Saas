@@ -1,0 +1,65 @@
+{
+  "anchor": "a1",
+  "fixture_version": "1.0.0",
+  "id": "starter_cohort_driver_baseline",
+  "latency_ms": 1800,
+  "match": [
+    "cohort driving manual review",
+    "highest referral cohort",
+    "intent cohort ranking",
+    "lost account openings stage"
+  ],
+  "prompt": "Which intent cohort lost the most account openings, and at which journey stage?",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "No intent cohort is losing a material number of openings: submit-to-open rates sit between **71.74%** and **79.71%** across all four cohorts.\n\n- low_web has the lowest open rate (**71.74%**, 33 of 46 applications) and the highest referral rate (**26.09%**).\n- At the **76.45%** open rate across all cohorts, low_web would have opened about **2** more accounts.\n- high_mobile has the most volume (**86** applications) and opens **75.58%** of them.\n\nThe spread is within what a small sample produces, so there is no loss to chase yet.",
+      "sql": {
+        "command": "SELECT intent_cohort, SUM(applications_submitted) AS applications_submitted, SUM(referred_to_review) / SUM(applications_submitted) AS referral_rate, SUM(applications_opened) / SUM(applications_submitted) AS submit_to_open_rate\nFROM aa_digital_intent_cohort\nGROUP BY intent_cohort\nORDER BY submit_to_open_rate",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_digital_intent_cohort"
+        ]
+      },
+      "table": {
+        "columns": [
+          "intent_cohort",
+          "applications_submitted",
+          "referral_rate",
+          "submit_to_open_rate"
+        ],
+        "rows": [
+          [
+            "low_web",
+            46,
+            0.2609,
+            0.7174
+          ],
+          [
+            "high_mobile",
+            86,
+            0.2093,
+            0.7558
+          ],
+          [
+            "medium_web",
+            58,
+            0.1034,
+            0.7759
+          ],
+          [
+            "medium_mobile",
+            69,
+            0.087,
+            0.7971
+          ]
+        ],
+        "row_count": 4,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "baseline"
+}

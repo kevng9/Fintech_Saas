@@ -8,9 +8,9 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "Filtered to EUR: 2 queued payments totalling USD 10.0 million fall in the next funding window.",
+      "text": "Filtered to EUR, the list is empty: Synthetic Entity 01 holds only a USD position, so it has no EUR payments in the next funding window. I have not substituted another currency.",
       "sql": {
-        "command": "SELECT queued_payment_id, amount_usd FROM aa_funding_window WHERE entity_id = 'ENT-EMEA' AND currency = 'EUR'",
+        "command": "SELECT queued_payment_id, amount_usd FROM aa_funding_window WHERE entity_id = 'ENT-01' AND currency = 'EUR' AND in_next_funding_window = 1",
         "confidence_score": 0.9,
         "tables_used": [
           "aa_funding_window"
@@ -21,17 +21,8 @@
           "queued_payment_id",
           "amount_usd"
         ],
-        "rows": [
-          [
-            "QP-88117",
-            6100000
-          ],
-          [
-            "QP-88121",
-            3900000
-          ]
-        ],
-        "row_count": 2,
+        "rows": [],
+        "row_count": 0,
         "truncated": false
       },
       "chart": null,

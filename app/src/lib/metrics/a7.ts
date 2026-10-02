@@ -1,10 +1,10 @@
 /**
- * Deterministic A7 Credit Risk Pulse queries.
+ * Deterministic A7 Credit and Exposure Management queries.
  *
  * No automated approval, decline, pricing, or adverse-action field exists
  * anywhere in this module (database/migrations/011_a7_credit.sql). The
  * pending-vs-booked comparison in `aa_portfolio_concentration` is explicitly
- * illustrative, per spec section 8.7, and is always labelled as such.
+ * illustrative, per spec section 8.7, and is always labeled as such.
  * Approval, decline, and pricing stay with credit officers.
  */
 
@@ -15,6 +15,9 @@ import type {
   SharedOverviewData,
 } from "../apiTypes";
 import { buildChangePayload, scenarioExecution, scenarioExpectedDeltas } from "./shared";
+
+/** Illustrative per-segment (industry x geography) limit. Mirrors domains/a7-credit-risk/manifest.yaml. */
+export const SEGMENT_CONCENTRATION_LIMIT = 0.25;
 
 interface CreditOperationsRow {
   product_id: string;
@@ -177,6 +180,7 @@ export async function overview(): Promise<SharedOverviewData> {
       { key: "concentration_share", label: "Booked concentration", format: "percent" },
       { key: "pending_amount", label: "Pending amount", format: "currency" },
       { key: "pro_forma_concentration_share", label: "Pro forma (illustrative)", format: "percent" },
+      { key: "limit_headroom", label: "Headroom to 25% limit", format: "percent" },
     ],
     rows: conc.map((row) => ({
       industry_code: row.industry_code,
@@ -186,6 +190,7 @@ export async function overview(): Promise<SharedOverviewData> {
       concentration_share: Number(row.concentration_share),
       pending_amount: Number(row.pending_amount),
       pro_forma_concentration_share: Number(row.pro_forma_concentration_share),
+      limit_headroom: SEGMENT_CONCENTRATION_LIMIT - Number(row.pro_forma_concentration_share),
     })),
   };
 
@@ -225,7 +230,7 @@ export async function overview(): Promise<SharedOverviewData> {
     tables,
     meta: {
       notes:
-        "Pro forma concentration is illustrative only: it shows what the book would look like if every pending application booked as requested. It is not a decision. Open an application id to inspect evidence.",
+        "Pro forma concentration and the 25% segment limit are illustrative only: they show what the book would look like if every pending application booked as requested. This is not a decision. Open an application id to inspect evidence.",
     },
   };
 }
@@ -242,8 +247,8 @@ async function change(): Promise<SharedChangePayload | null> {
 
   const expected = await scenarioExpectedDeltas(scenarioId);
   const segment = (expected.segment as Record<string, string> | undefined) ?? {};
-  const industry = segment.industry_code ?? "Transportation";
-  const geography = segment.geography_id ?? "CA";
+  const industry = segment.industry_code ?? "TRANSPORTATION";
+  const geography = segment.geography_id ?? "GEO-USCA";
 
   const conc = await concentration();
   const match = conc.find(
@@ -254,21 +259,26 @@ async function change(): Promise<SharedChangePayload | null> {
     scenarioId,
     execution,
     expected,
-    segmentLabel: `${industry} / ${geography} (illustrative pro forma)`,
+    segmentLabel: "Transportation in California, illustrative",
     specs: [
-      { label: "Pending amount", key: "pending_amount", format: "currency" },
-      { label: "Pro forma concentration (illustrative)", key: "pro_forma_concentration_share", format: "percent" },
-      { label: "Booked outstanding (unchanged)", key: "booked_outstanding_amount", format: "currency" },
+      { label: "Pending amount", key: "pending_amount_usd", format: "currency" },
+      { label: "Illustrative concentration", key: "pro_forma_concentration_share", format: "percent" },
+      { label: "Headroom to 25% segment limit", key: "limit_headroom", format: "percent" },
+      { label: "Booked exposure change", key: "booked_outstanding_delta_usd", format: "currency" },
     ],
     before: {
-      pending_amount: null,
-      pro_forma_concentration_share: null,
-      booked_outstanding_amount: match ? Number(match.booked_outstanding_amount) : null,
+      pending_amount_usd: 0,
+      pro_forma_concentration_share: match ? Number(match.concentration_share) : null,
+      limit_headroom: match ? SEGMENT_CONCENTRATION_LIMIT - Number(match.concentration_share) : null,
+      booked_outstanding_delta_usd: 0,
     },
     after: {
-      pending_amount: match ? Number(match.pending_amount) : null,
+      pending_amount_usd: match ? Number(match.pending_amount) : null,
       pro_forma_concentration_share: match ? Number(match.pro_forma_concentration_share) : null,
-      booked_outstanding_amount: match ? Number(match.booked_outstanding_amount) : null,
+      limit_headroom: match
+        ? SEGMENT_CONCENTRATION_LIMIT - Number(match.pro_forma_concentration_share)
+        : null,
+      booked_outstanding_delta_usd: 0,
     },
   });
 }

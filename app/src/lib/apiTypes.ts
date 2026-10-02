@@ -4,6 +4,7 @@ export interface AnchorSummaryPayload {
   id: string;
   name: string;
   jobTitle: string;
+  businessDecision: string;
   criticalBusinessIssue: string;
   takeaway: string;
   status: "available" | "planned";
@@ -291,6 +292,8 @@ export interface SharedKpiPayload {
   format: SharedMetricFormat;
   higherIsBetter?: boolean;
   detail?: string;
+  statusLabel?: string;
+  statusTone?: "neutral" | "good" | "warn" | "bad" | "accent";
 }
 
 export interface SharedColumn {

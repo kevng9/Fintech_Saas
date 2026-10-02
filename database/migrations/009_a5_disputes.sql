@@ -1,7 +1,9 @@
 -- A5 Disputes Operations fact tables and curated Aura views (spec sections
 -- 8.5, 8.6). `dispute_case.status` moves through 'open' -> 'pending_customer'
 -- -> 'closed'; SLA risk is computed from `due_at` against the demo logical
--- clock, never wall-clock time.
+-- clock, never wall-clock time. Merchant columns come from the disputed
+-- payment (payment_event -> dim_merchant), so concentration on one merchant
+-- is visible without storing merchant_id on dispute_case.
 
 DROP VIEW IF EXISTS aa_dispute_timeline;
 
@@ -76,6 +78,8 @@ SELECT
     dc.queue_id AS queue_id,
     dc.reason_code AS reason_code,
     dc.priority AS priority,
+    pe.merchant_id AS merchant_id,
+    dm.merchant_name AS merchant_name,
     COUNT(*) AS open_dispute_count,
     SUM(CASE WHEN dc.due_at <= DATE_ADD(ar.logical_time, INTERVAL 24 HOUR) THEN 1 ELSE 0 END) AS sla_risk_count,
     SUM(CASE
@@ -86,23 +90,29 @@ SELECT
     MIN(dc.due_at) AS nearest_due_at
 FROM dispute_case dc
 JOIN demo_active_run ar ON ar.singleton_id = 1 AND ar.run_id = dc.run_id
+LEFT JOIN payment_event pe ON pe.run_id = dc.run_id AND pe.payment_id = dc.payment_id
+LEFT JOIN dim_merchant dm ON dm.run_id = pe.run_id AND dm.merchant_id = pe.merchant_id
 WHERE dc.opened_at <= ar.logical_time
   AND dc.status <> 'closed'
-GROUP BY DATE(dc.opened_at), dc.queue_id, dc.reason_code, dc.priority;
+GROUP BY DATE(dc.opened_at), dc.queue_id, dc.reason_code, dc.priority, pe.merchant_id, dm.merchant_name;
 
 CREATE VIEW aa_dispute_queue_driver AS
 SELECT
     DATE(dc.opened_at) AS opened_date,
     dc.queue_id AS queue_id,
     dc.reason_code AS reason_code,
+    pe.merchant_id AS merchant_id,
+    dm.merchant_name AS merchant_name,
     COUNT(*) AS dispute_count,
     SUM(dc.disputed_amount) AS disputed_amount_total,
     AVG(dc.disputed_amount) AS avg_disputed_amount,
     SUM(CASE WHEN dc.scenario_id IS NULL THEN 0 ELSE 1 END) AS scenario_dispute_count
 FROM dispute_case dc
 JOIN demo_active_run ar ON ar.singleton_id = 1 AND ar.run_id = dc.run_id
+LEFT JOIN payment_event pe ON pe.run_id = dc.run_id AND pe.payment_id = dc.payment_id
+LEFT JOIN dim_merchant dm ON dm.run_id = pe.run_id AND dm.merchant_id = pe.merchant_id
 WHERE dc.opened_at <= ar.logical_time
-GROUP BY DATE(dc.opened_at), dc.queue_id, dc.reason_code;
+GROUP BY DATE(dc.opened_at), dc.queue_id, dc.reason_code, pe.merchant_id, dm.merchant_name;
 
 CREATE VIEW aa_dispute_timeline AS
 SELECT

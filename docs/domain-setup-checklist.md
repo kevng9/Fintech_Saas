@@ -112,7 +112,7 @@ generated, a refusal was actually a refusal. **You** confirm the substance
 against each question's recorded expectation, and mark it correct or incorrect.
 
 Every question must be correct before the Domain is considered validated. The
-last four matter most, because they are where a poorly contextualised Domain
+last four matter most, because they are where a poorly contextualized Domain
 invents an answer:
 
 - The ambiguous question must ask what you mean, or state the measure it chose.

@@ -1,14 +1,15 @@
 import type { AnchorDefinition } from "./types";
 
 /**
- * A7 Credit Risk Pulse. No automated approval, decline, pricing, or
+ * A7 Credit and Exposure Management. No automated approval, decline, pricing, or
  * adverse-action field exists anywhere in this anchor's data; the pending
- * vs. booked concentration comparison is always labelled illustrative.
+ * vs. booked concentration comparison is always labeled illustrative.
  */
 export const a7: AnchorDefinition = {
   id: "a7",
-  name: "Credit Risk Pulse",
+  name: "Credit and Exposure Management",
   jobTitle: "Chief Credit Officer",
+  businessDecision: "Credit and Exposure Management",
   criticalBusinessIssue:
     "Make timely, policy-compliant credit decisions while controlling concentration risk.",
   takeaway: "Context Before Decision",
@@ -24,9 +25,9 @@ export const a7: AnchorDefinition = {
     "Aura Analyst assembles and explains evidence. It does not approve or decline credit, or generate an adverse-action decision.",
   humanOwnership: "Approval, decline, and pricing stay with credit officers.",
   starterPrompts: [
-    "Show application volume, manual-review rate, and time to decision by product and channel.",
+    "If pending applications book, how much headroom remains against the 25% segment concentration limit?",
     "Summarize submitted evidence and missing items for the selected application.",
-    "Compare the pending request with current portfolio concentration without making a decision.",
+    "Show application volume, manual-review rate, and time to decision by product and channel.",
   ],
   overviewWidgets: [
     {
@@ -88,12 +89,13 @@ export const a7: AnchorDefinition = {
     {
       id: "portfolio_concentration",
       title: "Portfolio concentration (illustrative)",
-      subtitle: "Booked exposure vs. a pro forma view including pending applications",
+      subtitle: "Booked exposure vs. a pro forma view including pending applications, against an illustrative 25% segment limit",
       metricFormat: "percent",
       backendRoute: "/api/v1/anchors/a7/overview",
       visualization: "table",
-      expectedBaseline: "20.00 percent illustrative concentration",
-      expectedScenarioDelta: "Illustrative concentration changes from 20.00 percent to 23.81 percent",
+      expectedBaseline: "20.00 percent illustrative concentration, 5.00 points of headroom to the 25% limit",
+      expectedScenarioDelta:
+        "Illustrative concentration changes from 20.00 percent to 23.81 percent, leaving 1.19 points of headroom",
       proofMode: "deterministic",
       sourceTables: ["aa_portfolio_concentration"],
     },
@@ -117,7 +119,7 @@ export const a7: AnchorDefinition = {
       visualization: "callout",
       expectedBaseline: "No operational event active",
       expectedScenarioDelta:
-        "Pending amount rises by USD 5 million; illustrative concentration changes from 20.00 percent to 23.81 percent; booked exposure does not change",
+        "Pending amount rises by USD 5 million; illustrative concentration changes from 20.00 percent to 23.81 percent, leaving 1.19 points of headroom to the 25% segment limit; booked exposure does not change",
       proofMode: "deterministic",
       sourceTables: ["credit_application", "portfolio_exposure_snapshot", "demo_scenario_execution"],
     },

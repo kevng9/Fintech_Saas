@@ -10,7 +10,7 @@
  */
 
 import { Empty, Pill } from "@/components/ui";
-import { logicalTime, milliseconds, percent, usd } from "@/lib/format";
+import { logicalTime, milliseconds, percent } from "@/lib/format";
 import type { WhatChangedPayload, WindowMetricsPayload } from "@/lib/apiTypes";
 
 type Extractor = (metrics: WindowMetricsPayload) => number | null;
@@ -45,20 +45,6 @@ const ROWS: Row[] = [
     toleranceKey: "p95_latency_ms",
     format: (value) => milliseconds(value),
   },
-  {
-    label: "Attempts",
-    read: (metrics) => metrics.attempts,
-    expectedKey: "attempts",
-    toleranceKey: "attempts",
-    format: (value) => (value === null ? "—" : value.toLocaleString()),
-  },
-  {
-    label: "Declined value",
-    read: (metrics) => metrics.declined_amount,
-    expectedKey: "__none__",
-    toleranceKey: "__none__",
-    format: (value) => usd(value),
-  },
 ];
 
 export function WhatChanged({ comparison }: { comparison: WhatChangedPayload | null }) {
@@ -79,16 +65,17 @@ export function WhatChanged({ comparison }: { comparison: WhatChangedPayload | n
       <p className="text-[12px] leading-5 text-[var(--ink-soft)]">
         Route <span className="mono font-medium">{comparison.lane}</span> from{" "}
         <span className="mono">{logicalTime(comparison.windowStart)}</span> to{" "}
-        <span className="mono">{logicalTime(comparison.windowEnd)}</span>, compared with the same
-        route&apos;s recent baseline.
+        <span className="mono">{logicalTime(comparison.windowEnd)}</span>. Rates compare the same
+        route over the same number of attempts; the prior seven days supply the baseline.
+        {" "}The incident window contains {comparison.after.attempts.toLocaleString()} attempts.
       </p>
 
       <table className="grid">
         <thead>
           <tr>
             <th>Metric</th>
-            <th className="num">Before</th>
-            <th className="num">During</th>
+            <th className="num">7-day baseline</th>
+            <th className="num">Incident window</th>
             <th className="num">Expected</th>
             <th>Status</th>
           </tr>

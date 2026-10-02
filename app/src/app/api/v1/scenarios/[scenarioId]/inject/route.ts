@@ -38,7 +38,10 @@ export async function POST(
 
   return runCommand(req, {
     type: "INJECT",
-    payload: { scenario_id: scenarioId, idempotency_key: idempotencyKey },
+    // A buyer story is a bounded decision snapshot. Keep the logical clock at
+    // the end of that window so dashboards and live Analyst inspect the same
+    // evidence until the operator explicitly resumes the stream.
+    payload: { scenario_id: scenarioId, idempotency_key: idempotencyKey, freeze_after: true },
     waitMs: 30_000,
     action: "scenario.inject",
   });

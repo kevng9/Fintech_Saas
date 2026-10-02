@@ -11,9 +11,9 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "Open disputes jumped to 332 and SLA-risk count to 53 after the injected merchant-outage surge: 20 new disputes landed with reason code MERCHANT_OUTAGE, of which 12 are already at SLA risk, which is now the leading reason code in the ranking.",
+      "text": "SLA risk rose from **1** to **13** disputes, and **$7,197.75** of disputed value is now due within the next 24 logical hours. Amounts are normalized to US dollars.\n\n- PAID_BY_OTHER_MEANS in queue_disputes_escalated accounts for **12** of the 13 at-risk disputes and **$7,022.94** of the value at risk.\n- Open disputes rose from **5** to **25**; all 20 new ones carry PAID_BY_OTHER_MEANS.\n\nOne reason code in one queue explains almost all of the near-term risk. Ask which merchant those disputes trace to before deciding whether this is one incident.",
       "sql": {
-        "command": "SELECT queue_id, reason_code, priority, open_dispute_count, sla_risk_count, sla_risk_amount_total\nFROM aa_dispute_sla_risk\nORDER BY sla_risk_count DESC, sla_risk_amount_total DESC",
+        "command": "SELECT queue_id, reason_code, SUM(open_dispute_count) AS open_dispute_count, SUM(sla_risk_count) AS sla_risk_count, SUM(sla_risk_amount_total) AS sla_risk_amount_total\nFROM aa_dispute_sla_risk\nGROUP BY queue_id, reason_code\nORDER BY sla_risk_count DESC, sla_risk_amount_total DESC",
         "confidence_score": 0.9,
         "tables_used": [
           "aa_dispute_sla_risk"
@@ -29,28 +29,42 @@
         ],
         "rows": [
           [
-            "core_ops",
-            "MERCHANT_OUTAGE",
+            "queue_disputes_escalated",
+            "PAID_BY_OTHER_MEANS",
             20,
             12,
-            15800
+            7022.94
           ],
           [
-            "core_ops",
+            "queue_disputes_escalated",
             "DUPLICATE_CHARGE",
-            58,
-            14,
-            41200
+            2,
+            1,
+            174.81
           ],
           [
-            "core_ops",
-            "SERVICE_NOT_RECEIVED",
-            44,
-            9,
-            28600
+            "queue_disputes_1",
+            "BILLING_ERROR",
+            1,
+            0,
+            0
+          ],
+          [
+            "queue_disputes_2",
+            "GOODS_NOT_RECEIVED",
+            1,
+            0,
+            0
+          ],
+          [
+            "queue_disputes_2",
+            "FRAUD_CLAIM",
+            1,
+            0,
+            0
           ]
         ],
-        "row_count": 3,
+        "row_count": 5,
         "truncated": false
       },
       "chart": null,

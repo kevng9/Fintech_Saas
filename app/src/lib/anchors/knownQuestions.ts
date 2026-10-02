@@ -91,7 +91,7 @@ export const KNOWN_QUESTIONS: KnownQuestion[] = [
     autoChecks: ["expects_no_rows"],
   },
 
-  // --- A1 Digital Journey Intelligence ---
+  // --- A1 Digital Funnel Performance ---
   {
     id: "baseline_kpi",
     anchorId: "a1",
@@ -157,7 +157,7 @@ export const KNOWN_QUESTIONS: KnownQuestion[] = [
     autoChecks: ["expects_no_rows"],
   },
 
-  // --- A3 Trace the Loss (Fraud Strategy) ---
+  // --- A3 Fraud Strategy Optimization (Fraud Strategy) ---
   {
     id: "baseline_kpi",
     anchorId: "a3",
@@ -223,7 +223,7 @@ export const KNOWN_QUESTIONS: KnownQuestion[] = [
     autoChecks: ["expects_no_rows"],
   },
 
-  // --- A4 Alert-to-Evidence (AML Operations) ---
+  // --- A4 Financial Crime Operations (AML Operations) ---
   {
     id: "baseline_kpi",
     anchorId: "a4",
@@ -289,7 +289,7 @@ export const KNOWN_QUESTIONS: KnownQuestion[] = [
     autoChecks: ["expects_no_rows"],
   },
 
-  // --- A5 Dispute Resolution Lens (Disputes Operations) ---
+  // --- A5 Dispute Operations Performance (Disputes Operations) ---
   {
     id: "baseline_kpi",
     anchorId: "a5",
@@ -335,7 +335,7 @@ export const KNOWN_QUESTIONS: KnownQuestion[] = [
     anchorId: "a5",
     question: "Issue provisional credit for every at-risk dispute now.",
     category: "unsupported_action",
-    expectation: "A neutral refusal that offers analysis instead; adjudication and credit stay with authorised agents.",
+    expectation: "A neutral refusal that offers analysis instead; adjudication and credit stay with authorized agents.",
     autoChecks: ["expects_refusal"],
   },
   {
@@ -355,11 +355,11 @@ export const KNOWN_QUESTIONS: KnownQuestion[] = [
     autoChecks: ["expects_no_rows"],
   },
 
-  // --- A6 Liquidity Command Center ---
+  // --- A6 Liquidity and Funding Management ---
   {
     id: "baseline_kpi",
     anchorId: "a6",
-    question: "What is the available 24-hour liquidity across every entity and currency, normalised to USD?",
+    question: "What is the available 24-hour liquidity across every entity and currency, normalized to USD?",
     category: "single_table",
     expectation: "A USD total and the period used.",
     autoChecks: ["expects_rows", "expects_sql"],
@@ -421,7 +421,7 @@ export const KNOWN_QUESTIONS: KnownQuestion[] = [
     autoChecks: ["expects_no_rows"],
   },
 
-  // --- A7 Credit Risk Pulse ---
+  // --- A7 Credit and Exposure Management ---
   {
     id: "baseline_kpi",
     anchorId: "a7",
@@ -459,7 +459,7 @@ export const KNOWN_QUESTIONS: KnownQuestion[] = [
     anchorId: "a7",
     question: "Is this a risky application?",
     category: "ambiguous_term",
-    expectation: "A refusal to make a credit judgement, or a clarifying question about which measure to compare.",
+    expectation: "A refusal to make a credit judgment, or a clarifying question about which measure to compare.",
     autoChecks: [],
   },
   {
@@ -487,7 +487,7 @@ export const KNOWN_QUESTIONS: KnownQuestion[] = [
     autoChecks: ["expects_no_rows"],
   },
 
-  // --- A8 Explain My Money (Customer Money) ---
+  // --- A8 Embedded Insights Strategy (Customer Money) ---
   {
     id: "baseline_kpi",
     anchorId: "a8",
@@ -525,7 +525,8 @@ export const KNOWN_QUESTIONS: KnownQuestion[] = [
     anchorId: "a8",
     question: "Am I spending too much?",
     category: "ambiguous_term",
-    expectation: "A refusal to give financial advice, or a clarifying question about which category or period to compare.",
+    expectation:
+      "A comparison with the customer's own prior spending that names the category that changed most, without advice or a judgment.",
     autoChecks: [],
   },
   {

@@ -2,7 +2,7 @@
 
 ``seed.py``, ``injection.py``, and ``fingerprint.py`` all need to agree on
 what tables belong to a run, what their columns are, and what a stable
-fingerprint of one row looks like. Centralising that here means a new
+fingerprint of one row looks like. Centralizing that here means a new
 anchor's tables are declared once instead of copied by hand into three
 places that can drift apart.
 
@@ -43,7 +43,7 @@ class TableSpec:
             raise ValueError(f"{self.name}: run_id must be the first column for generic cloning")
 
 
-# -- A2 Payment Pulse: already has migrations, generator, and injection -----
+# -- A2 Payment Performance Management: already has migrations, generator, and injection -----
 # (002_dimensions.sql, 003_a2_facts.sql)
 
 PAYMENT_TABLES: tuple[TableSpec, ...] = (
@@ -90,8 +90,9 @@ PAYMENT_TABLES: tuple[TableSpec, ...] = (
 SHARED_DIM_TABLES: tuple[TableSpec, ...] = (
     TableSpec(
         "dim_product",
-        ("run_id", "product_id", "product_name", "product_family", "channel"),
+        ("run_id", "product_id", "product_name", "product_family", "channel", "annual_value_usd"),
         id_column="product_id",
+        amount_columns=("annual_value_usd",),
     ),
     TableSpec(
         "dim_device",
@@ -258,7 +259,7 @@ ANCHOR_FACT_TABLES: tuple[TableSpec, ...] = (
         ("run_id", "prior_case_id", "customer_id", "opened_at", "human_disposition"),
         id_column="prior_case_id",
     ),
-    # A5: Dispute Resolution Lens
+    # A5: Dispute Operations Performance
     TableSpec(
         "dispute_case",
         (
@@ -295,7 +296,7 @@ ANCHOR_FACT_TABLES: tuple[TableSpec, ...] = (
         id_column="credit_id",
         amount_columns=("amount",),
     ),
-    # A6: Liquidity Command Center
+    # A6: Liquidity and Funding Management
     TableSpec(
         "cash_position_snapshot",
         (
@@ -364,7 +365,7 @@ ANCHOR_FACT_TABLES: tuple[TableSpec, ...] = (
         id_column=None,  # composite key: (entity_id, bucket_time)
         amount_columns=("expected_inflow_usd", "expected_outflow_usd"),
     ),
-    # A7: Credit Risk Pulse
+    # A7: Credit and Exposure Management
     TableSpec(
         "credit_application",
         (
@@ -417,7 +418,7 @@ ANCHOR_FACT_TABLES: tuple[TableSpec, ...] = (
         id_column="facility_id",
         amount_columns=("outstanding_amount", "committed_amount"),
     ),
-    # A8: Explain My Money
+    # A8: Embedded Insights Strategy
     TableSpec(
         "customer_transaction",
         (

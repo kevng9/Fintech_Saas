@@ -61,7 +61,7 @@ DEFINITION = ScenarioDefinition(
         },
         "tolerance": {"referral_rate": 0.0005, "submit_to_open_rate": 0.0005},
         "narrative": (
-            "The high_mobile cohort adds 100 session starts, 80 applications, 40 "
+            "A high-intent mobile cohort adds 100 session starts, 80 applications, 40 "
             "manual-review referrals, and 20 approved openings: a 50 percent "
             "referral rate and a 25 percent submit-to-open conversion."
         ),

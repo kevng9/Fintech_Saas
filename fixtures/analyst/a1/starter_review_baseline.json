@@ -1,0 +1,54 @@
+{
+  "anchor": "a1",
+  "fixture_version": "1.0.0",
+  "id": "starter_review_baseline",
+  "latency_ms": 1800,
+  "match": [
+    "manual review vs straight through",
+    "review path comparison"
+  ],
+  "prompt": "Compare manual review with straight-through applications.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Straight-through applications approve at **82.95%** against **42.86%** for manual review, and decide almost three times faster.\n\n- Straight-through: **217** applications, **180** approved, **30.8** minutes to decision on average.\n- Manual review: **42** applications, **18** approved, **84.1** minutes to decision.\n\nThat gap is expected, since review exists to catch harder cases. Whether review is referring the right applicants is not something this data can show.",
+      "sql": {
+        "command": "SELECT review_path, SUM(applications) AS applications, SUM(approved) AS approved, SUM(approved) / SUM(applications) AS approval_rate, SUM(avg_minutes_to_decision * applications) / SUM(applications) AS avg_minutes_to_decision\nFROM aa_digital_review_comparison\nGROUP BY review_path",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_digital_review_comparison"
+        ]
+      },
+      "table": {
+        "columns": [
+          "review_path",
+          "applications",
+          "approved",
+          "approval_rate",
+          "avg_minutes_to_decision"
+        ],
+        "rows": [
+          [
+            "straight_through",
+            217,
+            180,
+            0.8295,
+            30.8
+          ],
+          [
+            "manual_review",
+            42,
+            18,
+            0.4286,
+            84.1
+          ]
+        ],
+        "row_count": 2,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "baseline"
+}

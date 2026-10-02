@@ -1,4 +1,4 @@
-# Aura Analyst Domain manifest for A2 Payment Pulse.
+# Aura Analyst Domain manifest for A2 Payment Performance Management.
 #
 # This file is the source of INTENT. The SingleStore Cloud Portal remains the
 # source of DEPLOYED state: public context-management APIs are not documented,
@@ -8,7 +8,7 @@
 
 anchor: a2
 domain_name: a2_payment_pulse
-context_version: 1.0.0
+context_version: 1.2.0
 fixture_version: 1.0.0
 validated_at: null
 database: fintech_demo
@@ -41,9 +41,9 @@ tables:
       timeout_decline_rate: timeout_declines divided by attempts.
       p95_latency_ms: 95th percentile authorization latency in milliseconds.
       avg_latency_ms: Mean authorization latency in milliseconds.
-      amount_attempted_usd: Sum of attempted amounts, normalised to US dollars.
-      amount_approved_usd: Sum of approved amounts, normalised to US dollars.
-      amount_declined_usd: Sum of declined amounts, normalised to US dollars.
+      amount_attempted_usd: Sum of attempted amounts, normalized to US dollars.
+      amount_approved_usd: Sum of approved amounts, normalized to US dollars.
+      amount_declined_usd: Sum of declined amounts, normalized to US dollars.
       contracted_sla_ms: Contracted latency SLA for the processor, in milliseconds.
 
   - name: aa_payment_decline_mix
@@ -62,7 +62,7 @@ tables:
       response_code: Decline reason, for example TIMEOUT, DO_NOT_HONOR, INSUFFICIENT_FUNDS.
       decline_count: Declines in the group.
       avg_latency_ms: Mean latency of the declined attempts in the group.
-      declined_amount_usd: Sum of declined amounts in the group, normalised to US dollars.
+      declined_amount_usd: Sum of declined amounts in the group, normalized to US dollars.
       processor_hour_declines: Total declines for the processor in that hour.
       share_of_processor_hour_declines: decline_count divided by processor_hour_declines.
 
@@ -86,7 +86,7 @@ tables:
       merchant_category: Merchant category.
       customer_id: Synthetic customer identifier.
       amount: Attempt amount in the issuer currency.
-      amount_usd: Attempt amount normalised to US dollars. Use this to sum or compare value.
+      amount_usd: Attempt amount normalized to US dollars. Use this to sum or compare value.
       currency: Issuer currency of the attempt.
       response_code: APPROVED or the decline reason.
       approved: 1 when approved, 0 when declined.
@@ -121,6 +121,12 @@ instructions: |
   Use the demo logical clock exposed by the views. Never use wall-clock now().
   State the selected period, filters, and comparison baseline in the answer.
   Distinguish observed facts, calculated metrics, and interpretations.
+  With every table, chart, or other dataset, write the commentary in Markdown
+  using this shape: an opening sentence that states the main comparison and
+  bolds the key figure; a bullet list of the key figures, with each figure in
+  bold; and a closing sentence on what the pattern may mean, including any
+  material limitation or missing context. Do not put Markdown inside table cells.
+  In the commentary, round rates to two decimals and durations to one decimal.
   Do not infer causation from correlation. A correlated change is a candidate
   explanation for a human to confirm, not a cause.
   Do not make or recommend regulated decisions. Do not approve, decline, block,
@@ -132,13 +138,13 @@ instructions: |
   between 0 and 1. Present them as percentages with two decimals.
   Latency is in milliseconds. Compare it against contracted_sla_ms when useful.
   Attempts settle in several currencies. Always aggregate value using the
-  *_usd columns, and say that amounts are normalised to US dollars.
+  *_usd columns, and say that amounts are normalized to US dollars.
   Never reveal or request secrets or direct identifiers.
   Prefer a concise answer with a supporting table or chart.
 
 starter_prompts:
   - Show authorization rate, p95 latency, and decline volume by hour.
-  - During the weakest window, rank processors and rails against the prior seven-day baseline.
+  - For P2 / Mastercard / GB in the incident window, compare approval and p95 latency with its prior seven-day baseline.
   - Break the largest change down by merchant category and response code.
 
 known_questions:

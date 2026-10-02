@@ -131,36 +131,73 @@ def register(anchor: str, fixtures: list[dict]) -> None:
 
 
 # ---------------------------------------------------------------------------
-# A1 Digital Journey Intelligence
+# A1 Digital Funnel Performance
 # ---------------------------------------------------------------------------
+A1_FUNNEL_SQL = (
+    "SELECT channel, SUM(sessions_started) AS sessions_started, "
+    "SUM(applications_submitted) AS applications_submitted, "
+    "SUM(referred_to_review) AS referred_to_review, "
+    "SUM(applications_approved) AS applications_approved, "
+    "SUM(applications_submitted) / SUM(sessions_started) AS completion_rate\n"
+    "FROM aa_digital_funnel\n"
+    "WHERE session_date > DATE_SUB((SELECT logical_time FROM demo_active_run WHERE singleton_id = 1), INTERVAL 30 DAY)\n"
+    "GROUP BY channel"
+)
+A1_FUNNEL_COLUMNS = [
+    "channel", "sessions_started", "applications_submitted", "referred_to_review",
+    "applications_approved", "completion_rate",
+]
+A1_REVIEW_SQL = (
+    "SELECT review_path, SUM(applications) AS applications, SUM(approved) AS approved, "
+    "SUM(approved) / SUM(applications) AS approval_rate, "
+    "SUM(avg_minutes_to_decision * applications) / SUM(applications) AS avg_minutes_to_decision\n"
+    "FROM aa_digital_review_comparison\nGROUP BY review_path"
+)
+A1_REVIEW_COLUMNS = ["review_path", "applications", "approved", "approval_rate", "avg_minutes_to_decision"]
+A1_LOST_SQL = (
+    "WITH prior AS (\n"
+    "  SELECT intent_cohort, SUM(applications_opened) / SUM(applications_submitted) AS baseline_open_rate\n"
+    "  FROM aa_digital_intent_cohort WHERE session_date < '2026-07-25' GROUP BY intent_cohort\n"
+    "), today AS (\n"
+    "  SELECT intent_cohort, SUM(applications_submitted) AS applications_today, "
+    "SUM(applications_opened) AS opened_today, SUM(referred_to_review) AS referred_today, "
+    "SUM(submitted_value_usd) AS submitted_value_usd, SUM(opened_value_usd) AS opened_value_usd\n"
+    "  FROM aa_digital_intent_cohort WHERE session_date = '2026-07-25' GROUP BY intent_cohort\n"
+    ")\n"
+    "SELECT t.intent_cohort, t.applications_today, t.referred_today, t.opened_today, p.baseline_open_rate,\n"
+    "  GREATEST(t.applications_today * p.baseline_open_rate - t.opened_today, 0) AS openings_lost,\n"
+    "  GREATEST(t.submitted_value_usd * p.baseline_open_rate - t.opened_value_usd, 0) AS lost_value_usd\n"
+    "FROM today t JOIN prior p ON p.intent_cohort = t.intent_cohort\n"
+    "ORDER BY lost_value_usd DESC"
+)
+A1_LOST_COLUMNS = [
+    "intent_cohort", "applications_today", "referred_today", "opened_today",
+    "baseline_open_rate", "openings_lost", "lost_value_usd",
+]
+
 a1_starters = [
     fixture(
         "a1",
         "starter_funnel_baseline",
-        "Show the account-opening funnel by step and channel for the last 30 logical days.",
+        "Show the account-opening funnel by step and channel for the last 30 days, including completion and abandonment rates.",
         ["funnel by channel", "sessions applications referrals", "account opening funnel"],
         "baseline",
         [
             result(
-                "Across the last 30 logical days, digital channels started 8,400 sessions, 5,460 "
-                "applications were submitted (65.0% completion), 819 were referred to manual review "
-                "(15.0% referral rate), and 4,368 were approved. Organic and paid_search behave "
-                "similarly; branch_referral has a smaller volume but a slightly higher completion rate.",
-                sql=(
-                    "SELECT channel, SUM(sessions_started) AS sessions_started, "
-                    "SUM(applications_submitted) AS applications_submitted, "
-                    "SUM(referred_to_review) AS referred_to_review, "
-                    "SUM(applications_approved) AS applications_approved\n"
-                    "FROM aa_digital_funnel\n"
-                    "WHERE session_date > DATE_SUB((SELECT logical_time FROM demo_active_run WHERE singleton_id = 1), INTERVAL 30 DAY)\n"
-                    "GROUP BY channel"
-                ),
+                "Session-to-application completion is **68.52%** across both channels: **378** sessions "
+                "started and **259** applications were submitted. Only seven logical days of history "
+                "exist (2026-07-18 to 2026-07-25), so that is the period shown rather than 30 days.\n\n"
+                "- mobile_app: **224** sessions, **155** applications (**69.20%** completion, **30.80%** "
+                "abandonment), **24** referred to manual review, **120** opened.\n"
+                "- web: **154** sessions, **104** applications (**67.53%** completion, **32.47%** "
+                "abandonment), **18** referred, **78** opened.\n\n"
+                "The two channels convert within two points of each other, so neither stands out.",
+                sql=A1_FUNNEL_SQL,
                 tables_used=["aa_digital_funnel"],
-                columns=["channel", "sessions_started", "applications_submitted", "referred_to_review", "applications_approved"],
+                columns=A1_FUNNEL_COLUMNS,
                 rows=[
-                    ["organic", 3600, 2340, 351, 1872],
-                    ["paid_search", 3200, 2080, 312, 1664],
-                    ["branch_referral", 1600, 1040, 156, 832],
+                    ["mobile_app", 224, 155, 24, 120, 0.6920],
+                    ["web", 154, 104, 18, 78, 0.6753],
                 ],
             )
         ],
@@ -168,55 +205,114 @@ a1_starters = [
     fixture(
         "a1",
         "starter_funnel_after",
-        "Show the account-opening funnel by step and channel for the last 30 logical days.",
+        "Show the account-opening funnel by step and channel for the last 30 days, including completion and abandonment rates.",
         ["funnel by channel", "sessions applications referrals", "account opening funnel"],
         "after_injection",
         [
             result(
-                "The same 30-day funnel now includes the injected high_intent_promo cohort: 100 "
-                "additional sessions, 80 additional applications, and 40 additional manual-review "
-                "referrals landed in the digital channel, which is why digital's referral rate is "
-                "visibly above its usual band this period. Approvals are unaffected because those "
-                "referrals have not yet reached a human disposition.",
-                sql=(
-                    "SELECT channel, SUM(sessions_started) AS sessions_started, "
-                    "SUM(applications_submitted) AS applications_submitted, "
-                    "SUM(referred_to_review) AS referred_to_review, "
-                    "SUM(applications_approved) AS applications_approved\n"
-                    "FROM aa_digital_funnel\n"
-                    "WHERE session_date > DATE_SUB((SELECT logical_time FROM demo_active_run WHERE singleton_id = 1), INTERVAL 30 DAY)\n"
-                    "GROUP BY channel"
-                ),
+                "mobile_app now converts sessions to applications at **72.84%** against **68.83%** on web, "
+                "but far fewer of its applications open an account. Only seven logical days of history "
+                "exist (2026-07-18 to 2026-07-25), so that is the period shown rather than 30 days.\n\n"
+                "- mobile_app: **324** sessions, **236** applications (**27.16%** abandonment), **65** "
+                "referred to manual review (**27.54%**), **140** opened.\n"
+                "- web: **154** sessions, **106** applications (**31.17%** abandonment), **19** referred "
+                "(**17.92%**), **80** opened.\n"
+                "- Since 09:00, mobile_app gained **100** sessions, **81** applications, and **41** "
+                "referrals, but only **20** more openings.\n\n"
+                "The extra demand is reaching the application step; the loss happens after submission. "
+                "Ask which cohort lost the most openings to see where.",
+                sql=A1_FUNNEL_SQL,
                 tables_used=["aa_digital_funnel"],
-                columns=["channel", "sessions_started", "applications_submitted", "referred_to_review", "applications_approved"],
+                columns=A1_FUNNEL_COLUMNS,
                 rows=[
-                    ["organic", 3600, 2340, 351, 1872],
-                    ["paid_search", 3300, 2160, 392, 1664],
-                    ["branch_referral", 1600, 1040, 156, 832],
+                    ["mobile_app", 324, 236, 65, 140, 0.7284],
+                    ["web", 154, 106, 19, 80, 0.6883],
                 ],
             )
         ],
     ),
     fixture(
         "a1",
-        "starter_review_comparison",
+        "starter_review_baseline",
         "Compare manual review with straight-through applications.",
         ["manual review vs straight through", "review path comparison"],
-        "any",
+        "baseline",
         [
             result(
-                "Straight-through applications approve at 88.0% with an average 4 minutes to decision. "
-                "Manual review approves at 61.0% with an average 214 minutes to decision, which is the "
-                "expected trade-off: review exists to catch the harder cases, at the cost of speed.",
-                sql=(
-                    "SELECT review_path, product_id, applications, approval_rate, avg_minutes_to_decision\n"
-                    "FROM aa_digital_review_comparison\nORDER BY applications DESC"
-                ),
+                "Straight-through applications approve at **82.95%** against **42.86%** for manual "
+                "review, and decide almost three times faster.\n\n"
+                "- Straight-through: **217** applications, **180** approved, **30.8** minutes to decision "
+                "on average.\n"
+                "- Manual review: **42** applications, **18** approved, **84.1** minutes to decision.\n\n"
+                "That gap is expected, since review exists to catch harder cases. Whether review is "
+                "referring the right applicants is not something this data can show.",
+                sql=A1_REVIEW_SQL,
                 tables_used=["aa_digital_review_comparison"],
-                columns=["review_path", "product_id", "applications", "approval_rate", "avg_minutes_to_decision"],
+                columns=A1_REVIEW_COLUMNS,
                 rows=[
-                    ["straight_through", "CHECKING", 4200, 0.88, 4],
-                    ["manual_review", "CHECKING", 620, 0.61, 214],
+                    ["straight_through", 217, 180, 0.8295, 30.8],
+                    ["manual_review", 42, 18, 0.4286, 84.1],
+                ],
+            )
+        ],
+    ),
+    fixture(
+        "a1",
+        "starter_review_after",
+        "Compare manual review with straight-through applications.",
+        ["manual review vs straight through", "review path comparison"],
+        "after_injection",
+        [
+            result(
+                "Straight-through applications approve at **70.16%** against **46.43%** for manual "
+                "review, a gap of **23.73** points.\n\n"
+                "- Straight-through: **258** applications, **181** approved, **26.4** minutes to decision "
+                "on average.\n"
+                "- Manual review: **84** applications, **39** approved, **47.5** minutes to decision.\n"
+                "- Manual-review volume doubled from **42** this morning, and straight-through approval "
+                "fell from **82.95%** because **40** new straight-through applications were all declined.\n\n"
+                "Both review paths are deciding more applications against the same customers, which "
+                "points to one cohort rather than a change in review policy. Confirm with the "
+                "onboarding team.",
+                sql=A1_REVIEW_SQL,
+                tables_used=["aa_digital_review_comparison"],
+                columns=A1_REVIEW_COLUMNS,
+                rows=[
+                    ["straight_through", 258, 181, 0.7016, 26.4],
+                    ["manual_review", 84, 39, 0.4643, 47.5],
+                ],
+            )
+        ],
+    ),
+    fixture(
+        "a1",
+        "starter_cohort_driver_baseline",
+        "Which intent cohort lost the most account openings, and at which journey stage?",
+        ["cohort driving manual review", "highest referral cohort", "intent cohort ranking", "lost account openings stage"],
+        "baseline",
+        [
+            result(
+                "No intent cohort is losing a material number of openings: submit-to-open rates sit "
+                "between **71.74%** and **79.71%** across all four cohorts.\n\n"
+                "- low_web has the lowest open rate (**71.74%**, 33 of 46 applications) and the highest "
+                "referral rate (**26.09%**).\n"
+                "- At the **76.45%** open rate across all cohorts, low_web would have opened about **2** "
+                "more accounts.\n"
+                "- high_mobile has the most volume (**86** applications) and opens **75.58%** of them.\n\n"
+                "The spread is within what a small sample produces, so there is no loss to chase yet.",
+                sql=(
+                    "SELECT intent_cohort, SUM(applications_submitted) AS applications_submitted, "
+                    "SUM(referred_to_review) / SUM(applications_submitted) AS referral_rate, "
+                    "SUM(applications_opened) / SUM(applications_submitted) AS submit_to_open_rate\n"
+                    "FROM aa_digital_intent_cohort\nGROUP BY intent_cohort\nORDER BY submit_to_open_rate"
+                ),
+                tables_used=["aa_digital_intent_cohort"],
+                columns=["intent_cohort", "applications_submitted", "referral_rate", "submit_to_open_rate"],
+                rows=[
+                    ["low_web", 46, 0.2609, 0.7174],
+                    ["high_mobile", 86, 0.2093, 0.7558],
+                    ["medium_web", 58, 0.1034, 0.7759],
+                    ["medium_mobile", 69, 0.0870, 0.7971],
                 ],
             )
         ],
@@ -224,24 +320,31 @@ a1_starters = [
     fixture(
         "a1",
         "starter_cohort_driver",
-        "Which high-intent cohort explains the largest conversion change?",
-        ["cohort driving manual review", "highest referral cohort", "intent cohort ranking"],
-        "any",
+        "Which intent cohort lost the most account openings, and at which journey stage?",
+        ["cohort driving manual review", "highest referral cohort", "intent cohort ranking", "lost account openings stage"],
+        "after_injection",
         [
             result(
-                "high_intent_promo has the highest manual-review referral rate today at 50.0%, well "
-                "above the other tracked cohorts, which sit between 10% and 18%. It is also the only "
-                "cohort with scenario activity flagged in the current run.",
-                sql=(
-                    "SELECT intent_cohort, channel, sessions_started, submit_rate, referral_rate\n"
-                    "FROM aa_digital_intent_cohort\nORDER BY referral_rate DESC LIMIT 5"
-                ),
+                "high_mobile lost the most account openings today, about **38**, worth an estimated "
+                "**$26,103.70** in first-year revenue, and the loss happens at the **manual-review** "
+                "stage, not at application start.\n\n"
+                "- Demand is healthy: **85** applications today from **107** sessions.\n"
+                "- **41** of those 85 applications (**48.24%**) were referred to manual review, against "
+                "**20.99%** over the prior seven logical days.\n"
+                "- Only **25** opened an account. At the cohort's own prior open rate of **74.07%**, about "
+                "**63** would have.\n"
+                "- The other three cohorts lost less than one opening each.\n\n"
+                "The dollar figure uses illustrative first-year product values set for this demo, not "
+                "benchmarks. Which review rule is referring these applicants is not in this Domain and "
+                "needs confirming with the onboarding team.",
+                sql=A1_LOST_SQL,
                 tables_used=["aa_digital_intent_cohort"],
-                columns=["intent_cohort", "channel", "sessions_started", "submit_rate", "referral_rate"],
+                columns=A1_LOST_COLUMNS,
                 rows=[
-                    ["high_intent_promo", "paid_search", 100, 0.80, 0.50],
-                    ["price_sensitive", "organic", 340, 0.62, 0.18],
-                    ["returning_visitor", "organic", 510, 0.71, 0.10],
+                    ["high_mobile", 85, 41, 25, 0.7407, 37.96, 26103.70],
+                    ["low_web", 2, 0, 1, 0.7273, 0.45, 136.36],
+                    ["medium_web", 6, 1, 5, 0.7778, 0, 0],
+                    ["medium_mobile", 5, 2, 4, 0.7846, 0, 0],
                 ],
             )
         ],
@@ -250,54 +353,80 @@ a1_starters = [
 a1_answers = {
     "baseline_kpi": dict(
         text=(
-            "Session-to-application completion is 65.0% over the last 30 logical days: 8,400 sessions "
-            "started and 5,460 applications were submitted."
+            "Session-to-application completion is **71.55%**: **478** sessions started and **342** "
+            "applications were submitted. Only seven logical days of history exist (2026-07-18 to "
+            "2026-07-25), so that is the period used rather than 30 days."
         ),
-        sql="SELECT SUM(sessions_started) AS sessions_started, SUM(applications_submitted) AS applications_submitted FROM aa_digital_funnel",
+        sql=(
+            "SELECT SUM(sessions_started) AS sessions_started, SUM(applications_submitted) AS applications_submitted, "
+            "SUM(applications_submitted) / SUM(sessions_started) AS completion_rate FROM aa_digital_funnel"
+        ),
         tables_used=["aa_digital_funnel"],
         columns=["sessions_started", "applications_submitted", "completion_rate"],
-        rows=[[8400, 5460, 0.65]],
+        rows=[[478, 342, 0.7155]],
     ),
     "comparison": dict(
         text=(
-            "Manual review approves at 61.0% versus 88.0% for straight-through applications, a 27-point "
-            "gap that is consistent with review existing to catch the harder cases."
+            "Straight-through applications approve at **70.16%** against **46.43%** for manual review, "
+            "so straight-through is higher by **23.73** points."
         ),
-        sql="SELECT review_path, approval_rate FROM aa_digital_review_comparison",
+        sql=(
+            "SELECT review_path, SUM(approved) / SUM(applications) AS approval_rate "
+            "FROM aa_digital_review_comparison GROUP BY review_path"
+        ),
         tables_used=["aa_digital_review_comparison"],
         columns=["review_path", "approval_rate"],
-        rows=[["manual_review", 0.61], ["straight_through", 0.88]],
+        rows=[["straight_through", 0.7016], ["manual_review", 0.4643]],
     ),
     "multi_table_drilldown": dict(
         text=(
-            "high_intent_promo drives the largest share of manual-review referrals: 40 of its 80 "
-            "submitted applications were referred, a 50.0% referral rate."
+            "high_mobile explains the largest share of manual-review referrals: **58** of **84** "
+            "(**69.05%**). Its referral rate is **34.94%**, with 58 of its 166 applications referred."
         ),
-        sql="SELECT intent_cohort, referred_to_review, referral_rate FROM aa_digital_intent_cohort ORDER BY referral_rate DESC LIMIT 1",
+        sql=(
+            "SELECT intent_cohort, SUM(applications_submitted) AS applications_submitted, "
+            "SUM(referred_to_review) AS referred_to_review, "
+            "SUM(referred_to_review) / SUM(applications_submitted) AS referral_rate "
+            "FROM aa_digital_intent_cohort GROUP BY intent_cohort ORDER BY referred_to_review DESC"
+        ),
         tables_used=["aa_digital_intent_cohort"],
-        columns=["intent_cohort", "referred_to_review", "referral_rate"],
-        rows=[["high_intent_promo", 40, 0.50]],
+        columns=["intent_cohort", "applications_submitted", "referred_to_review", "referral_rate"],
+        rows=[
+            ["high_mobile", 166, 58, 0.3494],
+            ["low_web", 46, 12, 0.2609],
+            ["medium_web", 60, 7, 0.1167],
+            ["medium_mobile", 70, 7, 0.1000],
+        ],
     ),
     "session_followup": dict(
         text=(
-            "For high_intent_promo, the paid_search channel accounts for essentially all of the cohort's "
-            "activity this period: 100 sessions, 80 applications, 40 referrals."
+            "high_mobile runs entirely through mobile_app: **226** sessions, **166** applications, and "
+            "**58** referrals to manual review. It has no web activity to compare against."
         ),
-        sql="SELECT channel, sessions_started, applications_submitted, referred_to_review FROM aa_digital_intent_cohort WHERE intent_cohort = 'high_intent_promo'",
+        sql=(
+            "SELECT channel, SUM(sessions_started) AS sessions_started, SUM(applications_submitted) AS applications_submitted, "
+            "SUM(referred_to_review) AS referred_to_review FROM aa_digital_intent_cohort "
+            "WHERE intent_cohort = 'high_mobile' GROUP BY channel"
+        ),
         tables_used=["aa_digital_intent_cohort"],
         columns=["channel", "sessions_started", "applications_submitted", "referred_to_review"],
-        rows=[["paid_search", 100, 80, 40]],
+        rows=[["mobile_app", 226, 166, 58]],
     ),
     "ambiguous_term": dict(
         text=(
-            "\"Best\" can mean the highest completion rate, the highest approval rate, or the lowest "
-            "referral rate, and channels do not rank the same way on all three. Tell me which measure "
-            "you mean and I will rank channels on it."
+            "\"Best\" depends on the measure, and the two channels rank differently. mobile_app has the "
+            "higher completion rate (**72.84%** against **68.83%**), but web opens more of its "
+            "applications (**75.47%** against **59.32%**). Tell me which measure you mean and I will "
+            "rank on it."
         ),
-        sql="SELECT channel, SUM(applications_submitted)/SUM(sessions_started) AS completion_rate FROM aa_digital_funnel GROUP BY channel",
+        sql=(
+            "SELECT channel, SUM(applications_submitted) / SUM(sessions_started) AS completion_rate, "
+            "SUM(applications_approved) / SUM(applications_submitted) AS submit_to_open_rate "
+            "FROM aa_digital_funnel GROUP BY channel"
+        ),
         tables_used=["aa_digital_funnel"],
-        columns=["channel", "completion_rate"],
-        rows=[["organic", 0.65], ["paid_search", 0.65], ["branch_referral", 0.65]],
+        columns=["channel", "completion_rate", "submit_to_open_rate"],
+        rows=[["mobile_app", 0.7284, 0.5932], ["web", 0.6883, 0.7547]],
     ),
     "unsupported_action": dict(
         text=(
@@ -309,9 +438,9 @@ a1_answers = {
     ),
     "no_data": dict(
         text=(
-            "There is no digital-channel data for channel = 'branch' in this dataset: this anchor tracks "
-            "organic, paid_search, and branch_referral. The filter returns no rows rather than a low "
-            "value, and I have not substituted a nearby channel."
+            "There is no digital-channel data for channel = 'branch' in this dataset: this Domain tracks "
+            "only mobile_app and web. The filter returns no rows rather than a low value, and I have not "
+            "substituted a nearby channel."
         ),
         sql="SELECT * FROM aa_digital_funnel WHERE channel = 'branch'",
         tables_used=["aa_digital_funnel"],
@@ -333,8 +462,42 @@ register("a1", a1_starters + known_question_fixtures("a1", {}, a1_answers))
 
 
 # ---------------------------------------------------------------------------
-# A3 Trace the Loss (Fraud Strategy)
+# A3 Fraud Strategy Optimization (Fraud Strategy)
 # ---------------------------------------------------------------------------
+A3_LOSS_SQL = (
+    "SELECT channel, fraud_type, cases_total, confirmed_fraud_cases, confirmed_loss_usd, "
+    "false_positive_rate\nFROM aa_fraud_loss_summary\nORDER BY confirmed_loss_usd DESC"
+)
+A3_LOSS_COLUMNS = ["channel", "fraud_type", "cases_total", "confirmed_fraud_cases", "confirmed_loss_usd", "false_positive_rate"]
+A3_LOSS_ROWS_BASELINE = [
+    ["atm", "first_party", 2, 2, 1519.75, 0.0],
+    ["card_present", "card_testing", 1, 1, 840.84, 0.0],
+    ["card_not_present", "account_takeover", 1, 1, 526.16, 0.0],
+    ["card_not_present", "first_party", 3, 1, 524.86, 0.6667],
+    ["atm", "card_testing", 1, 1, 381.30, 0.0],
+]
+A3_PATTERN_SQL = (
+    "SELECT human_disposition, COUNT(*) AS cases,\n"
+    "  SUM(JSON_ARRAY_CONTAINS_STRING(reason_codes, 'velocity_breach')) AS velocity_breach_cases,\n"
+    "  SUM(JSON_ARRAY_CONTAINS_STRING(reason_codes, 'geo_anomaly')) AS geo_anomaly_cases,\n"
+    "  COUNT(DISTINCT device_id) AS distinct_devices,\n"
+    "  MAX(device_alert_count) AS max_device_alert_count,\n"
+    "  ROUND(AVG(account_age_days), 1) AS avg_account_age_days,\n"
+    "  SUM(confirmed_loss_usd) AS confirmed_loss_usd\n"
+    "FROM aa_fraud_segment_evidence\n"
+    "WHERE channel = 'card_not_present' AND fraud_type = 'card_testing'\n"
+    "  AND human_disposition IN ('confirmed_fraud', 'legitimate')\n"
+    "GROUP BY human_disposition"
+)
+A3_PATTERN_COLUMNS = [
+    "human_disposition", "cases", "velocity_breach_cases", "geo_anomaly_cases",
+    "distinct_devices", "max_device_alert_count", "avg_account_age_days", "confirmed_loss_usd",
+]
+A3_REVIEW_SQL = (
+    "SELECT case_id, fraud_type, channel, score, human_disposition, confirmed_loss_usd\n"
+    "FROM aa_fraud_case_review\nORDER BY confirmed_loss_usd DESC, score DESC LIMIT 12"
+)
+
 a3_starters = [
     fixture(
         "a3",
@@ -344,20 +507,17 @@ a3_starters = [
         "baseline",
         [
             result(
-                "Confirmed fraud loss over the run totals $184,200 across five fraud types. account_takeover "
-                "on card_not_present carries the most loss at $61,400, with a false-positive rate of 22.0%.",
-                sql=(
-                    "SELECT channel, fraud_type, cases_total, confirmed_fraud_cases, confirmed_loss_usd, "
-                    "false_positive_rate\nFROM aa_fraud_loss_summary\nORDER BY confirmed_loss_usd DESC"
-                ),
+                "Over the seven baseline days, **ATM first-party fraud** leads investigator-confirmed "
+                "loss at **$1,519.75** from 2 confirmed cases.\n\n"
+                "- Total confirmed loss: **$3,792.91** across **21** cases.\n"
+                "- Overall false-positive rate: **66.67%** (12 legitimate of 18 dispositioned cases).\n"
+                "- No segment has more than **2** confirmed cases.\n\n"
+                "Loss is spread thinly across segments, so no single cluster stands out yet. Amounts "
+                "are normalized to US dollars.",
+                sql=A3_LOSS_SQL,
                 tables_used=["aa_fraud_loss_summary"],
-                columns=["channel", "fraud_type", "cases_total", "confirmed_fraud_cases", "confirmed_loss_usd", "false_positive_rate"],
-                rows=[
-                    ["card_not_present", "account_takeover", 58, 22, 61400, 0.22],
-                    ["ach", "synthetic_identity", 41, 15, 48900, 0.19],
-                    ["card_not_present", "card_testing", 63, 18, 39800, 0.31],
-                    ["wire", "authorized_push_payment", 24, 9, 34100, 0.12],
-                ],
+                columns=A3_LOSS_COLUMNS,
+                rows=A3_LOSS_ROWS_BASELINE,
             )
         ],
     ),
@@ -369,46 +529,83 @@ a3_starters = [
         "after_injection",
         [
             result(
-                "Confirmed fraud loss now totals $186,700: the injected loss cluster added $2,500 in "
-                "confirmed loss to account_takeover on card_not_present, which now leads the ranking by a "
-                "wider margin, with a false-positive rate of 58.33% for the injected cohort specifically.",
-                sql=(
-                    "SELECT channel, fraud_type, cases_total, confirmed_fraud_cases, confirmed_loss_usd, "
-                    "false_positive_rate\nFROM aa_fraud_loss_summary\nORDER BY confirmed_loss_usd DESC"
-                ),
+                "My answer has changed since the last run: **card testing on card-not-present** is "
+                "now the highest-loss segment at **$2,500**, ahead of ATM first-party fraud at "
+                "$1,519.75.\n\n"
+                "- The segment had no confirmed loss before; **12** cases arrived in the last few "
+                "minutes and investigators confirmed **5** as fraud.\n"
+                "- Its false-positive rate is **58.33%** (7 of 12 dispositioned cases were legitimate).\n"
+                "- Total confirmed loss rose from $3,792.91 to **$6,292.91**.\n\n"
+                "A new segment overtaking the ranking within minutes is worth an investigator's "
+                "attention; the next step is to see what separates its confirmed fraud from its "
+                "false positives. Amounts are normalized to US dollars.",
+                sql=A3_LOSS_SQL,
                 tables_used=["aa_fraud_loss_summary"],
-                columns=["channel", "fraud_type", "cases_total", "confirmed_fraud_cases", "confirmed_loss_usd", "false_positive_rate"],
+                columns=A3_LOSS_COLUMNS,
+                rows=[["card_not_present", "card_testing", 12, 5, 2500.00, 0.5833], *A3_LOSS_ROWS_BASELINE],
+            )
+        ],
+    ),
+    fixture(
+        "a3",
+        "starter_segment_pattern_baseline",
+        "For the highest-loss segment, compare reason codes, device reuse, account age, and merchant for confirmed fraud versus false positives.",
+        ["reason codes device reuse account age merchant", "confirmed fraud versus false positives"],
+        "baseline",
+        [
+            result(
+                "The highest-loss segment, **ATM first-party fraud**, has **2** confirmed cases and "
+                "no false positives, so there is nothing to contrast yet.\n\n"
+                "- FCASE-A3B-000020: **$1,018.01**, reason code geo_anomaly, device used on 1 alert, "
+                "account 2,441 days old, Silverline Ride Markets.\n"
+                "- FCASE-A3B-000008: **$501.74**, reason code device_mismatch, device used on 1 alert, "
+                "account 678 days old, Copperfield Electronics Retail.\n\n"
+                "The two cases share no reason code, device, or merchant, and two cases are too few "
+                "to call a pattern.",
+                sql=(
+                    "SELECT case_id, reason_codes, device_id, device_alert_count, account_age_days, "
+                    "merchant_name, confirmed_loss_usd\nFROM aa_fraud_segment_evidence\n"
+                    "WHERE channel = 'atm' AND fraud_type = 'first_party'\n"
+                    "ORDER BY confirmed_loss_usd DESC"
+                ),
+                tables_used=["aa_fraud_segment_evidence"],
+                columns=["case_id", "reason_codes", "device_id", "device_alert_count", "account_age_days", "merchant_name", "confirmed_loss_usd"],
                 rows=[
-                    ["card_not_present", "account_takeover", 70, 27, 63900, 0.24],
-                    ["ach", "synthetic_identity", 41, 15, 48900, 0.19],
-                    ["card_not_present", "card_testing", 63, 18, 39800, 0.31],
-                    ["wire", "authorized_push_payment", 24, 9, 34100, 0.12],
+                    ["FCASE-A3B-000020", '["geo_anomaly"]', "DEV-0034", 1, 2441, "Silverline Ride Markets", 1018.01],
+                    ["FCASE-A3B-000008", '["device_mismatch"]', "DEV-0001", 1, 678, "Copperfield Electronics Retail", 501.74],
                 ],
             )
         ],
     ),
     fixture(
         "a3",
-        "starter_segment_evidence",
-        "For the highest-loss segment, compare device reuse, account age, merchant, and velocity.",
-        ["device reuse account age merchant velocity", "segment evidence"],
-        "any",
+        "starter_segment_pattern_after",
+        "For the highest-loss segment, compare reason codes, device reuse, account age, and merchant for confirmed fraud versus false positives.",
+        ["reason codes device reuse account age merchant", "confirmed fraud versus false positives"],
+        "after_injection",
         [
             result(
-                "The highest-loss segment (account_takeover / card_not_present) shows heavy device reuse: "
-                "the median device has 4 prior alerts and the median account is 11 days old, both well "
-                "below the book average, alongside repeat merchants in digital goods.",
-                sql=(
-                    "SELECT merchant_category, customer_risk_tier, account_age_days, device_risk_band, "
-                    "device_alert_count\nFROM aa_fraud_segment_evidence\nWHERE case_id IN (SELECT case_id FROM aa_fraud_case_review "
-                    "WHERE fraud_type = 'account_takeover' ORDER BY confirmed_loss_usd DESC LIMIT 20)"
-                ),
-                tables_used=["aa_fraud_segment_evidence", "aa_fraud_case_review"],
-                columns=["merchant_category", "account_age_days", "device_risk_band", "device_alert_count"],
+                "In **card testing on card-not-present**, reason codes and device reuse separate "
+                "confirmed fraud from false positives cleanly: all **5** confirmed cases carry "
+                "velocity_breach and share **one device**, while all **7** false positives were "
+                "flagged on geo_anomaly alone.\n\n"
+                "- Confirmed fraud: **5 of 5** carry velocity_breach and cvv_retry; one device "
+                "appears on all **5** alerts; accounts average **1,645.4** days old.\n"
+                "- False positives: **7 of 7** carry only geo_anomaly; **7** different devices, none "
+                "on more than **2** alerts; accounts average **760.9** days old.\n"
+                "- Merchant does not separate them: all 12 are Electronics merchants, with 3 of the "
+                "5 confirmed cases at Harbor Electronics Retail and 4 of the 7 false positives at "
+                "Brightside Electronics Direct.\n\n"
+                "Rapid repeat attempts from one device on established accounts fit a card-testing "
+                "pattern rather than new-account fraud, and location alone flagged only legitimate "
+                "purchases here. This rests on 12 cases from one burst, so an investigator should "
+                "confirm it against a longer window.",
+                sql=A3_PATTERN_SQL,
+                tables_used=["aa_fraud_segment_evidence"],
+                columns=A3_PATTERN_COLUMNS,
                 rows=[
-                    ["Digital Goods", 9, "high", 5],
-                    ["Digital Goods", 14, "high", 3],
-                    ["Electronics", 6, "medium", 4],
+                    ["confirmed_fraud", 5, 5, 0, 1, 5, 1645.4, 2500.00],
+                    ["legitimate", 7, 0, 7, 7, 2, 760.9, 0.00],
                 ],
             )
         ],
@@ -421,18 +618,69 @@ a3_starters = [
         "any",
         [
             result(
-                "Twelve open or recently-dispositioned cases are ranked below by confirmed loss, then "
-                "alert score, for investigator review.",
-                sql=(
-                    "SELECT case_id, fraud_type, channel, score, human_disposition, confirmed_loss_usd\n"
-                    "FROM aa_fraud_case_review\nORDER BY confirmed_loss_usd DESC, score DESC LIMIT 12"
-                ),
+                "The **12** highest-loss cases are ranked below by confirmed loss, then alert score; "
+                "the largest is **FCASE-A3B-000020** at **$1,018.01**.\n\n"
+                "- The five card-testing burst cases (FCASE-A3LC-000 to -004) are **$500** each and "
+                "rank behind five larger baseline losses.\n"
+                "- **3** cases are still open and need a disposition: FCASE-A3B-000002, "
+                "FCASE-A3B-000004, and FCASE-A3B-000014.\n\n"
+                "Ranking by loss favors single large cases; ranking by segment surfaces the burst "
+                "sooner. Dispositions stay with fraud investigators.",
+                sql=A3_REVIEW_SQL,
                 tables_used=["aa_fraud_case_review"],
                 columns=["case_id", "fraud_type", "channel", "score", "human_disposition", "confirmed_loss_usd"],
                 rows=[
-                    ["CASE-00042", "account_takeover", "card_not_present", 0.91, "confirmed_fraud", 4200],
-                    ["CASE-00058", "account_takeover", "card_not_present", 0.88, "open", 0],
-                    ["CASE-00071", "synthetic_identity", "ach", 0.83, "legitimate", 0],
+                    ["FCASE-A3B-000020", "first_party", "atm", 0.723, "confirmed_fraud", 1018.01],
+                    ["FCASE-A3B-000007", "card_testing", "card_present", 0.9405, "confirmed_fraud", 840.84],
+                    ["FCASE-A3B-000005", "account_takeover", "card_not_present", 0.4028, "confirmed_fraud", 526.16],
+                    ["FCASE-A3B-000006", "first_party", "card_not_present", 0.4119, "confirmed_fraud", 524.86],
+                    ["FCASE-A3B-000008", "first_party", "atm", 0.6932, "confirmed_fraud", 501.74],
+                    ["FCASE-A3LC-004", "card_testing", "card_not_present", 0.87, "confirmed_fraud", 500.00],
+                    ["FCASE-A3LC-003", "card_testing", "card_not_present", 0.79, "confirmed_fraud", 500.00],
+                    ["FCASE-A3LC-002", "card_testing", "card_not_present", 0.71, "confirmed_fraud", 500.00],
+                    ["FCASE-A3LC-001", "card_testing", "card_not_present", 0.63, "confirmed_fraud", 500.00],
+                    ["FCASE-A3LC-000", "card_testing", "card_not_present", 0.55, "confirmed_fraud", 500.00],
+                    ["FCASE-A3B-000015", "card_testing", "atm", 0.3921, "confirmed_fraud", 381.30],
+                    ["FCASE-A3B-000003", "synthetic_identity", "atm", 0.9747, "legitimate", 0.00],
+                ],
+            )
+        ],
+    ),
+    fixture(
+        "a3",
+        "rule_change_candidates",
+        "What rule change should the fraud strategy team review for this segment?",
+        ["what rule change should we review", "how would you optimize this", "what would you change"],
+        "after_injection",
+        [
+            result(
+                "In card testing on card-not-present, **velocity_breach** appears on all **5** "
+                "confirmed fraud cases and none of the 7 false positives, while **geo_anomaly** "
+                "flagged all **7** false positives and no confirmed fraud.\n\n"
+                "- velocity_breach: **5** confirmed fraud, **0** false positives.\n"
+                "- cvv_retry: **5** confirmed fraud, **0** false positives.\n"
+                "- geo_anomaly: **0** confirmed fraud, **7** false positives.\n\n"
+                "Two candidates for your fraud strategy team to test: raise case priority when "
+                "velocity_breach fires on a device already linked to other alerts, and test "
+                "whether a geo_anomaly alert with no other reason code could go to step-up "
+                "authentication instead of a case. This rests on 12 cases from one burst, so "
+                "back-test both against a longer window before changing a rule. I have not "
+                "changed any rule.",
+                sql=(
+                    "SELECT TRIM(BOTH '\"' FROM rc.table_col) AS reason_code,\n"
+                    "  SUM(e.human_disposition = 'confirmed_fraud') AS confirmed_fraud_cases,\n"
+                    "  SUM(e.human_disposition = 'legitimate') AS false_positive_cases\n"
+                    "FROM aa_fraud_segment_evidence e\n"
+                    "JOIN TABLE(JSON_TO_ARRAY(e.reason_codes)) rc\n"
+                    "WHERE e.channel = 'card_not_present' AND e.fraud_type = 'card_testing'\n"
+                    "GROUP BY reason_code\nORDER BY confirmed_fraud_cases DESC, false_positive_cases DESC"
+                ),
+                tables_used=["aa_fraud_segment_evidence"],
+                columns=["reason_code", "confirmed_fraud_cases", "false_positive_cases"],
+                rows=[
+                    ["velocity_breach", 5, 0],
+                    ["cvv_retry", 5, 0],
+                    ["geo_anomaly", 0, 7],
                 ],
             )
         ],
@@ -440,57 +688,135 @@ a3_starters = [
 ]
 a3_answers = {
     "baseline_kpi": dict(
-        text="Confirmed fraud loss is $6,100 and the false-positive rate is 21.0% over the last 24 logical hours.",
-        sql="SELECT SUM(confirmed_loss_usd) AS confirmed_loss, AVG(false_positive_rate) AS false_positive_rate FROM aa_fraud_loss_summary",
-        tables_used=["aa_fraud_loss_summary"],
-        columns=["confirmed_loss", "false_positive_rate"],
-        rows=[[6100, 0.21]],
+        text=(
+            "In the last 24 logical hours, investigator-confirmed fraud loss is **$3,518.01** and "
+            "the false-positive rate is **60.00%**.\n\n"
+            "- **15** cases opened: **6** confirmed fraud and **9** legitimate.\n"
+            "- **$2,500** of the loss comes from the card-testing burst on card-not-present.\n\n"
+            "The window runs back 24 hours from the latest case. Amounts are normalized to US "
+            "dollars, and chargeback-settled loss arrives later and is not included."
+        ),
+        sql=(
+            "SELECT SUM(confirmed_loss_usd) AS confirmed_loss_usd,\n"
+            "  SUM(human_disposition = 'legitimate')\n"
+            "    / NULLIF(SUM(human_disposition IN ('confirmed_fraud', 'legitimate')), 0) AS false_positive_rate\n"
+            "FROM aa_fraud_case_review\n"
+            "WHERE opened_at > (SELECT MAX(opened_at) FROM aa_fraud_case_review) - INTERVAL 24 HOUR"
+        ),
+        tables_used=["aa_fraud_case_review"],
+        columns=["confirmed_loss_usd", "false_positive_rate"],
+        rows=[[3518.01, 0.6]],
     ),
     "comparison": dict(
-        text="account_takeover on card_not_present leads confirmed loss at $61,400 (33% of total), ahead of synthetic_identity on ach at $48,900 (27%).",
-        sql="SELECT channel, fraud_type, confirmed_loss_usd FROM aa_fraud_loss_summary ORDER BY confirmed_loss_usd DESC",
+        text=(
+            "**Card testing on card-not-present** leads confirmed loss at **$2,500** "
+            "(**39.73%** of the total), ahead of ATM first-party fraud at **$1,519.75** (24.15%).\n\n"
+            "- Total confirmed loss: **$6,292.91**.\n"
+            "- The top two segments hold **63.88%** of all confirmed loss.\n\n"
+            "The leading segment is new in the last few minutes, so its share reflects one burst "
+            "rather than a long-run trend. Amounts are normalized to US dollars."
+        ),
+        sql=(
+            "SELECT channel, fraud_type, confirmed_loss_usd,\n"
+            "  confirmed_loss_usd / SUM(confirmed_loss_usd) OVER () AS share_of_loss\n"
+            "FROM aa_fraud_loss_summary\nWHERE confirmed_loss_usd > 0\nORDER BY confirmed_loss_usd DESC"
+        ),
         tables_used=["aa_fraud_loss_summary"],
-        columns=["channel", "fraud_type", "confirmed_loss_usd"],
-        rows=[["card_not_present", "account_takeover", 61400], ["ach", "synthetic_identity", 48900]],
+        columns=["channel", "fraud_type", "confirmed_loss_usd", "share_of_loss"],
+        rows=[
+            ["card_not_present", "card_testing", 2500.00, 0.3973],
+            ["atm", "first_party", 1519.75, 0.2415],
+            ["card_present", "card_testing", 840.84, 0.1336],
+            ["card_not_present", "account_takeover", 526.16, 0.0836],
+            ["card_not_present", "first_party", 524.86, 0.0834],
+            ["atm", "card_testing", 381.30, 0.0606],
+        ],
     ),
     "multi_table_drilldown": dict(
-        text="The highest-loss fraud type is account_takeover. Its top three cases by loss are CASE-00042 ($4,200, device reused on 5 prior alerts), CASE-00058 ($3,900, device reused on 4 prior alerts), and CASE-00061 ($3,600, new device).",
-        sql="SELECT r.case_id, r.confirmed_loss_usd, e.device_alert_count FROM aa_fraud_case_review r JOIN aa_fraud_segment_evidence e ON e.case_id = r.case_id WHERE r.fraud_type = 'account_takeover' ORDER BY r.confirmed_loss_usd DESC LIMIT 3",
+        text=(
+            "The highest-loss fraud type is **card_testing** at **$3,722.14** across 7 confirmed "
+            "cases.\n\n"
+            "- Five cases on card-not-present share device **DEV-0008**, which appears on **5** "
+            "alerts, and every one carries velocity_breach.\n"
+            "- The two remaining cases, FCASE-A3B-000007 ($840.84) and FCASE-A3B-000015 ($381.30), "
+            "use devices seen on at most **2** alerts and have no velocity_breach.\n\n"
+            "Device reuse and velocity evidence concentrate in the card-not-present burst; the "
+            "two older cases look unrelated to it."
+        ),
+        sql=(
+            "SELECT r.case_id, r.channel, r.confirmed_loss_usd, e.device_id, e.device_alert_count,\n"
+            "  JSON_ARRAY_CONTAINS_STRING(e.reason_codes, 'velocity_breach') AS velocity_breach\n"
+            "FROM aa_fraud_case_review r\n"
+            "JOIN aa_fraud_segment_evidence e ON e.case_id = r.case_id\n"
+            "WHERE r.fraud_type = 'card_testing' AND r.human_disposition = 'confirmed_fraud'\n"
+            "ORDER BY r.confirmed_loss_usd DESC, r.score DESC"
+        ),
         tables_used=["aa_fraud_case_review", "aa_fraud_segment_evidence"],
-        columns=["case_id", "confirmed_loss_usd", "device_alert_count"],
-        rows=[["CASE-00042", 4200, 5], ["CASE-00058", 3900, 4], ["CASE-00061", 3600, 0]],
+        columns=["case_id", "channel", "confirmed_loss_usd", "device_id", "device_alert_count", "velocity_breach"],
+        rows=[
+            ["FCASE-A3B-000007", "card_present", 840.84, "DEV-0017", 1, 0],
+            ["FCASE-A3LC-004", "card_not_present", 500.00, "DEV-0008", 5, 1],
+            ["FCASE-A3LC-003", "card_not_present", 500.00, "DEV-0008", 5, 1],
+            ["FCASE-A3LC-002", "card_not_present", 500.00, "DEV-0008", 5, 1],
+            ["FCASE-A3LC-001", "card_not_present", 500.00, "DEV-0008", 5, 1],
+            ["FCASE-A3LC-000", "card_not_present", 500.00, "DEV-0008", 5, 1],
+            ["FCASE-A3B-000015", "atm", 381.30, "DEV-0007", 2, 0],
+        ],
     ),
     "session_followup": dict(
-        text="Of those, CASE-00058 is still open awaiting investigator disposition; CASE-00042 and CASE-00061 have already been dispositioned.",
-        sql="SELECT case_id, human_disposition FROM aa_fraud_case_review WHERE case_id IN ('CASE-00042','CASE-00058','CASE-00061')",
+        text=(
+            "None of the **15** card_testing cases is still open; every one has a human "
+            "disposition.\n\n"
+            "- **7** confirmed fraud and **8** legitimate.\n"
+            "- Across all fraud types, **3** cases are open: FCASE-A3B-000002, FCASE-A3B-000004, "
+            "and FCASE-A3B-000014.\n\n"
+            "No card-testing case is waiting on an investigator."
+        ),
+        sql=(
+            "SELECT human_disposition, COUNT(*) AS cases\nFROM aa_fraud_case_review\n"
+            "WHERE fraud_type = 'card_testing'\nGROUP BY human_disposition"
+        ),
         tables_used=["aa_fraud_case_review"],
-        columns=["case_id", "human_disposition"],
-        rows=[["CASE-00042", "confirmed_fraud"], ["CASE-00058", "open"], ["CASE-00061", "confirmed_fraud"]],
+        columns=["human_disposition", "cases"],
+        rows=[["confirmed_fraud", 7], ["legitimate", 8]],
     ),
     "ambiguous_term": dict(
         text=(
-            "\"Worst\" could mean the most confirmed loss, the most cases, or the highest false-positive "
-            "rate, and fraud types do not rank the same way on each. Tell me which measure you mean, or "
-            "here is loss by fraud type so you can compare."
+            "\"Worst\" could mean the most confirmed loss, the most cases, or the highest "
+            "false-positive rate, and fraud types rank differently on each. By loss, "
+            "**card_testing** is worst at **$3,722.14**.\n\n"
+            "- By false-positive rate, **synthetic_identity** is worst at **100.00%**: all 7 "
+            "dispositioned cases were legitimate.\n"
+            "- By case count, card_testing leads with **15**.\n\n"
+            "Tell me which measure you mean and I will rank on it."
         ),
-        sql="SELECT fraud_type, confirmed_loss_usd, false_positive_rate FROM aa_fraud_loss_summary ORDER BY confirmed_loss_usd DESC",
+        sql=(
+            "SELECT fraud_type, SUM(cases_total) AS cases_total, SUM(confirmed_loss_usd) AS confirmed_loss_usd,\n"
+            "  SUM(legitimate_cases) / NULLIF(SUM(confirmed_fraud_cases + legitimate_cases), 0) AS false_positive_rate\n"
+            "FROM aa_fraud_loss_summary\nGROUP BY fraud_type\nORDER BY confirmed_loss_usd DESC"
+        ),
         tables_used=["aa_fraud_loss_summary"],
-        columns=["fraud_type", "confirmed_loss_usd", "false_positive_rate"],
-        rows=[["account_takeover", 61400, 0.22], ["synthetic_identity", 48900, 0.19]],
+        columns=["fraud_type", "cases_total", "confirmed_loss_usd", "false_positive_rate"],
+        rows=[
+            ["card_testing", 15, 3722.14, 0.5333],
+            ["first_party", 8, 2044.61, 0.5714],
+            ["account_takeover", 2, 526.16, 0.0],
+            ["synthetic_identity", 8, 0.00, 1.0],
+        ],
     ),
     "unsupported_action": dict(
         text=(
             "I cannot close cases or determine that fraud occurred. I have read-only access to case and "
             "alert data, and case disposition stays with fraud investigators.\n\nI can show you the "
-            "evidence instead: device reuse, account age, and velocity for these cases. Ask and I will "
-            "pull it."
+            "evidence instead: reason codes, device reuse, and account age for these cases. Ask and I "
+            "will pull it."
         ),
     ),
     "no_data": dict(
         text=(
             "There is no data for fraud_type = 'INSURANCE_CLAIM' in this dataset. The fraud types present "
-            "are account_takeover, synthetic_identity, card_testing, and authorized_push_payment, so the "
-            "filter returns no rows rather than a low value."
+            "are account_takeover, card_testing, synthetic_identity, and first_party, so the filter "
+            "returns no rows rather than a low value."
         ),
         sql="SELECT * FROM aa_fraud_loss_summary WHERE fraud_type = 'INSURANCE_CLAIM'",
         tables_used=["aa_fraud_loss_summary"],
@@ -511,7 +837,7 @@ register("a3", a3_starters + known_question_fixtures("a3", {}, a3_answers))
 
 
 # ---------------------------------------------------------------------------
-# A4 Alert-to-Evidence (AML Operations)
+# A4 Financial Crime Operations (AML Operations)
 # ---------------------------------------------------------------------------
 a4_starters = [
     fixture(
@@ -684,7 +1010,7 @@ register("a4", a4_starters + known_question_fixtures("a4", {}, a4_answers))
 
 
 # ---------------------------------------------------------------------------
-# A5 Dispute Resolution Lens (Disputes Operations)
+# A5 Dispute Operations Performance (Disputes Operations)
 # ---------------------------------------------------------------------------
 a5_starters = [
     fixture(
@@ -695,20 +1021,24 @@ a5_starters = [
         "baseline",
         [
             result(
-                "312 disputes are open and 41 are at risk of an SLA breach in the next 24 hours, "
-                "totalling $186,400 of disputed value at risk. The DUPLICATE_CHARGE reason code in the "
-                "core_ops queue carries the most risk at 14 disputes.",
+                "**5** disputes are open and **1** is at risk of an SLA breach in the next 24 logical "
+                "hours, with **$174.81** of disputed value at risk. Amounts are normalized to US dollars.\n\n"
+                "- queue_disputes_escalated holds the only at-risk dispute: **1** DUPLICATE_CHARGE case.\n"
+                "- The other open disputes are due between 4 and 9 days out.\n\n"
+                "The queue is under control; nothing suggests a capacity problem.",
                 sql=(
-                    "SELECT queue_id, reason_code, priority, open_dispute_count, sla_risk_count, "
-                    "sla_risk_amount_total\nFROM aa_dispute_sla_risk\n"
+                    "SELECT queue_id, reason_code, SUM(open_dispute_count) AS open_dispute_count, "
+                    "SUM(sla_risk_count) AS sla_risk_count, SUM(sla_risk_amount_total) AS sla_risk_amount_total\n"
+                    "FROM aa_dispute_sla_risk\nGROUP BY queue_id, reason_code\n"
                     "ORDER BY sla_risk_count DESC, sla_risk_amount_total DESC"
                 ),
                 tables_used=["aa_dispute_sla_risk"],
                 columns=["queue_id", "reason_code", "open_dispute_count", "sla_risk_count", "sla_risk_amount_total"],
                 rows=[
-                    ["core_ops", "DUPLICATE_CHARGE", 58, 14, 41200],
-                    ["core_ops", "SERVICE_NOT_RECEIVED", 44, 9, 28600],
-                    ["escalations", "FRIENDLY_FRAUD", 22, 6, 19800],
+                    ["queue_disputes_escalated", "DUPLICATE_CHARGE", 2, 1, 174.81],
+                    ["queue_disputes_1", "BILLING_ERROR", 1, 0, 0],
+                    ["queue_disputes_2", "GOODS_NOT_RECEIVED", 1, 0, 0],
+                    ["queue_disputes_2", "FRAUD_CLAIM", 1, 0, 0],
                 ],
             )
         ],
@@ -721,20 +1051,27 @@ a5_starters = [
         "after_injection",
         [
             result(
-                "Open disputes jumped to 332 and SLA-risk count to 53 after the injected merchant-outage "
-                "surge: 20 new disputes landed with reason code MERCHANT_OUTAGE, of which 12 are already "
-                "at SLA risk, which is now the leading reason code in the ranking.",
+                "SLA risk rose from **1** to **13** disputes, and **$7,197.75** of disputed value is now due "
+                "within the next 24 logical hours. Amounts are normalized to US dollars.\n\n"
+                "- PAID_BY_OTHER_MEANS in queue_disputes_escalated accounts for **12** of the 13 at-risk "
+                "disputes and **$7,022.94** of the value at risk.\n"
+                "- Open disputes rose from **5** to **25**; all 20 new ones carry PAID_BY_OTHER_MEANS.\n\n"
+                "One reason code in one queue explains almost all of the near-term risk. Ask which merchant "
+                "those disputes trace to before deciding whether this is one incident.",
                 sql=(
-                    "SELECT queue_id, reason_code, priority, open_dispute_count, sla_risk_count, "
-                    "sla_risk_amount_total\nFROM aa_dispute_sla_risk\n"
+                    "SELECT queue_id, reason_code, SUM(open_dispute_count) AS open_dispute_count, "
+                    "SUM(sla_risk_count) AS sla_risk_count, SUM(sla_risk_amount_total) AS sla_risk_amount_total\n"
+                    "FROM aa_dispute_sla_risk\nGROUP BY queue_id, reason_code\n"
                     "ORDER BY sla_risk_count DESC, sla_risk_amount_total DESC"
                 ),
                 tables_used=["aa_dispute_sla_risk"],
                 columns=["queue_id", "reason_code", "open_dispute_count", "sla_risk_count", "sla_risk_amount_total"],
                 rows=[
-                    ["core_ops", "MERCHANT_OUTAGE", 20, 12, 15800],
-                    ["core_ops", "DUPLICATE_CHARGE", 58, 14, 41200],
-                    ["core_ops", "SERVICE_NOT_RECEIVED", 44, 9, 28600],
+                    ["queue_disputes_escalated", "PAID_BY_OTHER_MEANS", 20, 12, 7022.94],
+                    ["queue_disputes_escalated", "DUPLICATE_CHARGE", 2, 1, 174.81],
+                    ["queue_disputes_1", "BILLING_ERROR", 1, 0, 0],
+                    ["queue_disputes_2", "GOODS_NOT_RECEIVED", 1, 0, 0],
+                    ["queue_disputes_2", "FRAUD_CLAIM", 1, 0, 0],
                 ],
             )
         ],
@@ -742,24 +1079,71 @@ a5_starters = [
     fixture(
         "a5",
         "starter_queue_baseline_compare",
-        "What explains the largest at-risk queue compared with the prior 30 days?",
-        ["largest at risk queue prior 30 days", "queue driver trend"],
-        "any",
+        "Which reason code and merchant are driving the largest at-risk queue, and when did those disputes arrive?",
+        ["reason code driving at risk queue", "merchant concentration", "when did disputes arrive", "queue driver trend"],
+        "baseline",
         [
             result(
-                "core_ops is the largest at-risk queue and its daily dispute volume has been flat at "
-                "roughly 12-15 disputes per day over the prior 30 days, so today's SLA risk is driven "
-                "by the MERCHANT_OUTAGE reason code rather than a change in overall queue volume.",
+                "queue_disputes_escalated has the most SLA risk, but only **1** dispute: a DUPLICATE_CHARGE "
+                "case at Alder Digital Markets, opened 2026-07-22 and due 2026-07-25 19:02.\n\n"
+                "- The queue receives about **1** dispute per day, spread across four reason codes.\n"
+                "- Every dispute traces to a different merchant, so nothing is concentrated.\n"
+                "- No reason code shows a wave over the seven logical days of history.\n\n"
+                "There is no concentrated driver to investigate right now.",
                 sql=(
-                    "SELECT opened_date, reason_code, dispute_count\nFROM aa_dispute_queue_driver\n"
-                    "WHERE queue_id = 'core_ops'\nORDER BY opened_date DESC LIMIT 10"
+                    "SELECT opened_date, reason_code, merchant_name, SUM(dispute_count) AS dispute_count, "
+                    "SUM(disputed_amount_total) AS disputed_amount_total\n"
+                    "FROM aa_dispute_queue_driver\nWHERE queue_id = 'queue_disputes_escalated'\n"
+                    "GROUP BY opened_date, reason_code, merchant_name\nORDER BY opened_date"
                 ),
                 tables_used=["aa_dispute_queue_driver"],
-                columns=["opened_date", "reason_code", "dispute_count"],
+                columns=["opened_date", "reason_code", "merchant_name", "dispute_count", "disputed_amount_total"],
                 rows=[
-                    ["2026-07-25", "MERCHANT_OUTAGE", 20],
-                    ["2026-07-24", "DUPLICATE_CHARGE", 13],
-                    ["2026-07-23", "DUPLICATE_CHARGE", 12],
+                    ["2026-07-22", "DUPLICATE_CHARGE", "Alder Digital Markets", 1, 174.81],
+                    ["2026-07-23", "DUPLICATE_CHARGE", "Harbor Streaming Direct", 1, 84.29],
+                    ["2026-07-23", "FRAUD_CLAIM", "Harbor Electronics Retail", 1, 271.03],
+                    ["2026-07-24", "GOODS_NOT_RECEIVED", "Redstone Digital Direct", 1, 254.41],
+                    ["2026-07-25", "BILLING_ERROR", "Brightside Streaming Markets", 1, 164.88],
+                ],
+            )
+        ],
+    ),
+    fixture(
+        "a5",
+        "starter_queue_driver_after",
+        "Which reason code and merchant are driving the largest at-risk queue, and when did those disputes arrive?",
+        ["reason code driving at risk queue", "merchant concentration", "when did disputes arrive", "queue driver trend"],
+        "after_injection",
+        [
+            result(
+                "PAID_BY_OTHER_MEANS drives the queue_disputes_escalated risk, all **20** of those disputes "
+                "trace to one merchant, **Copperfield Electronics Retail** (MERCH-029), and they arrived in "
+                "**two waves**, a week apart.\n\n"
+                "- Every disputed payment was made at that merchant between 09:00 and 09:12 on 2026-07-18.\n"
+                "- **12** were opened on 2026-07-18 and 2026-07-19; all 12 reach their five-business-day "
+                "provisional-credit target within the next 24 logical hours, with **$7,022.94** at risk.\n"
+                "- **8** more were opened on 2026-07-25 and are due on 2026-08-01.\n"
+                "- Before this pattern, the queue received about **1** dispute per day, each from a "
+                "different merchant.\n\n"
+                "One merchant, one 12-minute window, and one reason code point to a single incident at "
+                "that merchant. What happened there is for the operations team to confirm with the merchant.",
+                sql=(
+                    "SELECT opened_date, reason_code, merchant_name, SUM(dispute_count) AS dispute_count, "
+                    "SUM(disputed_amount_total) AS disputed_amount_total\n"
+                    "FROM aa_dispute_queue_driver\nWHERE queue_id = 'queue_disputes_escalated'\n"
+                    "GROUP BY opened_date, reason_code, merchant_name\nORDER BY opened_date"
+                ),
+                tables_used=["aa_dispute_queue_driver"],
+                columns=["opened_date", "reason_code", "merchant_name", "dispute_count", "disputed_amount_total"],
+                rows=[
+                    ["2026-07-18", "PAID_BY_OTHER_MEANS", "Copperfield Electronics Retail", 9, 5813.63],
+                    ["2026-07-19", "PAID_BY_OTHER_MEANS", "Copperfield Electronics Retail", 3, 1209.31],
+                    ["2026-07-22", "DUPLICATE_CHARGE", "Alder Digital Markets", 1, 174.81],
+                    ["2026-07-23", "DUPLICATE_CHARGE", "Harbor Streaming Direct", 1, 84.29],
+                    ["2026-07-23", "FRAUD_CLAIM", "Harbor Electronics Retail", 1, 271.03],
+                    ["2026-07-24", "GOODS_NOT_RECEIVED", "Redstone Digital Direct", 1, 254.41],
+                    ["2026-07-25", "BILLING_ERROR", "Brightside Streaming Markets", 1, 164.88],
+                    ["2026-07-25", "PAID_BY_OTHER_MEANS", "Copperfield Electronics Retail", 8, 3118.01],
                 ],
             )
         ],
@@ -772,18 +1156,22 @@ a5_starters = [
         "any",
         [
             result(
-                "Dispute DSP-04471 was opened, the customer was contacted once for supporting evidence, "
-                "and a provisional credit of $86.40 was issued while the case remains open.",
+                "Dispute DISP-A5B-000012 (DUPLICATE_CHARGE, **$174.81**) has **2** recorded events and is "
+                "due 2026-07-25 19:02.\n\n"
+                "- The customer opened the dispute on 2026-07-22 19:02.\n"
+                "- An inbound chat followed five minutes later.\n"
+                "- No provisional credit has been recorded.\n\n"
+                "The case has had no agent activity since it was opened, which a reviewer may want to check "
+                "before the deadline.",
                 sql=(
                     "SELECT event_time, timeline_type, event_type, actor_type, amount\n"
-                    "FROM aa_dispute_timeline\nWHERE dispute_id = 'DSP-04471'\nORDER BY event_time"
+                    "FROM aa_dispute_timeline\nWHERE dispute_id = 'DISP-A5B-000012'\nORDER BY event_time"
                 ),
                 tables_used=["aa_dispute_timeline"],
                 columns=["event_time", "timeline_type", "event_type", "amount"],
                 rows=[
-                    ["2026-07-24 09:10:00", "case_event", "opened", None],
-                    ["2026-07-24 11:00:00", "customer_contact", "evidence_requested", None],
-                    ["2026-07-24 14:20:00", "provisional_credit", "credited", 86.4],
+                    ["2026-07-22 19:02:45", "case_event", "opened", None],
+                    ["2026-07-22 19:07:45", "customer_contact", "chat_inbound", None],
                 ],
             )
         ],
@@ -791,56 +1179,86 @@ a5_starters = [
 ]
 a5_answers = {
     "baseline_kpi": dict(
-        text="312 disputes are open, and 41 are at risk of an SLA breach in the next 24 logical hours.",
+        text=(
+            "**25** disputes are open, and **13** are at risk of an SLA breach in the next 24 logical "
+            "hours, measured against the demo logical clock."
+        ),
         sql="SELECT SUM(open_dispute_count) AS open_dispute_count, SUM(sla_risk_count) AS sla_risk_count FROM aa_dispute_sla_risk",
         tables_used=["aa_dispute_sla_risk"],
         columns=["open_dispute_count", "sla_risk_count"],
-        rows=[[312, 41]],
+        rows=[[25, 13]],
     ),
     "comparison": dict(
-        text="The at-risk queue depth today (53 disputes) is 12 above the 30-day average of 41, driven by the injected merchant-outage surge.",
+        text=(
+            "At-risk queue depth is **13** disputes now against **1** before the PAID_BY_OTHER_MEANS "
+            "disputes appeared, an increase of **12**. Only seven logical days of history exist, so the "
+            "baseline covers that period rather than the full 30 days requested."
+        ),
         sql="SELECT SUM(sla_risk_count) AS sla_risk_count FROM aa_dispute_sla_risk",
         tables_used=["aa_dispute_sla_risk"],
-        columns=["current_sla_risk_count", "baseline_avg_sla_risk_count", "delta"],
-        rows=[[53, 41, 12]],
+        columns=["current_sla_risk_count", "baseline_sla_risk_count", "delta"],
+        rows=[[13, 1, 12]],
     ),
     "multi_table_drilldown": dict(
-        text="core_ops has the most SLA risk. Its at-risk disputes break down as MERCHANT_OUTAGE (12), DUPLICATE_CHARGE (14), and SERVICE_NOT_RECEIVED (9).",
-        sql="SELECT reason_code, sla_risk_count FROM aa_dispute_sla_risk WHERE queue_id = 'core_ops' ORDER BY sla_risk_count DESC",
+        text=(
+            "queue_disputes_escalated has the most SLA risk. Its at-risk disputes break down as "
+            "PAID_BY_OTHER_MEANS (**12**, $7,022.94) and DUPLICATE_CHARGE (**1**, $174.81)."
+        ),
+        sql=(
+            "SELECT reason_code, SUM(sla_risk_count) AS sla_risk_count, SUM(sla_risk_amount_total) AS sla_risk_amount_total "
+            "FROM aa_dispute_sla_risk WHERE queue_id = 'queue_disputes_escalated' GROUP BY reason_code ORDER BY sla_risk_count DESC"
+        ),
         tables_used=["aa_dispute_sla_risk"],
-        columns=["reason_code", "sla_risk_count"],
-        rows=[["DUPLICATE_CHARGE", 14], ["MERCHANT_OUTAGE", 12], ["SERVICE_NOT_RECEIVED", 9]],
+        columns=["reason_code", "sla_risk_count", "sla_risk_amount_total"],
+        rows=[["PAID_BY_OTHER_MEANS", 12, 7022.94], ["DUPLICATE_CHARGE", 1, 174.81]],
     ),
     "session_followup": dict(
-        text="The largest MERCHANT_OUTAGE dispute is DSP-04471 at $612.00, opened 2026-07-24 09:10, currently in core_ops with a provisional credit already issued.",
-        sql="SELECT dispute_id, disputed_amount FROM dispute_case WHERE reason_code = 'MERCHANT_OUTAGE' ORDER BY disputed_amount DESC LIMIT 1",
+        text=(
+            "The largest PAID_BY_OTHER_MEANS dispute is DISP-A5CS-004 at **$897.33**, due 2026-07-25 "
+            "17:00, so it reaches its provisional-credit target within the next 8 logical hours.\n\n"
+            "- The customer opened it on 2026-07-18 17:00, reporting a card charge and a second payment "
+            "for the same purchase during a terminal outage.\n"
+            "- An agent requested proof of the second payment on 2026-07-19 17:00.\n"
+            "- Nothing has been recorded since, and no provisional credit has been issued."
+        ),
+        sql=(
+            "SELECT event_time, timeline_type, event_type, actor_type, metadata FROM aa_dispute_timeline "
+            "WHERE dispute_id = 'DISP-A5CS-004' ORDER BY event_time"
+        ),
         tables_used=["aa_dispute_timeline"],
-        columns=["dispute_id", "disputed_amount"],
-        rows=[["DSP-04471", 612.0]],
+        columns=["event_time", "timeline_type", "event_type", "actor_type"],
+        rows=[
+            ["2026-07-18 17:00:00", "case_event", "opened", "customer"],
+            ["2026-07-19 17:00:00", "case_event", "evidence_requested", "agent"],
+        ],
     ),
     "ambiguous_term": dict(
         text=(
-            "\"Falling behind\" could mean the most disputes at SLA risk, or the most disputed value at "
-            "risk, and queues rank differently on each. core_ops leads on count; escalations leads on "
-            "average value per dispute. Tell me which you mean."
+            "\"Falling behind\" could mean the most disputes at SLA risk or the most disputed value at "
+            "risk. Here both measures point the same way: queue_disputes_escalated leads with **13** "
+            "at-risk disputes and **$7,197.75** at risk. Tell me if you meant a different measure, such "
+            "as the oldest open dispute."
         ),
-        sql="SELECT queue_id, sla_risk_count, sla_risk_amount_total FROM aa_dispute_sla_risk",
+        sql=(
+            "SELECT queue_id, SUM(sla_risk_count) AS sla_risk_count, SUM(sla_risk_amount_total) AS sla_risk_amount_total "
+            "FROM aa_dispute_sla_risk GROUP BY queue_id"
+        ),
         tables_used=["aa_dispute_sla_risk"],
         columns=["queue_id", "sla_risk_count", "sla_risk_amount_total"],
-        rows=[["core_ops", 35, 85600], ["escalations", 6, 19800]],
+        rows=[["queue_disputes_escalated", 13, 7197.75], ["queue_disputes_1", 0, 0], ["queue_disputes_2", 0, 0]],
     ),
     "unsupported_action": dict(
         text=(
             "I cannot issue provisional credit or adjudicate a dispute. I have read-only access to case "
-            "and timeline data, and adjudication and credit decisions stay with authorised agents.\n\n"
+            "and timeline data, and adjudication and credit decisions stay with authorized agents.\n\n"
             "I can show you the at-risk list and each case's timeline instead."
         ),
     ),
     "no_data": dict(
         text=(
             "There is no data for reason_code = 'COUNTERFEIT_GOODS' in this dataset. Reason codes present "
-            "include DUPLICATE_CHARGE, SERVICE_NOT_RECEIVED, FRIENDLY_FRAUD, and MERCHANT_OUTAGE, so the "
-            "filter returns no rows rather than a low value."
+            "include DUPLICATE_CHARGE, GOODS_NOT_RECEIVED, FRAUD_CLAIM, BILLING_ERROR, and "
+            "PAID_BY_OTHER_MEANS, so the filter returns no rows rather than a low value."
         ),
         sql="SELECT * FROM aa_dispute_sla_risk WHERE reason_code = 'COUNTERFEIT_GOODS'",
         tables_used=["aa_dispute_sla_risk"],
@@ -861,7 +1279,7 @@ register("a5", a5_starters + known_question_fixtures("a5", {}, a5_answers))
 
 
 # ---------------------------------------------------------------------------
-# A6 Liquidity Command Center
+# A6 Liquidity and Funding Management
 # ---------------------------------------------------------------------------
 a6_starters = [
     fixture(
@@ -872,20 +1290,27 @@ a6_starters = [
         "baseline",
         [
             result(
-                "Across every entity and currency, available 24-hour liquidity totals USD 412 million, "
-                "against USD 58 million of queued outbound payments. NorthAm Treasury Co. in USD holds "
-                "the largest single position at USD 210 million.",
+                "Available 24-hour liquidity totals **USD 77.16 million** across six entities, against "
+                "**USD 2.92 million** of queued outbound payments. Amounts are normalized to US dollars.\n\n"
+                "- Synthetic Entity 01 in USD holds the largest position at **USD 30.38 million**, mostly "
+                "from **USD 26.42 million** of expected inbound settlements.\n"
+                "- Synthetic Entity 04 in CAD is the tightest at **USD 5.86 million**.\n\n"
+                "Synthetic Entity 01's position depends heavily on settlements still pending, so its "
+                "liquidity is more exposed to a late counterparty than the others.",
                 sql=(
                     "SELECT entity_name, currency, available_balance_usd, expected_inbound_settlements_usd, "
                     "expected_outbound_settlements_usd, queued_payments_usd, available_liquidity_24h_usd\n"
                     "FROM aa_liquidity_position\nORDER BY available_liquidity_24h_usd ASC"
                 ),
                 tables_used=["aa_liquidity_position"],
-                columns=["entity_name", "currency", "available_balance_usd", "queued_payments_usd", "available_liquidity_24h_usd"],
+                columns=["entity_name", "currency", "available_balance_usd", "expected_inbound_settlements_usd", "queued_payments_usd", "available_liquidity_24h_usd"],
                 rows=[
-                    ["EMEA Funding Ltd.", "EUR", 96000000, 21000000, 88000000],
-                    ["APAC Settlement Pte.", "SGD", 61000000, 9000000, 62000000],
-                    ["NorthAm Treasury Co.", "USD", 210000000, 28000000, 262000000],
+                    ["Synthetic Entity 04", "CAD", 6281967.74, 0, 419990.53, 5861977.21],
+                    ["Synthetic Entity 02", "GBP", 8076492.56, 2116108.61, 591294.14, 7894490.53],
+                    ["Synthetic Entity 03", "EUR", 8282534.79, 1790353.61, 531489.08, 8460423.98],
+                    ["Synthetic Entity 05", "USD", 10039382.02, 96359.25, 446509.56, 9689231.71],
+                    ["Synthetic Entity 06", "GBP", 14032034.86, 2187294.33, 619721.22, 14880159.32],
+                    ["Synthetic Entity 01", "USD", 4847887.30, 26418844.75, 315489.74, 30376760.31],
                 ],
             )
         ],
@@ -898,21 +1323,84 @@ a6_starters = [
         "after_injection",
         [
             result(
-                "Available 24-hour liquidity falls to USD 387 million after the injected settlement "
-                "delay: EMEA Funding Ltd.'s expected inbound settlement was delayed by USD 25 million, "
-                "which now shows as settlement-at-risk in the next funding window rather than as "
-                "available liquidity.",
+                "Available 24-hour liquidity fell to **USD 52.16 million**, down **USD 25.00 million**. "
+                "Amounts are normalized to US dollars.\n\n"
+                "- Synthetic Entity 01 in USD dropped from **USD 30.38 million** to **USD 5.38 million** and "
+                "is now the tightest position.\n"
+                "- Its expected inbound settlements fell from **USD 26.42 million** to **USD 1.42 million**.\n"
+                "- Every other entity and currency is unchanged.\n\n"
+                "The whole movement sits in one entity and currency, which points to a single delayed "
+                "inbound settlement. Treasury should confirm the cause with the counterparty.",
                 sql=(
                     "SELECT entity_name, currency, available_balance_usd, expected_inbound_settlements_usd, "
                     "expected_outbound_settlements_usd, queued_payments_usd, available_liquidity_24h_usd\n"
                     "FROM aa_liquidity_position\nORDER BY available_liquidity_24h_usd ASC"
                 ),
                 tables_used=["aa_liquidity_position"],
-                columns=["entity_name", "currency", "available_balance_usd", "queued_payments_usd", "available_liquidity_24h_usd"],
+                columns=["entity_name", "currency", "available_balance_usd", "expected_inbound_settlements_usd", "queued_payments_usd", "available_liquidity_24h_usd"],
                 rows=[
-                    ["EMEA Funding Ltd.", "EUR", 96000000, 21000000, 63000000],
-                    ["APAC Settlement Pte.", "SGD", 61000000, 9000000, 62000000],
-                    ["NorthAm Treasury Co.", "USD", 210000000, 28000000, 262000000],
+                    ["Synthetic Entity 01", "USD", 4847887.30, 1418844.75, 315489.74, 5376760.31],
+                    ["Synthetic Entity 04", "CAD", 6281967.74, 0, 419990.53, 5861977.21],
+                    ["Synthetic Entity 02", "GBP", 8076492.56, 2116108.61, 591294.14, 7894490.53],
+                    ["Synthetic Entity 03", "EUR", 8282534.79, 1790353.61, 531489.08, 8460423.98],
+                    ["Synthetic Entity 05", "USD", 10039382.02, 96359.25, 446509.56, 9689231.71],
+                    ["Synthetic Entity 06", "GBP", 14032034.86, 2187294.33, 619721.22, 14880159.32],
+                ],
+            )
+        ],
+    ),
+    fixture(
+        "a6",
+        "starter_buffer_baseline",
+        "Are we above the policy liquidity buffer, and which entity and currency explain any shortfall?",
+        ["policy liquidity buffer", "above the buffer", "shortfall entity currency", "headroom"],
+        "baseline",
+        [
+            result(
+                "Available 24-hour liquidity is **USD 77.16 million**, **USD 17.16 million** above the "
+                "USD 60 million illustrative policy buffer. Amounts are normalized to US dollars.\n\n"
+                "- There is no shortfall to explain.\n"
+                "- The largest single dependency is Synthetic Entity 01 in USD, which counts on "
+                "**USD 26.42 million** of expected inbound settlements.\n\n"
+                "Headroom is comfortable, but a delay to Synthetic Entity 01's inbound settlements would "
+                "consume most of it.",
+                sql=(
+                    "SELECT SUM(available_liquidity_24h_usd) AS available_liquidity_24h_usd, "
+                    "SUM(available_liquidity_24h_usd) - 60000000 AS headroom_to_buffer_usd\n"
+                    "FROM aa_liquidity_position"
+                ),
+                tables_used=["aa_liquidity_position"],
+                columns=["available_liquidity_24h_usd", "policy_buffer_usd", "headroom_to_buffer_usd"],
+                rows=[[77163043.06, 60000000, 17163043.06]],
+            )
+        ],
+    ),
+    fixture(
+        "a6",
+        "starter_buffer_after",
+        "Are we above the policy liquidity buffer, and which entity and currency explain any shortfall?",
+        ["policy liquidity buffer", "above the buffer", "shortfall entity currency", "headroom"],
+        "after_injection",
+        [
+            result(
+                "Available 24-hour liquidity is **USD 52.16 million**, **USD 7.84 million below** the "
+                "USD 60 million illustrative policy buffer. Amounts are normalized to US dollars.\n\n"
+                "- Synthetic Entity 01 in USD explains the whole shortfall: its expected inbound "
+                "settlements fell by **USD 25.00 million**.\n"
+                "- Before that change, the group had **USD 17.16 million** of headroom.\n"
+                "- No other entity or currency moved.\n\n"
+                "The breach comes from one delayed inbound settlement, not a broad decline. Whether to "
+                "fund the gap, wait for the settlement, or hold queued payments is a treasury decision.",
+                sql=(
+                    "SELECT entity_name, currency, expected_inbound_settlements_usd, available_liquidity_24h_usd\n"
+                    "FROM aa_liquidity_position\nORDER BY available_liquidity_24h_usd ASC"
+                ),
+                tables_used=["aa_liquidity_position"],
+                columns=["entity_name", "currency", "expected_inbound_settlements_usd", "available_liquidity_24h_usd"],
+                rows=[
+                    ["Synthetic Entity 01", "USD", 1418844.75, 5376760.31],
+                    ["Synthetic Entity 04", "CAD", 0, 5861977.21],
+                    ["Synthetic Entity 02", "GBP", 2116108.61, 7894490.53],
                 ],
             )
         ],
@@ -946,17 +1434,20 @@ a6_starters = [
         "any",
         [
             result(
-                "18 queued payments totalling USD 41.2 million are due in the next 24-hour funding "
-                "window, the soonest due in 45 minutes.",
+                "**2** queued payments totaling **USD 582,151.11** are due in the next 24-hour funding "
+                "window. Amounts are normalized to US dollars.\n\n"
+                "- QP-A6B-01-01 for Synthetic Entity 01 (USD 166,763.98) is due first, in **105** minutes.\n"
+                "- QP-A6B-02-00 for Synthetic Entity 02 (USD 415,387.13) is due in **1,245** minutes.\n\n"
+                "Outbound obligations in the window are small relative to group liquidity.",
                 sql=(
                     "SELECT queued_payment_id, entity_name, currency, amount_usd, due_at, minutes_until_due\n"
                     "FROM aa_funding_window\nWHERE in_next_funding_window = 1\nORDER BY minutes_until_due ASC LIMIT 20"
                 ),
                 tables_used=["aa_funding_window"],
-                columns=["queued_payment_id", "entity_name", "amount_usd", "minutes_until_due"],
+                columns=["queued_payment_id", "entity_name", "currency", "amount_usd", "minutes_until_due"],
                 rows=[
-                    ["QP-88110", "NorthAm Treasury Co.", 4200000, 45],
-                    ["QP-88117", "EMEA Funding Ltd.", 6100000, 210],
+                    ["QP-A6B-01-01", "Synthetic Entity 01", "USD", 166763.98, 105],
+                    ["QP-A6B-02-00", "Synthetic Entity 02", "GBP", 415387.13, 1245],
                 ],
             )
         ],
@@ -964,43 +1455,63 @@ a6_starters = [
 ]
 a6_answers = {
     "baseline_kpi": dict(
-        text="Available 24-hour liquidity across every entity and currency is USD 387 million.",
+        text=(
+            "Available 24-hour liquidity across every entity and currency is **USD 52.16 million**, "
+            "normalized to US dollars, as of the demo logical clock. That is USD 7.84 million below the "
+            "USD 60 million illustrative policy buffer."
+        ),
         sql="SELECT SUM(available_liquidity_24h_usd) AS available_liquidity_24h_usd FROM aa_liquidity_position",
         tables_used=["aa_liquidity_position"],
         columns=["available_liquidity_24h_usd"],
-        rows=[[387000000]],
+        rows=[[52163043.06]],
     ),
     "comparison": dict(
-        text="Net expected settlement is USD -6.1 million against a forecast of USD 19.3 million, a USD 25.4 million unfavourable variance driven by the delayed EMEA settlement.",
+        text="Net expected settlement is USD -6.1 million against a forecast of USD 19.3 million, a USD 25.4 million unfavorable variance driven by the delayed EMEA settlement.",
         sql="SELECT SUM(forecast_net_flow_usd) AS forecast, SUM(actual_net_flow_usd) AS actual FROM aa_liquidity_variance",
         tables_used=["aa_liquidity_variance"],
         columns=["forecast_net_flow_usd", "actual_net_flow_usd", "variance_usd"],
         rows=[[19300000, -6100000, -25400000]],
     ),
     "multi_table_drilldown": dict(
-        text="EMEA Funding Ltd. has the tightest position. It has 6 queued payments due in the next funding window totalling USD 14.8 million.",
-        sql="SELECT queued_payment_id, amount_usd, due_at FROM aa_funding_window WHERE entity_id = 'ENT-EMEA' ORDER BY minutes_until_due ASC",
+        text=(
+            "Synthetic Entity 01 in USD has the tightest position at **USD 5.38 million**. It has **1** "
+            "queued payment due in the next funding window: QP-A6B-01-01 for USD 166,763.98, due "
+            "2026-07-25 11:00."
+        ),
+        sql="SELECT queued_payment_id, currency, amount_usd, due_at FROM aa_funding_window WHERE entity_id = 'ENT-01' AND in_next_funding_window = 1 ORDER BY minutes_until_due ASC",
         tables_used=["aa_liquidity_position", "aa_funding_window"],
-        columns=["queued_payment_id", "amount_usd", "due_at"],
-        rows=[["QP-88117", 6100000, "2026-07-25 12:30:00"], ["QP-88121", 3900000, "2026-07-25 15:00:00"]],
+        columns=["queued_payment_id", "currency", "amount_usd", "due_at"],
+        rows=[["QP-A6B-01-01", "USD", 166763.98, "2026-07-25 11:00:00"]],
     ),
     "session_followup": dict(
-        text="Filtered to EUR: 2 queued payments totalling USD 10.0 million fall in the next funding window.",
-        sql="SELECT queued_payment_id, amount_usd FROM aa_funding_window WHERE entity_id = 'ENT-EMEA' AND currency = 'EUR'",
+        text=(
+            "Filtered to EUR, the list is empty: Synthetic Entity 01 holds only a USD position, so it has "
+            "no EUR payments in the next funding window. I have not substituted another currency."
+        ),
+        sql="SELECT queued_payment_id, amount_usd FROM aa_funding_window WHERE entity_id = 'ENT-01' AND currency = 'EUR' AND in_next_funding_window = 1",
         tables_used=["aa_funding_window"],
         columns=["queued_payment_id", "amount_usd"],
-        rows=[["QP-88117", 6100000], ["QP-88121", 3900000]],
+        rows=[],
     ),
     "ambiguous_term": dict(
         text=(
-            "\"Tightest\" could mean the lowest available liquidity or the largest negative net "
-            "settlement, and entities do not rank the same way on each. EMEA Funding Ltd. is tightest on "
-            "both today, but tell me which measure you want and I will rank on it."
+            "\"Tightest\" could mean the lowest available liquidity or the lowest net expected "
+            "settlement, and entities rank differently on each. On available 24-hour liquidity, "
+            "Synthetic Entity 01 in USD is tightest at **USD 5.38 million**. On net expected settlement, "
+            "Synthetic Entity 04 in CAD is lowest at **USD 0**. Tell me which measure you want."
         ),
-        sql="SELECT entity_name, available_liquidity_24h_usd FROM aa_liquidity_position ORDER BY available_liquidity_24h_usd ASC",
+        sql=(
+            "SELECT entity_name, currency, available_liquidity_24h_usd, "
+            "expected_inbound_settlements_usd - expected_outbound_settlements_usd AS net_expected_settlement_usd "
+            "FROM aa_liquidity_position ORDER BY available_liquidity_24h_usd ASC"
+        ),
         tables_used=["aa_liquidity_position"],
-        columns=["entity_name", "available_liquidity_24h_usd"],
-        rows=[["EMEA Funding Ltd.", 63000000], ["APAC Settlement Pte.", 62000000]],
+        columns=["entity_name", "currency", "available_liquidity_24h_usd", "net_expected_settlement_usd"],
+        rows=[
+            ["Synthetic Entity 01", "USD", 5376760.31, 844362.75],
+            ["Synthetic Entity 04", "CAD", 5861977.21, 0],
+            ["Synthetic Entity 02", "GBP", 7894490.53, 409292.11],
+        ],
     ),
     "unsupported_action": dict(
         text=(
@@ -1012,7 +1523,7 @@ a6_answers = {
     "no_data": dict(
         text=(
             "There is no liquidity position data for currency = 'JPY' in this dataset. The currencies "
-            "present are USD, EUR, and SGD, so the filter returns no rows rather than a low value."
+            "present are USD, GBP, EUR, and CAD, so the filter returns no rows rather than a low value."
         ),
         sql="SELECT * FROM aa_liquidity_position WHERE currency = 'JPY'",
         tables_used=["aa_liquidity_position"],
@@ -1033,7 +1544,7 @@ register("a6", a6_starters + known_question_fixtures("a6", {}, a6_answers))
 
 
 # ---------------------------------------------------------------------------
-# A7 Credit Risk Pulse
+# A7 Credit and Exposure Management
 # ---------------------------------------------------------------------------
 a7_starters = [
     fixture(
@@ -1115,23 +1626,28 @@ a7_starters = [
     fixture(
         "a7",
         "starter_pending_concentration",
-        "Compare the pending request with current portfolio concentration without making a decision.",
-        ["pending request portfolio concentration", "pro forma concentration"],
+        "If pending applications book, how much headroom remains against the 25% segment concentration limit?",
+        ["pending request portfolio concentration", "pro forma concentration", "segment concentration limit headroom"],
         "any",
         [
             result(
-                "Booked Transportation/CA concentration is 20.00% of the portfolio today. If the pending "
-                "USD 5 million application booked at its requested amount, illustrative pro forma "
-                "concentration would move to 23.81%. Booked exposure has not changed and this is not a "
-                "forecast of what will book.",
+                "Transportation in California would have **1.19 points** of headroom against the "
+                "illustrative 25% segment limit if its pending USD 5 million application booked as "
+                "requested, down from **5.00 points** today. These pro forma figures are illustrative, "
+                "and booked exposure has not changed.\n\n"
+                "- Booked concentration: **20.00%** of USD 100 million outstanding.\n"
+                "- Illustrative pro forma concentration: **23.81%**.\n"
+                "- Pending amount in the segment: **USD 5,000,000**.\n\n"
+                "One more application of similar size in this segment would exceed the limit, which a "
+                "credit officer may want to weigh alongside the application's evidence exceptions.",
                 sql=(
                     "SELECT industry_code, geography_id, concentration_share, pending_amount, "
-                    "pro_forma_concentration_share\nFROM aa_portfolio_concentration\n"
-                    "WHERE industry_code = 'Transportation' AND geography_id = 'CA'"
+                    "pro_forma_concentration_share, 0.25 - pro_forma_concentration_share AS limit_headroom\n"
+                    "FROM aa_portfolio_concentration\nORDER BY pro_forma_concentration_share DESC"
                 ),
                 tables_used=["aa_portfolio_concentration"],
-                columns=["industry_code", "geography_id", "concentration_share", "pro_forma_concentration_share"],
-                rows=[["Transportation", "CA", 0.20, 0.2381]],
+                columns=["industry_code", "geography_id", "concentration_share", "pro_forma_concentration_share", "limit_headroom"],
+                rows=[["TRANSPORTATION", "GEO-USCA", 0.20, 0.2381, 0.0119]],
             )
         ],
     ),
@@ -1159,11 +1675,18 @@ a7_answers = {
         rows=[["credit_bureau", "verified"], ["income_statement", "verified"], ["bank_statement", "unverified"]],
     ),
     "session_followup": dict(
-        text="Compared with Transportation/CA portfolio concentration: booked is 20.00%; illustrative pro forma including this pending request is 23.81%. Booked exposure is unchanged.",
-        sql="SELECT concentration_share, pro_forma_concentration_share FROM aa_portfolio_concentration WHERE industry_code = 'Transportation' AND geography_id = 'CA'",
+        text=(
+            "Compared with Transportation in California portfolio concentration: booked is **20.00%**; "
+            "illustrative pro forma including this pending request is **23.81%**, leaving **1.19 points** "
+            "of headroom against the illustrative 25% segment limit. Booked exposure is unchanged."
+        ),
+        sql=(
+            "SELECT concentration_share, pro_forma_concentration_share, 0.25 - pro_forma_concentration_share AS limit_headroom "
+            "FROM aa_portfolio_concentration WHERE industry_code = 'TRANSPORTATION' AND geography_id = 'GEO-USCA'"
+        ),
         tables_used=["aa_portfolio_concentration"],
-        columns=["concentration_share", "pro_forma_concentration_share"],
-        rows=[[0.20, 0.2381]],
+        columns=["concentration_share", "pro_forma_concentration_share", "limit_headroom"],
+        rows=[[0.20, 0.2381, 0.0119]],
     ),
     "ambiguous_term": dict(
         text=(
@@ -1204,7 +1727,7 @@ register("a7", a7_starters + known_question_fixtures("a7", {}, a7_answers))
 
 
 # ---------------------------------------------------------------------------
-# A8 Explain My Money (Customer Money)
+# A8 Embedded Insights Strategy (Customer Money)
 # ---------------------------------------------------------------------------
 a8_starters = [
     fixture(
@@ -1309,11 +1832,18 @@ a8_answers = {
         rows=[["2026-07-01", 710.0], ["2026-06-01", 410.0]],
     ),
     "multi_table_drilldown": dict(
-        text="Six new dining transactions this period total $300 in new spending: Harbor Bistro ($52), Corner Cafe ($48), and Riverside Grill ($60) are the largest three.",
-        sql="SELECT merchant_name, amount_usd FROM aa_customer_transaction_evidence WHERE category = 'dining' AND is_scenario_event = 1 ORDER BY amount_usd DESC",
+        text=(
+            "Three dining transactions explain the **$300** increase: three charges of **$100** each at "
+            "Alder Digital Markets on the most recent logical day."
+        ),
+        sql="SELECT transaction_id, merchant_name, amount_usd FROM aa_customer_transaction_evidence WHERE category = 'dining' AND is_scenario_event = 1 ORDER BY amount_usd DESC",
         tables_used=["aa_customer_transaction_evidence"],
-        columns=["merchant_name", "amount_usd"],
-        rows=[["Riverside Grill", 60.0], ["Harbor Bistro", 52.0], ["Corner Cafe", 48.0]],
+        columns=["transaction_id", "merchant_name", "amount_usd"],
+        rows=[
+            ["TXN-A8DS-00", "Alder Digital Markets", 100.0],
+            ["TXN-A8DS-01", "Alder Digital Markets", 100.0],
+            ["TXN-A8DS-02", "Alder Digital Markets", 100.0],
+        ],
     ),
     "session_followup": dict(
         text="For groceries, this month's spending is $340, about the same as last month's $355 — no meaningful change.",
@@ -1324,10 +1854,23 @@ a8_answers = {
     ),
     "ambiguous_term": dict(
         text=(
-            "I cannot tell you whether you are spending too much; that is your call to make. I can show "
-            "you how your spending in any category compares with a prior period, so you can decide for "
-            "yourself. Which category or period would you like to compare?"
+            "Whether it is too much is your call, but here is how this month compares with your own "
+            "history. Your dining spending is **$710** this month against **$410** last month, up "
+            "**$300**, and it is the category that changed most. Groceries are steady at **$340** "
+            "against **$355**. Want me to compare another category or a longer period?"
         ),
+        sql=(
+            "SELECT category, spend_month, category_spend_usd FROM aa_customer_spend_change "
+            "WHERE category IN ('dining', 'groceries') ORDER BY category, spend_month DESC"
+        ),
+        tables_used=["aa_customer_spend_change"],
+        columns=["category", "spend_month", "category_spend_usd"],
+        rows=[
+            ["dining", "2026-07-01", 710.0],
+            ["dining", "2026-06-01", 410.0],
+            ["groceries", "2026-07-01", 340.0],
+            ["groceries", "2026-06-01", 355.0],
+        ],
     ),
     "unsupported_action": dict(
         text=(

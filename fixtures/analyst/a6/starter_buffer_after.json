@@ -1,0 +1,59 @@
+{
+  "anchor": "a6",
+  "fixture_version": "1.0.0",
+  "id": "starter_buffer_after",
+  "latency_ms": 1800,
+  "match": [
+    "policy liquidity buffer",
+    "above the buffer",
+    "shortfall entity currency",
+    "headroom"
+  ],
+  "prompt": "Are we above the policy liquidity buffer, and which entity and currency explain any shortfall?",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "Available 24-hour liquidity is **USD 52.16 million**, **USD 7.84 million below** the USD 60 million illustrative policy buffer. Amounts are normalized to US dollars.\n\n- Synthetic Entity 01 in USD explains the whole shortfall: its expected inbound settlements fell by **USD 25.00 million**.\n- Before that change, the group had **USD 17.16 million** of headroom.\n- No other entity or currency moved.\n\nThe breach comes from one delayed inbound settlement, not a broad decline. Whether to fund the gap, wait for the settlement, or hold queued payments is a treasury decision.",
+      "sql": {
+        "command": "SELECT entity_name, currency, expected_inbound_settlements_usd, available_liquidity_24h_usd\nFROM aa_liquidity_position\nORDER BY available_liquidity_24h_usd ASC",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_liquidity_position"
+        ]
+      },
+      "table": {
+        "columns": [
+          "entity_name",
+          "currency",
+          "expected_inbound_settlements_usd",
+          "available_liquidity_24h_usd"
+        ],
+        "rows": [
+          [
+            "Synthetic Entity 01",
+            "USD",
+            1418844.75,
+            5376760.31
+          ],
+          [
+            "Synthetic Entity 04",
+            "CAD",
+            0,
+            5861977.21
+          ],
+          [
+            "Synthetic Entity 02",
+            "GBP",
+            2116108.61,
+            7894490.53
+          ]
+        ],
+        "row_count": 3,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "after_injection"
+}

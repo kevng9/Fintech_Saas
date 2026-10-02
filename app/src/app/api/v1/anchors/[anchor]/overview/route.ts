@@ -38,7 +38,7 @@ export async function GET(
 
   const requestedWindow = Number(req.nextUrl.searchParams.get("window") ?? DEFAULT_WINDOW_MINUTES);
   const windowMinutes =
-    Number.isInteger(requestedWindow) && requestedWindow > 0 && requestedWindow <= 24 * 60
+    Number.isInteger(requestedWindow) && requestedWindow > 0 && requestedWindow <= 30 * 24 * 60
       ? requestedWindow
       : DEFAULT_WINDOW_MINUTES;
 

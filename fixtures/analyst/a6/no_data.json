@@ -8,7 +8,7 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "There is no liquidity position data for currency = 'JPY' in this dataset. The currencies present are USD, EUR, and SGD, so the filter returns no rows rather than a low value.",
+      "text": "There is no liquidity position data for currency = 'JPY' in this dataset. The currencies present are USD, GBP, EUR, and CAD, so the filter returns no rows rather than a low value.",
       "sql": {
         "command": "SELECT * FROM aa_liquidity_position WHERE currency = 'JPY'",
         "confidence_score": 0.9,

@@ -43,6 +43,7 @@ def inject(
     actor_role: str = "demo_administrator",
     request_id: str = "cli",
     world: World | None = None,
+    freeze_after: bool = False,
 ) -> dict[str, Any]:
     started = time.time()
     definition = scenarios.get_definition(scenario_id)
@@ -95,7 +96,7 @@ def inject(
 
     # The logical clock is shared across every anchor, so payment background
     # generation keeps running under a non-payment scenario's window unless
-    # that scenario explicitly opts out. A2 keeps its historical behaviour by
+    # that scenario explicitly opts out. A2 keeps its historical behavior by
     # excluding only its own affected lane via excluded_segment_keys.
     background_rows: list[tuple] = []
     if not definition.suppress_payment_background:
@@ -158,7 +159,7 @@ def inject(
         )
         raise
 
-    if was_running:
+    if was_running and not freeze_after:
         version = state.transition(
             cursor, expected_version=version, stream_status=state.STATUS_RUNNING
         )

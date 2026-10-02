@@ -4,7 +4,7 @@ A presenter-ready, 10-minute story for a Head of Payments or Payment Operations
 audience. The script follows Tell-Show-Tell: establish the business problem,
 show the investigation, then close on the business outcome.
 
-This script demonstrates **A2 Payment Pulse** in depth. All eight anchors are
+This script demonstrates **A2 Payment Performance Management** in depth. All eight anchors are
 available end to end; use the [`fintech anchor catalog`](anchor-catalog.md) for
 each anchor's business contract, deterministic scenario, evidence path, and
 talk track.
@@ -31,7 +31,7 @@ broader platform:
 > governed views, and reach the supporting evidence. Regulated or financial
 > actions remain with the responsible person.
 >
-> Today I will show that pattern in depth through Payment Pulse. The same
+> Today I will show that pattern in depth through Payment Performance Management. The same
 > baseline-to-evidence workflow is live across the other seven anchors.
 
 ## Before the audience joins
@@ -47,17 +47,16 @@ broader platform:
    ```
 
 2. Open `/admin` and confirm the database, active run, baseline checksum, and
-   stream checks are green.
-3. If you will use live Aura Analyst, run all questions at
-   `/admin/domain-check`. Otherwise, open **Demo controls** and select
-   **Analyst → Fixture**.
-4. Select **Audience → Business**.
-5. Reset the environment to its baseline.
-6. Open **Overview** and collapse **Demo controls**.
-7. Confirm the overview shows approximately `322,000` authorizations and
-   **Normal operations**.
+   stream checks are green. The customer demo uses live Aura
+   (`ANALYST_MODE=live`).
+3. Run the known questions at `/admin/domain-check`.
+4. Reset the environment, then resume the stream. A reset leaves the clock
+   paused. Resume once so the baseline is live, then press **Esc** to return
+   to the customer view.
+5. Open **Overview**. Confirm **Operating normally**, approval near 95.9%, and
+   no incident badge.
 
-Do not start the operational drill before the presentation.
+Do not open the incident before the presentation.
 
 ---
 
@@ -77,9 +76,9 @@ Do not start the operational drill before the presentation.
 
 **Point to:**
 
-- The live authorization network
+- **Authorization network** and **Operating normally**
 - The seven-day operating baseline
-- **Today’s focus → Payment Pulse**
+- **See a revenue-risk incident**
 
 **Transition:**
 
@@ -89,9 +88,9 @@ Do not start the operational drill before the presentation.
 
 ## 0:45–2:00 — Establish the healthy baseline
 
-**Action:** Click **Open payment operations**.
+**Action:** Open **Payment Performance Management** from the header. Do not start the incident yet.
 
-**Screen:** Payment Pulse, one-hour range
+**Screen:** Payment Performance Management, one-hour range
 
 **Say:**
 
@@ -122,31 +121,31 @@ measured normal behavior.
 
 ---
 
-## 2:00–3:00 — Start the processor disruption
+## 2:00–3:00 — Reveal the processor incident
 
-**Action:** Scroll to **Run an operational drill**.
+**Action:** Return to **Overview** and choose **See a revenue-risk incident**,
+or choose **Reveal the incident** on Payment Performance Management.
 
-**Say before clicking:**
+**Say before the page finishes:**
 
-> This drill introduces a two-minute timeout burst on one route: Cardinal Rails,
+> This introduces a two-minute timeout burst on one route: Cardinal Rails,
 > Mastercard, and UK issuers.
 >
-> We know the expected operating signature before we start: approval rate on
+> We know the expected operating signature before it appears: approval rate on
 > that route falls from 96 to 88 percent, timeout share rises from one to seven
 > percent, and p95 latency rises from 180 to 680 milliseconds.
 
-**Action:** Click **Start drill**.
+**Say while the page loads:**
 
-**Say while the page refreshes:**
-
-> The event is written atomically, so the team never sees a half-loaded incident.
-> The dashboard moves from the complete baseline to the complete disruption.
+> The event is written as one complete change, and the logical clock pauses at
+> the end of that window. The incident card, the hour-wide context, and Aura
+> then inspect the same moment.
 
 **Expected result:**
 
-- The page status changes to **Operational change detected**
-- The affected route becomes the largest negative lane movement
-- **Change impact** displays a before-and-during comparison
+- The decision card reads **Revenue-risk incident detected**
+- P2 / Mastercard / GB shows 88% approval, −8 points, 680 ms, and 200 attempts
+- **Change impact** confirms 96% → 88%, 1% → 7%, and 180 ms → 680 ms
 
 **Transition:**
 
@@ -154,25 +153,25 @@ measured normal behavior.
 
 ---
 
-## 3:00–4:30 — Isolate the affected route
+## 3:00–4:30 — Read the incident, then the network context
 
-**Action:** Return to **Key operating signals** and **Lane movement**.
+**Action:** Stay on the incident card. Then point to **Lane movement**.
 
 **Say:**
 
-> The overall approval rate moves only modestly because one route is diluted
-> across the full network. But when we compare each route with its own baseline,
-> Cardinal Rails, Mastercard, and GB issuers separates immediately.
+> The decision is the two-minute window on Cardinal Rails, Mastercard, and GB
+> issuers. The hour-wide network moves only modestly because that burst is
+> diluted across every other route and the rest of the hour.
 >
-> This is the difference between seeing that the portfolio moved and knowing
-> where an operator should investigate.
+> The lane chart is context. It stays where it is because the clock is paused.
+> The incident card is the number an operator acts on.
 
-**Action:** Point to the affected route, then the **Change impact** card.
+**Action:** Point to **Change impact**.
 
 **Say:**
 
-> Here is the same route before and during the event. Approval falls to exactly
-> 88 percent, timeout share reaches seven percent, and p95 latency reaches 680
+> Here is the same route before and during the event. Approval falls to 88
+> percent, timeout share reaches seven percent, and p95 latency reaches 680
 > milliseconds. The observed impact matches the expected operating signature.
 
 **Business takeaway:**
@@ -184,23 +183,29 @@ measured normal behavior.
 
 ## 4:30–7:00 — Investigate in natural language
 
-**Action:** Scroll to **Ask your payment data**.
+**Action:** Scroll to **Ask about Payment Performance Management**.
 
-### Question 1: Find the driver
+### Question 1: Confirm the incident window
 
 **Ask:**
 
-> During the weakest window, rank processors and rails against the prior
-> seven-day baseline.
+> For P2 / Mastercard / GB in the incident window, compare approval and p95
+> latency with its prior seven-day baseline.
 
-**Say while the answer streams:**
+**Say before you ask, so the room hears why the chat is here:**
 
-> Aura Analyst is translating the business question into SQL over curated,
-> read-only payment views. The dashboard metrics remain deterministic; Analyst
-> adds a conversational investigation path over the same governed data.
+> The tiles are the operating picture. They show that something moved. This
+> chat is how you investigate a question those tiles were not built to answer:
+> a processor comparison, a decline mix, or that same mix for Mastercard only.
+> Aura Analyst turns the question into SQL over curated, read-only payment
+> views, runs it on SingleStore, and leaves the SQL available to check. A
+> follow-up keeps the window you already set. Analyst assembles the evidence.
+> Payment operations still owns the routing decision.
 
-**Expected answer:** Cardinal Rails / P2 and the affected Mastercard route rank
-as the largest deterioration.
+**Expected answer:** One row for P2 / Mastercard / GB. Incident attempts are
+200, approval is 88 percent, and p95 latency is 680 milliseconds. The prior
+seven-day baseline is about 96 percent and 180 milliseconds. The answer uses
+the paused incident window, not a later hour.
 
 ### Question 2: Explain the decline mix
 
@@ -218,6 +223,28 @@ Digital Goods for the affected route.
 > where the change occurred, which response code expanded, and which merchant
 > segment carries the concentration. Payment operations still owns the routing
 > or processor decision.
+
+### Optional 90-second insert — Why Aura is not a generic LLM (P9)
+
+Use after Question 1 when the room may confuse Aura with “ChatGPT on our data.”
+
+**Screen:** Analyst answer with SQL open, or `/value#why-aura`
+
+**Say:**
+
+> Connecting a language model to warehouse tables is easy to claim. What you
+> just saw is different: the question ran against a governed Domain, the SQL
+> executed on SingleStore’s live foundation, and the evidence stays
+> inspectable. Aura assembles the pattern; your operators still own the action.
+
+Full talk track: [`proof-modules.md`](proof-modules.md) and in-app `/value`.
+
+### Optional CFO / FP&A insert — AI Platform Economics (P10)
+
+If a finance or platform-economics buyer is present, open `/value#ai-cost` or
+**Platform** and contrast one-engine architecture with
+operational-store → ETL → warehouse → LLM agent spend. Do not invent vendor
+invoices; ask for their AI and warehouse baseline as the stage gate.
 
 ### Optional trust proof for a technical audience
 
@@ -284,7 +311,7 @@ If the audience is nontechnical, shorten this to:
 
 ## 9:30–10:00 — Close and ask for the next step
 
-**Action:** Return to Payment Pulse. Do not reset until after the closing
+**Action:** Return to Payment Performance Management. Do not reset until after the closing
 question; leave the business impact visible.
 
 **Say:**
@@ -313,13 +340,13 @@ Pause. Do not fill the silence.
 Use this when time is tight:
 
 1. **0:00–0:45:** State the delayed-visibility problem.
-2. **0:45–1:30:** Show the healthy Payment Pulse baseline.
-3. **1:30–2:00:** Start the processor timeout drill.
-4. **2:00–3:00:** Show the affected route and Change impact.
-5. **3:00–4:15:** Ask one Analyst question:
+2. **0:45–1:30:** Show the healthy Payment Performance Management baseline.
+3. **1:30–2:00:** Choose **See a revenue-risk incident**. The clock pauses.
+4. **2:00–3:00:** Read the incident card and **Change impact**.
+5. **3:00–4:15:** Ask the incident-window question:
 
-   > For the largest change, break declines down by processor, merchant category,
-   > and response code.
+   > For P2 / Mastercard / GB in the incident window, compare approval and p95
+   > latency with its prior seven-day baseline.
 
 6. **4:15–5:00:** Close with **Protect approvals** and ask the stage-gate
    question.
@@ -330,16 +357,13 @@ Skip the payment-level drill-down and generated SQL.
 
 1. Keep speaking. Say:
 
-   > The operational dashboard is live and independent of the conversational
-   > layer. I’m switching to a reviewed response so we can continue the business
-   > story.
+   > The operating decision is already on the incident card. Aura is the
+   > investigation path, and the card remains the evidence if that path is slow.
 
-2. Open **Demo controls**.
-3. Select **Analyst → Fixture**.
-4. Ask one of the displayed starter questions.
-5. Do not apologize repeatedly or troubleshoot on screen.
-
-The UI labels stored responses, so the fallback is visible rather than hidden.
+2. Stay on the incident card and **Change impact**.
+3. Do not switch the room to a stored answer. This demo is configured for live
+   Aura, and the customer view does not substitute a fixture.
+4. Do not apologize repeatedly or troubleshoot on screen.
 
 ## Presenter guardrails
 

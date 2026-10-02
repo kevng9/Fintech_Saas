@@ -560,7 +560,7 @@ def reset(
 def active_summary(cursor) -> dict:
     active = state.read_active(cursor)
     if not active:
-        return {"status": "uninitialised"}
+        return {"status": "uninitialized"}
     run = query_one(cursor, "SELECT * FROM demo_run WHERE run_id = %s", (active["run_id"],))
     executions = query_all(
         cursor,

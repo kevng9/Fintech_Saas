@@ -3,11 +3,12 @@
 /** Business-facing overview for the synthetic payments operation. */
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useDemoState } from "@/components/DemoStateProvider";
 import { PresenterCard } from "@/components/PresenterCard";
 import { Banner, Pill, Skeleton } from "@/components/ui";
-import { count, logicalTime } from "@/lib/format";
-import type { AnchorSummaryPayload } from "@/lib/apiTypes";
+import { count, logicalTime, percent, usd } from "@/lib/format";
+import type { AnchorSummaryPayload, OverviewPayload } from "@/lib/apiTypes";
 
 const CAPABILITY_ICON: Record<string, string> = {
   a1: "↗",
@@ -38,7 +39,7 @@ function CapabilityCard({ anchor }: { anchor: AnchorSummaryPayload }) {
       >
         {CAPABILITY_ICON[anchor.id] ?? "•"}
       </span>
-      <div className="min-w-0">
+        <div className="min-w-0">
         <div className="flex items-center gap-2">
           <h3 className="truncate text-[13px] font-semibold">{anchor.name}</h3>
           {available && <Pill tone="good">Live</Pill>}
@@ -55,31 +56,56 @@ function CapabilityCard({ anchor }: { anchor: AnchorSummaryPayload }) {
   }
 
   return (
-    <Link href={`/anchors/${anchor.id}`} className={cardClass}>
+    <Link
+      href={anchor.id === "a2" ? "/anchors/a2?story=incident" : `/anchors/${anchor.id}?story=decision`}
+      className={cardClass}
+    >
       {content}
     </Link>
   );
 }
 
 export default function LaunchpadPage() {
-  const { config, envelope } = useDemoState();
+  const { config, envelope, presentationMode } = useDemoState();
+  const [paymentOverview, setPaymentOverview] = useState<OverviewPayload | null>(null);
   const state = envelope?.state;
   const run = envelope?.run;
-  const availableAnchor = config?.anchors.find((anchor) => anchor.status === "available");
-  const paymentEvents = run?.row_counts.payment_event;
+  const paymentAnchor = config?.anchors.find(
+    (anchor) => anchor.id === "a2" && anchor.status === "available"
+  );
   const totalRows = run
     ? Object.values(run.row_counts).reduce((sum, rows) => sum + Number(rows), 0)
     : null;
 
+  useEffect(() => {
+    let canceled = false;
+    void fetch("/api/v1/anchors/a2/overview?window=60", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((body: OverviewPayload | null) => {
+        if (!canceled && body) setPaymentOverview(body);
+      })
+      .catch(() => undefined);
+    return () => {
+      canceled = true;
+    };
+  }, [state?.run_id, state?.state_version]);
+
+  const currentApproval = paymentOverview?.widgets.authorization_rate.value ?? null;
+  const currentDeclinedValue = paymentOverview?.widgets.declined_value.value ?? null;
+  const paymentIncidentActive = (envelope?.executions ?? []).some(
+    (execution) =>
+      execution.scenario_id === "A2_PROCESSOR_TIMEOUT" && execution.status === "complete"
+  );
+
   return (
     <div className="space-y-8">
-      {!state && (
+      {!state && !presentationMode && (
         <Banner tone="bad">
           The payments environment is not connected. Open Demo controls for operator details.
         </Banner>
       )}
 
-      <PresenterCard />
+      {!presentationMode && <PresenterCard />}
 
       <section className="business-hero grid min-h-[360px] gap-8 px-8 py-9 lg:grid-cols-[1.25fr_.75fr] lg:px-12 lg:py-12">
         <div className="relative z-10 flex max-w-[720px] flex-col items-start justify-center">
@@ -96,13 +122,15 @@ export default function LaunchpadPage() {
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
-              href="/anchors/a2"
+              href="/anchors/a2?story=incident"
               className="inline-flex items-center gap-2 rounded-[11px] bg-[var(--lime)] px-5 py-3 text-[13px] font-bold text-[var(--navy)] transition-transform hover:-translate-y-0.5"
             >
-              Open payment operations
+              {paymentIncidentActive ? "Open incident investigation" : "See a revenue-risk incident"}
               <span aria-hidden>→</span>
             </Link>
-            <span className="text-[11px] text-white/45">Live synthetic authorization network</span>
+            <span className="text-[11px] text-white/45">
+              Controlled event · synthetic payment data
+            </span>
           </div>
         </div>
 
@@ -111,29 +139,43 @@ export default function LaunchpadPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[11px] font-semibold text-white/50">Authorization network</p>
-                <p className="mt-1 text-[15px] font-semibold">Operating normally</p>
+                <p className="mt-1 text-[15px] font-semibold">
+                  {paymentIncidentActive ? "Operational change detected" : "Operating normally"}
+                </p>
               </div>
-              <span className="flex items-center gap-2 rounded-full bg-[var(--lime)]/10 px-3 py-1.5 text-[10px] font-bold text-[var(--lime)]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[var(--lime)]" />
-                LIVE
+              <span
+                className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-[10px] font-bold ${
+                  paymentIncidentActive
+                    ? "bg-[#ff8c9b]/10 text-[#ffb5bf]"
+                    : "bg-[var(--lime)]/10 text-[var(--lime)]"
+                }`}
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    paymentIncidentActive ? "bg-[#ff8c9b]" : "bg-[var(--lime)]"
+                  }`}
+                />
+                {paymentIncidentActive ? "INCIDENT" : "LIVE"}
               </span>
             </div>
             <div className="mt-5 grid grid-cols-2 gap-3">
               <div className="glass-stat p-4">
                 <p className="text-[10px] font-semibold tracking-[0.08em] text-white/40 uppercase">
-                  Authorizations
+                  Approval rate
                 </p>
                 <p className="mt-2 text-[27px] font-semibold tracking-[-0.04em]">
-                  {count(paymentEvents)}
+                  {paymentOverview ? percent(currentApproval) : "Loading…"}
                 </p>
-                <p className="mt-1 text-[10px] text-white/40">in active business run</p>
+                <p className="mt-1 text-[10px] text-white/40">approval rate · last hour</p>
               </div>
               <div className="glass-stat p-4">
                 <p className="text-[10px] font-semibold tracking-[0.08em] text-white/40 uppercase">
-                  Intelligence
+                  Declined value
                 </p>
-                <p className="mt-2 text-[27px] font-semibold tracking-[-0.04em]">Always on</p>
-                <p className="mt-1 text-[10px] text-white/40">deterministic + Analyst</p>
+                <p className="mt-2 text-[27px] font-semibold tracking-[-0.04em]">
+                  {paymentOverview ? usd(currentDeclinedValue) : "Loading…"}
+                </p>
+                <p className="mt-1 text-[10px] text-white/40">current 60-minute window</p>
               </div>
             </div>
             <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-4 text-[10px] text-white/40">
@@ -148,7 +190,9 @@ export default function LaunchpadPage() {
         <div className="mb-4 flex items-end justify-between gap-4">
           <div>
             <p className="label">Today&apos;s focus</p>
-            <h2 className="section-title mt-1">Protect payment revenue</h2>
+            <h2 className="section-title mt-1">
+              {paymentAnchor?.businessDecision ?? "Payment Performance Management"}
+            </h2>
           </div>
           <Link
             href="/anchors/a2"
@@ -171,10 +215,10 @@ export default function LaunchpadPage() {
                   <Pill tone="good">Monitoring live</Pill>
                 </div>
                 <h3 className="mt-5 text-[23px] font-semibold tracking-[-0.035em]">
-                  Payment Pulse
+                  {paymentAnchor?.name ?? "Payment Performance Management"}
                 </h3>
                 <p className="mt-2 max-w-[58ch] text-[13px] leading-6 text-[var(--ink-soft)]">
-                  {availableAnchor?.criticalBusinessIssue ??
+                  {paymentAnchor?.criticalBusinessIssue ??
                     "Keep approval rates high and latency inside contracted thresholds across every payment lane."}
                 </p>
                 <div className="mt-5 flex flex-wrap gap-2">
@@ -227,6 +271,53 @@ export default function LaunchpadPage() {
       </section>
 
       <section>
+        <div className="mb-4 flex items-end justify-between gap-4">
+          <div>
+            <p className="label">Why Aura</p>
+            <h2 className="section-title mt-1">Operational intelligence you can trust and scale</h2>
+          </div>
+          <Link
+            href="/value"
+            className="text-[12px] font-semibold text-[var(--accent-dark)] hover:underline"
+          >
+            Open value stories →
+          </Link>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Link
+            href="/value#why-aura"
+            className="card p-5 transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(7,28,23,.1)]"
+          >
+            <p className="text-[10px] font-bold tracking-[0.1em] text-[var(--accent-dark)] uppercase">
+              Governed intelligence
+            </p>
+            <h3 className="mt-2 text-[16px] font-semibold tracking-[-0.02em]">
+              Why Aura, not a generic LLM
+            </h3>
+            <p className="mt-2 text-[12px] leading-5 text-[var(--ink-soft)]">
+              Governed Domain context, live SQL on SingleStore, and inspectable evidence — not chat
+              on a dump of tables.
+            </p>
+          </Link>
+          <Link
+            href="/value#ai-cost"
+            className="card p-5 transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(7,28,23,.1)]"
+          >
+            <p className="text-[10px] font-bold tracking-[0.1em] text-[var(--accent-dark)] uppercase">
+              CFO and FP&A
+            </p>
+            <h3 className="mt-2 text-[16px] font-semibold tracking-[-0.02em]">
+              AI Platform Economics
+            </h3>
+            <p className="mt-2 text-[12px] leading-5 text-[var(--ink-soft)]">
+              Reduce open-ended schema exploration and reuse governed decision paths across
+              operator, product, and workflow experiences.
+            </p>
+          </Link>
+        </div>
+      </section>
+
+      <section id="use-cases" className="scroll-mt-24">
         <div className="mb-4">
           <p className="label">Intelligence suite</p>
           <h2 className="section-title mt-1">One view across the financial journey</h2>

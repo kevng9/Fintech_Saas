@@ -53,11 +53,11 @@ export function PresenterCard() {
   const recommendation =
     recommendedAnchor === "a7"
       ? {
-          name: "Credit Risk Pulse",
+          name: "Credit and Exposure Management",
           reason: "Best for risk and regulatory audiences: evidence is assembled, while decisions stay with credit officers.",
         }
       : {
-          name: "Payment Pulse",
+          name: "Payment Performance Management",
           reason: "Best general opener: the audience sees a clear operational change, its cause, and the supporting rows.",
         };
 
@@ -154,7 +154,12 @@ export function PresenterCard() {
             <p className="label">3 · Explain it</p>
             <p className="mt-2 text-[13px] font-semibold">Choose a reviewed question</p>
             <p className="mt-1 text-[11px] leading-4 text-[var(--ink-soft)]">
-              Analyst starts in Auto and clearly labels any stored answer it uses.
+              Analyst starts in Auto and clearly labels any stored answer it uses. After the first
+              answer, open{" "}
+              <Link href="/value" className="font-semibold text-[var(--accent-dark)] hover:underline">
+                Value stories
+              </Link>{" "}
+              if the room needs Aura-vs-LLM or AI-cost framing.
             </p>
           </div>
         </div>

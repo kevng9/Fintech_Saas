@@ -1,4 +1,4 @@
-# Aura Analyst Domain manifest for A5 Dispute Resolution Lens (Disputes Operations).
+# Aura Analyst Domain manifest for A5 Dispute Operations Performance (Disputes Operations).
 #
 # This file is the source of INTENT. The SingleStore Cloud Portal remains the
 # source of DEPLOYED state: public context-management APIs are not documented,
@@ -8,7 +8,7 @@
 
 anchor: a5
 domain_name: a5_disputes_ops
-context_version: 1.0.0
+context_version: 1.4.0
 fixture_version: 1.0.0
 validated_at: null
 database: fintech_demo
@@ -22,33 +22,39 @@ description: >-
 tables:
   - name: aa_dispute_sla_risk
     description: >-
-      Open dispute counts and SLA risk grouped by day opened, queue, and
-      reason code. Primary table for backlog and SLA-risk questions.
-    grain: logical day opened x queue x reason code x priority
+      Open dispute counts and SLA risk grouped by day opened, queue, reason
+      code, priority, and the merchant of the disputed payment. Primary table
+      for backlog and SLA-risk questions.
+    grain: logical day opened x queue x reason code x priority x merchant
     columns:
       opened_date: Logical calendar day the disputes in the group were opened.
       queue_id: Operations queue the disputes are assigned to.
-      reason_code: Dispute reason, for example MERCHANT_OUTAGE, DUPLICATE_CHARGE.
+      reason_code: Dispute reason, for example PAID_BY_OTHER_MEANS, DUPLICATE_CHARGE.
       priority: Dispute priority, high or normal.
+      merchant_id: Synthetic merchant identifier of the disputed payment.
+      merchant_name: Synthetic merchant name of the disputed payment.
       open_dispute_count: Disputes in the group not yet closed.
       sla_risk_count: Open disputes in the group due within 24 logical hours.
-      sla_risk_amount_total: Sum of disputed_amount for disputes at SLA risk, normalised to US dollars.
-      disputed_amount_total: Sum of disputed_amount for all open disputes in the group, normalised to US dollars.
+      sla_risk_amount_total: Sum of disputed_amount for disputes at SLA risk, normalized to US dollars.
+      disputed_amount_total: Sum of disputed_amount for all open disputes in the group, normalized to US dollars.
       nearest_due_at: Earliest due_at among open disputes in the group.
 
   - name: aa_dispute_queue_driver
     description: >-
-      Daily dispute volume and value by queue and reason code, including how
-      many of the day's disputes belong to an injected demo scenario. Use
-      this for trend questions.
-    grain: logical day opened x queue x reason code
+      Daily dispute volume and value by queue, reason code, and merchant of
+      the disputed payment, including how many of the day's disputes belong
+      to an injected demo scenario. Use this for trend and merchant
+      concentration questions.
+    grain: logical day opened x queue x reason code x merchant
     columns:
       opened_date: Logical calendar day.
       queue_id: Operations queue.
       reason_code: Dispute reason.
+      merchant_id: Synthetic merchant identifier of the disputed payment.
+      merchant_name: Synthetic merchant name of the disputed payment.
       dispute_count: Disputes opened in the group that day.
-      disputed_amount_total: Sum of disputed value for the group, normalised to US dollars.
-      avg_disputed_amount: Mean disputed amount for the group, normalised to US dollars.
+      disputed_amount_total: Sum of disputed value for the group, normalized to US dollars.
+      avg_disputed_amount: Mean disputed amount for the group, normalized to US dollars.
       scenario_dispute_count: Disputes in the group that belong to an injected demo scenario.
 
   - name: aa_dispute_timeline
@@ -80,6 +86,19 @@ relationships:
 metric_definitions:
   open_dispute_count: Disputes with status not equal to closed, as of the demo logical clock.
   sla_risk_count: Open disputes whose due_at is within 24 logical hours of the current logical time.
+  due_at: >-
+    The issuer's internal deadline for the dispute. For PAID_BY_OTHER_MEANS
+    disputes it is the five-business-day (seven calendar day) provisional-credit
+    target, which is stricter than the Regulation E ten-business-day limit.
+  arrival_pattern: >-
+    Disputes from one incident arrive in waves as statements reach customers.
+    When asked when disputes arrived, group aa_dispute_queue_driver by
+    opened_date for the reason code in question.
+  merchant_concentration: >-
+    Share of a reason code's disputes that trace to one merchant. When asked
+    what is driving a queue, group by merchant_name as well as reason_code
+    and say whether the disputes concentrate on one merchant or spread across
+    many.
   baseline_comparison: >-
     Unless the user names a period, compare the selected window against the
     same queue and reason code over the preceding 30 logical days.
@@ -90,19 +109,25 @@ instructions: |
   Use the demo logical clock exposed by the views. Never use wall-clock now().
   State the selected period, filters, and comparison baseline in the answer.
   Distinguish observed facts, calculated metrics, and interpretations.
+  With every table, chart, or other dataset, write the commentary in Markdown
+  using this shape: an opening sentence that states the main comparison and
+  bolds the key figure; a bullet list of the key figures, with each figure in
+  bold; and a closing sentence on what the pattern may mean, including any
+  material limitation or missing context. Do not put Markdown inside table cells.
+  In the commentary, round rates to two decimals and durations to one decimal.
   Do not infer causation from correlation. A correlated change is a candidate
   explanation for a human to confirm, not a cause.
   Do not adjudicate a dispute, issue or recommend a provisional credit, or
   contact a customer. Report only recorded timeline events.
   Always aggregate value using the *_usd columns, and say that amounts are
-  normalised to US dollars.
+  normalized to US dollars.
   When evidence is incomplete, say what is missing.
   Never reveal or request secrets or direct identifiers.
   Prefer a concise answer with a supporting table or chart.
 
 starter_prompts:
   - Show disputes at risk of SLA breach in the next 24 logical hours.
-  - What explains the largest at-risk queue compared with the prior 30 days?
+  - Which reason code and merchant are driving the largest at-risk queue, and when did those disputes arrive?
   - Show the timeline for the selected dispute.
 
 known_questions:
@@ -161,4 +186,4 @@ known_questions:
 guardrail_text: >-
   Aura Analyst assembles and explains evidence. It does not adjudicate a
   dispute or issue a credit. Adjudication and provisional credit stay with
-  authorised agents.
+  authorized agents.

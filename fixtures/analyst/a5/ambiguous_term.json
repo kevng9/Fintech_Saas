@@ -8,9 +8,9 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "\"Falling behind\" could mean the most disputes at SLA risk, or the most disputed value at risk, and queues rank differently on each. core_ops leads on count; escalations leads on average value per dispute. Tell me which you mean.",
+      "text": "\"Falling behind\" could mean the most disputes at SLA risk or the most disputed value at risk. Here both measures point the same way: queue_disputes_escalated leads with **13** at-risk disputes and **$7,197.75** at risk. Tell me if you meant a different measure, such as the oldest open dispute.",
       "sql": {
-        "command": "SELECT queue_id, sla_risk_count, sla_risk_amount_total FROM aa_dispute_sla_risk",
+        "command": "SELECT queue_id, SUM(sla_risk_count) AS sla_risk_count, SUM(sla_risk_amount_total) AS sla_risk_amount_total FROM aa_dispute_sla_risk GROUP BY queue_id",
         "confidence_score": 0.9,
         "tables_used": [
           "aa_dispute_sla_risk"
@@ -24,17 +24,22 @@
         ],
         "rows": [
           [
-            "core_ops",
-            35,
-            85600
+            "queue_disputes_escalated",
+            13,
+            7197.75
           ],
           [
-            "escalations",
-            6,
-            19800
+            "queue_disputes_1",
+            0,
+            0
+          ],
+          [
+            "queue_disputes_2",
+            0,
+            0
           ]
         ],
-        "row_count": 2,
+        "row_count": 3,
         "truncated": false
       },
       "chart": null,

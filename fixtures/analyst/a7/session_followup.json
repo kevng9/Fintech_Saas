@@ -8,9 +8,9 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "Compared with Transportation/CA portfolio concentration: booked is 20.00%; illustrative pro forma including this pending request is 23.81%. Booked exposure is unchanged.",
+      "text": "Compared with Transportation in California portfolio concentration: booked is **20.00%**; illustrative pro forma including this pending request is **23.81%**, leaving **1.19 points** of headroom against the illustrative 25% segment limit. Booked exposure is unchanged.",
       "sql": {
-        "command": "SELECT concentration_share, pro_forma_concentration_share FROM aa_portfolio_concentration WHERE industry_code = 'Transportation' AND geography_id = 'CA'",
+        "command": "SELECT concentration_share, pro_forma_concentration_share, 0.25 - pro_forma_concentration_share AS limit_headroom FROM aa_portfolio_concentration WHERE industry_code = 'TRANSPORTATION' AND geography_id = 'GEO-USCA'",
         "confidence_score": 0.9,
         "tables_used": [
           "aa_portfolio_concentration"
@@ -19,12 +19,14 @@
       "table": {
         "columns": [
           "concentration_share",
-          "pro_forma_concentration_share"
+          "pro_forma_concentration_share",
+          "limit_headroom"
         ],
         "rows": [
           [
             0.2,
-            0.2381
+            0.2381,
+            0.0119
           ]
         ],
         "row_count": 1,

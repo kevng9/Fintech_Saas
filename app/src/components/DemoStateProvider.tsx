@@ -38,6 +38,7 @@ interface DemoStateContextValue {
   refresh: () => Promise<void>;
   pause: () => Promise<ControlResult>;
   resume: () => Promise<ControlResult>;
+  startUpdates: () => Promise<ControlResult>;
   setSpeed: (speed: number) => Promise<ControlResult>;
   reset: () => Promise<ControlResult>;
   inject: (scenarioId: string) => Promise<ControlResult>;
@@ -67,7 +68,7 @@ export function DemoStateProvider({ children }: { children: React.ReactNode }) {
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [persona, setPersonaState] = useState<PersonaId>("business");
   const [analystMode, setAnalystModeState] = useState<AnalystModeChoice>("auto");
-  const [presentationMode, setPresentationModeState] = useState(false);
+  const [presentationMode, setPresentationModeState] = useState(true);
   // Resolved after mount because it comes from sessionStorage. It is state
   // rather than a ref so that consumers reading it through context, such as the
   // Analyst session scoping on /admin/domain-check, see the real value instead
@@ -80,11 +81,23 @@ export function DemoStateProvider({ children }: { children: React.ReactNode }) {
     // Start every browser tab on the safest presenter setting. Advanced mode
     // choices remain useful during a session, but must not surprise the next
     // salesperson who opens the demo.
-    setAnalystModeState(
-      (window.sessionStorage.getItem("demo-analyst-mode") as AnalystModeChoice) || "auto"
-    );
-    setPresentationModeState(window.localStorage.getItem("demo-presentation") === "1");
+    const storedMode = window.sessionStorage.getItem("demo-analyst-mode") as AnalystModeChoice | null;
+    setAnalystModeState(storedMode === "live" || storedMode === "fixture" || storedMode === "auto" ? storedMode : "auto");
+    const customerDefaultVersion = "1";
+    const defaultApplied = window.localStorage.getItem("demo-customer-default");
+    const storedPresentation = window.localStorage.getItem("demo-presentation");
+    const nextPresentation =
+      defaultApplied === customerDefaultVersion ? storedPresentation !== "0" : true;
+    setPresentationModeState(nextPresentation);
+    window.localStorage.setItem("demo-presentation", nextPresentation ? "1" : "0");
+    window.localStorage.setItem("demo-customer-default", customerDefaultVersion);
   }, []);
+
+  useEffect(() => {
+    if (config?.analyst.mode !== "live") return;
+    setAnalystModeState("live");
+    window.sessionStorage.setItem("demo-analyst-mode", "live");
+  }, [config?.analyst.mode]);
 
   const refresh = useCallback(async () => {
     try {
@@ -102,11 +115,11 @@ export function DemoStateProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
+    let canceled = false;
     (async () => {
       try {
         const response = await fetch("/api/v1/config", { cache: "no-store" });
-        if (!cancelled && response.ok) {
+        if (!canceled && response.ok) {
           setConfig((await response.json()) as ConfigPayload);
         }
       } catch {
@@ -114,7 +127,7 @@ export function DemoStateProvider({ children }: { children: React.ReactNode }) {
       }
     })();
     return () => {
-      cancelled = true;
+      canceled = true;
     };
   }, []);
 
@@ -182,6 +195,7 @@ export function DemoStateProvider({ children }: { children: React.ReactNode }) {
       },
       analystMode,
       setAnalystMode: (next) => {
+        if (config?.analyst.mode === "live" && next !== "live") return;
         setAnalystModeState(next);
         window.sessionStorage.setItem("demo-analyst-mode", next);
       },
@@ -193,6 +207,7 @@ export function DemoStateProvider({ children }: { children: React.ReactNode }) {
       refresh,
       pause: () => call("pause", "/api/v1/simulator/pause"),
       resume: () => call("resume", "/api/v1/simulator/resume"),
+      startUpdates: () => call("start", "/api/v1/simulator/start"),
       setSpeed: (speed) =>
         call("speed", "/api/v1/simulator/speed", { body: JSON.stringify({ speed }) }),
       reset: () => call("reset", "/api/v1/demo/reset"),

@@ -54,14 +54,20 @@ export function AppShell({ children }: { children: ReactNode }) {
     return <div className="min-h-screen">{children}</div>;
   }
 
-  const nav = config
+  const nav = presentationMode
     ? [
         { href: "/", label: "Overview" },
-        ...config.anchors
-          .filter((anchor) => anchor.status === "available")
-          .map((anchor) => ({ href: `/anchors/${anchor.id}`, label: anchor.name })),
+        { href: "/anchors/a2", label: "Payment Performance Management" },
+        { href: "/#use-cases", label: "All use cases" },
       ]
-    : [{ href: "/", label: "Overview" }, ...FALLBACK_NAV];
+    : config
+      ? [
+          { href: "/", label: "Overview" },
+          ...config.anchors
+            .filter((anchor) => anchor.status === "available")
+            .map((anchor) => ({ href: `/anchors/${anchor.id}`, label: anchor.name })),
+        ]
+      : [{ href: "/", label: "Overview" }, ...FALLBACK_NAV];
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -104,42 +110,42 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="ml-auto flex items-center gap-1">
-            {presentationMode && (
-              <button
-                type="button"
-                onClick={() => setPresentationMode(false)}
-                title="Press Esc to exit presentation mode"
-                className="rounded-[9px] border border-white/20 bg-white/10 px-3 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-white/20"
-              >
-                Exit presentation
-              </button>
+            {!presentationMode && (
+              <>
+                <Link
+                  href="/value"
+                  className="hidden rounded-[9px] px-3 py-2 text-[12px] font-medium text-white/55 transition-colors hover:bg-white/10 hover:text-white lg:block"
+                >
+                  Value stories
+                </Link>
+                <Link
+                  href="/architecture"
+                  className="hidden rounded-[9px] px-3 py-2 text-[12px] font-medium text-white/55 transition-colors hover:bg-white/10 hover:text-white lg:block"
+                >
+                  Platform
+                </Link>
+                <Link
+                  href="/admin"
+                  className="hidden rounded-[9px] px-3 py-2 text-[12px] font-medium text-white/55 transition-colors hover:bg-white/10 hover:text-white lg:block"
+                >
+                  Admin
+                </Link>
+                <span className="mx-2 h-5 w-px bg-white/10" />
+                <div
+                  className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-[11px] font-semibold"
+                  title={healthy ? "Demo is ready to present" : "Demo needs attention"}
+                >
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{
+                      background: healthy ? "var(--lime)" : "var(--amber)",
+                      boxShadow: healthy ? "0 0 0 3px rgba(199,243,107,.12)" : undefined,
+                    }}
+                  />
+                  {healthy ? "Ready to present" : "Needs attention"}
+                </div>
+              </>
             )}
-            <Link
-              href="/architecture"
-              className="hidden rounded-[9px] px-3 py-2 text-[12px] font-medium text-white/55 transition-colors hover:bg-white/10 hover:text-white lg:block"
-            >
-              Platform
-            </Link>
-            <Link
-              href="/admin"
-              className="hidden rounded-[9px] px-3 py-2 text-[12px] font-medium text-white/55 transition-colors hover:bg-white/10 hover:text-white lg:block"
-            >
-              Admin
-            </Link>
-            <span className="mx-2 h-5 w-px bg-white/10" />
-            <div
-              className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-[11px] font-semibold"
-              title={healthy ? "Demo is ready to present" : "Demo needs attention"}
-            >
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{
-                  background: healthy ? "var(--lime)" : "var(--amber)",
-                  boxShadow: healthy ? "0 0 0 3px rgba(199,243,107,.12)" : undefined,
-                }}
-              />
-              {healthy ? "Ready to present" : "Needs attention"}
-            </div>
           </div>
         </div>
       </header>
@@ -150,7 +156,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {children}
       </main>
 
-      <FloatingAnalystChat />
+      {!pathname.startsWith("/anchors/a2") && <FloatingAnalystChat />}
 
       <footer className="border-t border-[var(--line)] bg-[var(--surface)]">
         <div className="mx-auto flex max-w-[1480px] flex-col gap-2 px-4 py-4 text-[10px] leading-4 text-[var(--ink-muted)] sm:flex-row sm:items-center sm:justify-between sm:px-6">

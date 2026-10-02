@@ -22,6 +22,15 @@ from ..rng import det_choice
 from ..tables import TABLE_COLUMNS
 
 PRODUCT_FAMILIES = ("Checking", "Savings", "Credit Card", "Personal Loan", "Business Line")
+# Illustrative first-year revenue per opened account, in USD. Synthetic
+# planning values for the demo, not benchmarks.
+ANNUAL_VALUE_USD_BY_FAMILY = {
+    "Checking": 300.00,
+    "Savings": 150.00,
+    "Credit Card": 450.00,
+    "Personal Loan": 800.00,
+    "Business Line": 2500.00,
+}
 PRODUCT_CHANNELS = ("digital", "branch", "partner")
 PRODUCT_COUNT = 12
 
@@ -57,12 +66,14 @@ def counterparty_id(index: int) -> str:
 
 
 def build_products(world: World) -> list[tuple]:
-    """(product_id, product_name, product_family, channel)"""
+    """(product_id, product_name, product_family, channel, annual_value_usd)"""
     rows = []
     for index in range(1, PRODUCT_COUNT + 1):
         family = PRODUCT_FAMILIES[(index - 1) % len(PRODUCT_FAMILIES)]
         channel = det_choice(PRODUCT_CHANNELS, world.seed, "product-channel", index)
-        rows.append((product_id(index), f"{family} {index:02d}", family, channel))
+        rows.append(
+            (product_id(index), f"{family} {index:02d}", family, channel, ANNUAL_VALUE_USD_BY_FAMILY[family])
+        )
     return rows
 
 

@@ -1,4 +1,4 @@
-"""A1 Digital Journey baseline: account-opening funnel history.
+"""A1 Digital Funnel Performance baseline: account-opening funnel history.
 
 Seeds ``digital_session`` and ``application`` (plus a ``manual_review`` row for
 whichever applications land in review) over the run's baseline window, spread

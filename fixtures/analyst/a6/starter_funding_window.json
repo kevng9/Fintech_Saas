@@ -11,7 +11,7 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "18 queued payments totalling USD 41.2 million are due in the next 24-hour funding window, the soonest due in 45 minutes.",
+      "text": "**2** queued payments totaling **USD 582,151.11** are due in the next 24-hour funding window. Amounts are normalized to US dollars.\n\n- QP-A6B-01-01 for Synthetic Entity 01 (USD 166,763.98) is due first, in **105** minutes.\n- QP-A6B-02-00 for Synthetic Entity 02 (USD 415,387.13) is due in **1,245** minutes.\n\nOutbound obligations in the window are small relative to group liquidity.",
       "sql": {
         "command": "SELECT queued_payment_id, entity_name, currency, amount_usd, due_at, minutes_until_due\nFROM aa_funding_window\nWHERE in_next_funding_window = 1\nORDER BY minutes_until_due ASC LIMIT 20",
         "confidence_score": 0.9,
@@ -23,21 +23,24 @@
         "columns": [
           "queued_payment_id",
           "entity_name",
+          "currency",
           "amount_usd",
           "minutes_until_due"
         ],
         "rows": [
           [
-            "QP-88110",
-            "NorthAm Treasury Co.",
-            4200000,
-            45
+            "QP-A6B-01-01",
+            "Synthetic Entity 01",
+            "USD",
+            166763.98,
+            105
           ],
           [
-            "QP-88117",
-            "EMEA Funding Ltd.",
-            6100000,
-            210
+            "QP-A6B-02-00",
+            "Synthetic Entity 02",
+            "GBP",
+            415387.13,
+            1245
           ]
         ],
         "row_count": 2,

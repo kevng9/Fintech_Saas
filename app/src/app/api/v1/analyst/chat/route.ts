@@ -10,10 +10,11 @@ import {
 import { findFixture, fixtureUnavailableResult } from "@/lib/analyst/fixtures";
 import { canGoLive, fixtureFallbackReason, resolveMode, scenarioState } from "@/lib/analyst/mode";
 import { withPageContext, type AnalystPageContext } from "@/lib/analyst/pageContext";
-import { SINGLESTORE_SQL_LIVE_HINT } from "@/lib/analyst/singlestoreSql";
+import { DATA_COMMENTARY_HINT } from "@/lib/analyst/promptGuidance";
+import { logicalClockHint, SINGLESTORE_SQL_LIVE_HINT } from "@/lib/analyst/singlestoreSql";
 import { clearSession, getSession, rememberSession } from "@/lib/analyst/sessionStore";
 import { fixtureStream, tapSessionId } from "@/lib/analyst/sse";
-import { readDemoState } from "@/lib/demoState";
+import { latestExecution, readDemoState } from "@/lib/demoState";
 import { analystConfig } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
@@ -71,12 +72,38 @@ export async function POST(req: NextRequest) {
   const runId = state?.runId ?? 0;
   const tab = tabId(req);
   const existingSession = getSession(appUserId, tab, anchorId, runId);
+  const guidedPaymentQuestion =
+    anchorId === "a2" &&
+    (/weakest window.*rank (?:processors and rails|payment lanes)/i.test(message) ||
+      /P2.*Mastercard.*GB.*incident window/i.test(message));
+  const paymentExecution = guidedPaymentQuestion
+    ? await latestExecution(runId, "A2_PROCESSOR_TIMEOUT").catch(() => null)
+    : null;
+  const guidedPaymentHint =
+    guidedPaymentQuestion && paymentExecution?.window_start && paymentExecution.window_end
+      ? "Use one row for processor_id P2, card_network Mastercard, issuer_country GB. " +
+        `The incident is the exact bounded window from ${paymentExecution.window_start} through ` +
+        `${paymentExecution.window_end}. Filter incident rows to scenario_id = ` +
+        "'A2_PROCESSOR_TIMEOUT' inside those exact timestamps. Do not use the latest hour, " +
+        "the current logical time, or any later rows. Compare those incident rows with this lane's " +
+        "preceding seven-day baseline where scenario_id IS NULL. Return incident attempts, approval " +
+        "rate, and p95 latency plus baseline approval rate and p95 latency. Do not return baseline " +
+        "attempts or baseline volume because the periods differ."
+      : "";
   // Live Analyst has no browser selection; attach the open entity id when present.
   // Also remind the model of SingleStore SQL limits — Aura still emits GROUP_CONCAT
   // patterns that fail with error 1706 until Domain instructions are republished.
   const liveMessage = clampString(
-    [withPageContext(message, pageContext), SINGLESTORE_SQL_LIVE_HINT].join("\n\n"),
-    analystConfig.maxMessageChars + 420
+    [
+      DATA_COMMENTARY_HINT,
+      withPageContext(message, pageContext),
+      guidedPaymentHint,
+      logicalClockHint(state?.logicalTime),
+      SINGLESTORE_SQL_LIVE_HINT,
+    ]
+      .filter(Boolean)
+      .join("\n\n"),
+    analystConfig.maxMessageChars + 2000
   );
 
   if (canGoLive(anchorId, mode)) {

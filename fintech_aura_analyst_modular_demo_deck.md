@@ -1,130 +1,159 @@
-### Slide 1: Discovery demos earn attention by making one costly decision materially faster
+# SingleStore Aura Analyst for Financial Services
 
-- Open with a consequential customer decision, its current time-to-know, and the cost of delay.
-- Define the observable customer delta before selecting capabilities or screens.
-- Balance business outcomes, regulated risk, and technical feasibility from the first minute.
-- Treat every business delta as a hypothesis until customer owners validate it.
-
-*Visual: Decision-latency timeline from signal through investigation, decision, and action; current versus target.*
-
-*Presenter note: Ask which decision grows more valuable if time-to-know falls.*
+## From live business signals to governed, evidence-backed answers
 
 ---
 
-### Slide 2: A modular system connects eight customer decisions to eight reusable proofs
+### Slide 1: Financial teams lose time between a changing signal and a confident response
 
-- Anchors A1–A4: Digital Journey Intelligence, Payment Pulse, Trace the Loss, and Alert-to-Evidence.
-- Anchors A5–A8: Dispute Resolution Lens, Liquidity Command Center, Credit Risk Pulse, and Explain My Money.
-- Proofs P1–P4: Conversational Drill-Down, Live Event Impact, Transparent Answer, and Governed Business Context.
-- Proofs P5–P8: Scoped Access, Embedded Streaming, Structured Integration, and Reusable Decision View.
-- Assemble each path as Anchor → Proof → Persona value → Validated delta.
+- Revenue, risk, liquidity, and customer experience can change before scheduled reports reveal the movement.
+- Investigations often cross operational systems, analytical copies, dashboards, and specialist queues.
+- Business teams wait for answers while data teams repeatedly translate terms, rebuild joins, and reconcile metrics.
+- The opportunity is to shorten time-to-answer without weakening governance or moving accountability away from people.
 
-*Visual: Two module racks connected into configurable demo paths.*
-
----
-
-### Slide 3: Persona selection determines the question, evidence, and stopping point
-
-- Business personas prioritize growth, conversion, margin, liquidity, and decision speed.
-- Risk personas prioritize evidence, policy context, access scope, explainability, and accountable ownership.
-- Technical personas prioritize data paths, latency, concurrency, integration contracts, and operational boundaries.
-- Choose one primary persona and no more than two supporting personas.
-- Show Domain and access views only when they help prove how context and permissions shape the decision.
-
-*Visual: Three persona lanes showing questions, preferred proofs, and success signals.*
+*Visual: A timeline from live signal → report delay → analyst queue → evidence → human action, with the waiting time highlighted.*
 
 ---
 
-### Slide 4: Four anchors convert digital and payment signals into prioritized investigations
+### Slide 2: Aura Analyst turns natural-language questions into governed analysis on SingleStore
 
-- A1 Digital Journey Intelligence reveals journey friction and conversion hypotheses through P1 and P8.
-- A2 Payment Pulse exposes changing authorization and payment behavior through P2 and P6.
-- A3 Trace the Loss moves from aggregate fraud loss to contributing segments through P1 and P3.
-- A4 Alert-to-Evidence turns an AML alert into inspectable supporting evidence through P3 and P5.
-- For each anchor, identify the owner, trigger, current delay, intended action, and delta requiring validation.
+- Business users ask questions in familiar language.
+- Aura uses a configured Domain: approved descriptions, metrics, relationships, and instructions for that business area.
+- Aura generates and executes SQL against curated SingleStore views, then returns a summary, data, or visualization.
+- The answer can be inspected, refined through follow-up questions, and embedded in an existing application.
+- SingleStore keeps current operational and analytical data queryable in one real-time foundation.
 
-*Visual: Four anchor cards with owner, trigger, recommended proofs, and delta.*
-
----
-
-### Slide 5: Four more anchors support disputes, liquidity, credit, and embedded customer experiences
-
-- A5 Dispute Resolution Lens organizes dispute evidence and context through P3 and P4.
-- A6 Liquidity Command Center connects live movements to liquidity decisions through P2 and P8.
-- A7 Credit Risk Pulse monitors risk indicators through P4 and P5 without delegating regulated decisions.
-- A8 Explain My Money provides contextual explanations through an embedded experience using P1 and P7.
-- Human owners retain all regulated decisions and customer-impacting judgments.
-
-*Visual: Four decision panels flowing from signal to evidence to accountable action.*
+*Visual: Business question → governed Domain → generated SQL → SingleStore → summary, table, or chart.*
 
 ---
 
-### Slide 6: Eight proofs make each decision path credible, composable, and testable
+### Slide 3: This is more than a general-purpose LLM connected to warehouse tables
 
-- P1 Conversational Drill-Down and P2 Live Event Impact demonstrate investigative speed and responsiveness.
-- P3 Transparent Answer supports inspectability, not guaranteed correctness; P4 demonstrates configured business context.
-- P5 Scoped Access demonstrates configured permissions, with governance dependent on identity, policy, and deployment.
-- P6 uses `/chat`, SSE, and sessions; P7 uses `/query` and structured JSON.
-- P8 preserves decision context for repeat use and validation.
+| General-purpose LLM pattern | Aura Analyst on SingleStore |
+|---|---|
+| Starts with raw schemas and prompt instructions | Starts with configured business meaning |
+| May invent joins or choose an unapproved definition | Uses documented metrics and relationships |
+| Often queries a separate analytical copy | Executes against curated views on the live data foundation |
+| Produces an answer that can be difficult to verify | Can expose generated SQL and supporting rows |
+| Leaves access and decision boundaries to custom prompting | Uses scoped Domains while people retain consequential decisions |
 
-*Visual: Eight-cell proof matrix grouped by Interaction, Trust, Integration, and Reuse.*
+**Customer takeaway:** governed context, live execution, and inspectable evidence distinguish Aura from “chat over tables.”
 
----
-
-### Slide 7: Tell–Show–Tell turns a capability demonstration into a measurable decision story
-
-- Tell: state the decision, baseline time-to-know, consequence, and hypothesized delta.
-- Show: follow one anchor-led path using only the proofs required to reach evidence.
-- Tell: state what changed, who acts, and which customer-owned metric will validate value.
-- Measure investigation time, handoffs, evidence retrieval, decision-cycle duration, or avoided rework.
-- Remove anything that does not strengthen the decision-to-delta argument.
-
-*Visual: Tell–Show–Tell loop around a before-and-after time gauge.*
+*Visual: Side-by-side comparison with Context, Freshness, Inspectability, and Accountability rows.*
 
 ---
 
-### Slide 8: Trust requires explicit context, scoped access, inspectable evidence, and accountable humans
+### Slide 4: Digital Funnel Performance — find where high-intent journeys stall
 
-- Make weak or missing Domain context visible rather than implying universal accuracy.
-- Demonstrate scoped access rather than claiming universal governance.
-- State that governance depends on configuration, identity, policy, and deployment choices.
-- Use inspectability to support review without presenting it as guaranteed correctness.
-- Keep regulated decisions with accountable humans; Preview capabilities are not autonomous controls.
+- See account-opening progress by channel, journey step, and review path.
+- Compare straight-through and manual-review experiences using the institution’s own baseline.
+- Move from aggregate abandonment to the affected intent cohort and its supporting journey events.
+- Give digital, operations, and risk teams a shared evidence set for deciding what to investigate next.
 
-*Visual: Layered guardrails comprising Domain, access, evidence, and human ownership.*
+**Potential measures:** completion rate, abandonment rate, time to open, manual-review rate, and investigation cycle time.
 
----
-
-### Slide 9: Native APIs supply intelligence while customer engineering owns the embedded experience
-
-- `/chat` provides conversation, SSE streaming, and session continuity.
-- `/query` provides structured JSON for downstream rendering and integration.
-- Native scope includes Aura Analyst and API response patterns; these capabilities remain Preview.
-- Custom UI, workflow actions, telemetry, and downstream orchestration remain customer-owned.
-- Embedded delivery requires engineering, product, security, and operational work beyond the native intelligence layer.
-
-*Visual: Architecture divided between native Aura intelligence and the customer-owned experience.*
+*Visual: Funnel movement → affected cohort → supporting journey evidence.*
 
 ---
 
-### Slide 10: Variable-length recipes preserve one decision spine while changing proof depth
+### Slide 5: Payment Performance Management — isolate authorization and latency changes quickly
 
-- 5 minutes: one persona, one anchor, one proof, and one delta hypothesis.
-- 10 minutes: one anchor, two proofs, Tell–Show–Tell, and one measurable delta.
-- 15 minutes: primary and supporting personas, one anchor, three proofs, and the native-versus-custom boundary.
-- 25 minutes: two related anchors, all three persona perspectives, an API path, guardrails, and a validation plan.
-- 40 minutes: discovery-led assembly, architecture review, ownership mapping, delta validation, and a workshop gate.
+- Monitor authorization rate, latency, and decline mix across processors, rails, regions, and merchant categories.
+- Detect a changing payment lane before a portfolio average hides the deterioration.
+- Ask follow-up questions to identify the response codes and segments behind the movement.
+- Reach individual authorization events while payment operations retains routing and partner decisions.
 
-*Visual: Nested recipe cards with increasing depth and audience coverage.*
+**Potential measures:** authorization rate, p95 latency, decline volume, lost conversion, and time to isolate an affected lane.
+
+*Visual: Portfolio signal → processor and rail → response-code evidence → human-owned operational action.*
 
 ---
 
-### Slide 11: Proceed, reshape, or stop based on testable value and feasibility
+### Slide 6: Fraud Strategy Optimization, Financial Crime Operations, and Dispute Operations Performance
 
-- Confirm the priority anchor, primary persona, decision owner, and consequential question.
-- Select the minimum proofs and customer-owned success evidence.
-- Validate Domain context, data and events, access, API fit, engineering requirements, and ownership boundaries.
-- Record governance dependencies, inspectability limits, human accountability, Preview status, and delta assumptions.
-- Decide explicitly whether to proceed to validation, reshape the hypothesis, or stop.
+- Trace fraud loss from the aggregate to contributing channels, segments, and cases.
+- Connect an AML alert to transaction value, counterparties, geographies, and prior activity.
+- Identify dispute queues approaching service-level risk and open the timeline behind an individual case.
+- Keep investigation, escalation, filing, and adjudication decisions with authorized teams.
 
-*Visual: Decision gate with Decision, Data, Controls, and Delta inputs and Proceed, Reshape, or Stop outputs.*
+**Potential measures:** investigation time, false-positive rate, loss exposure, alert backlog, case handle time, and SLA breaches.
+
+*Visual: Three parallel paths for fraud, AML, and disputes, each ending in inspectable evidence and a named human owner.*
+
+---
+
+### Slide 7: Liquidity and Funding Management and Credit and Exposure Management
+
+- Compare liquidity positions, forecast variance, queued payments, and upcoming funding windows.
+- Review application evidence and identify items that remain unverified.
+- Compare pending requests with current portfolio concentration as an explicitly illustrative view.
+- Preserve treasury, credit, pricing, approval, and adverse-action ownership with responsible professionals.
+
+**Potential measures:** forecast variance, reconciliation time, emergency funding cost, review time, and concentration exposure.
+
+*Visual: Current position or application → evidence → illustrative comparison → accountable human decision.*
+
+---
+
+### Slide 8: Embedded Insights Strategy — bring governed explanations into the customer experience
+
+- Embed streamed analytical answers inside a bank or fintech application.
+- Explain spending changes with the transactions that support the answer.
+- Continue a conversation without forcing the customer to restate context.
+- Restrict the experience to the authorized customer and the configured Domain.
+- Let the institution own the product experience, authentication, telemetry, and downstream actions.
+
+**Potential measures:** support deflection, engagement, repeat use, completion rate, and premium-service adoption.
+
+*Visual: Customer question inside a banking app → streamed explanation → supporting transactions.*
+
+---
+
+### Slide 9: Trust is designed into the path from question to answer
+
+- **Governed meaning:** Domain definitions and relationships shape how business terms are interpreted.
+- **Scoped access:** each integration is authorized for its configured Domain; application entitlements remain customer-owned.
+- **Inspectable evidence:** generated SQL and returned data can support human review.
+- **Current data:** curated views expose the active, queryable business state rather than relying on a stale report.
+- **Human accountability:** Aura supports analysis and evidence assembly; people own regulated and customer-impacting actions.
+
+Aura Analyst and its APIs are Preview capabilities. Production use requires validation of security, quality, performance, and operating controls.
+
+*Visual: Five trust layers surrounding the analytical answer.*
+
+---
+
+### Slide 10: AI Platform Economics — one data foundation can improve the cost of AI at scale
+
+- AI operating cost includes both model consumption and the data platforms each question repeatedly queries.
+- A fragmented pattern can add operational storage, ETL, analytical copies, warehouse compute, and model tokens to every use case.
+- SingleStore can serve current operational data and curated analytical views from one engine.
+- Domain context narrows questions to approved data and meaning instead of broad, open-ended schema exploration.
+- The same governed analytical path can support an operator, an API integration, or an embedded customer experience.
+
+Any savings estimate requires the customer’s actual model, warehouse, pipeline, and operations baseline. Competitive invoice figures are not assumed.
+
+*Visual: Fragmented multi-platform cost path versus SingleStore + Aura governed question path.*
+
+---
+
+### Slide 11: Validate one valuable decision with your data
+
+1. Choose a business decision where faster time-to-answer has measurable value.
+2. Connect the required data and define the governed business context.
+3. Agree on representative questions, access boundaries, and answer-quality criteria.
+4. Measure the current baseline and the proposed analytical path.
+5. Evaluate value, feasibility, security, and operating ownership before expanding.
+
+**Suggested success measures**
+
+- Time from signal to accepted answer
+- Data freshness and query latency
+- Analyst or report-ticket volume
+- Evidence retrieval and investigation time
+- Answer acceptance and correction rate
+- AI and analytical platform cost per validated workflow
+
+**Next step:** schedule a joint value-and-data workshop with the business owner, data owner, security owner, and executive sponsor.
+
+*Visual: Decision → data → governed questions → measured validation → expansion gate.*

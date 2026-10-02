@@ -1,5 +1,5 @@
 /**
- * Deterministic A4 Alert-to-Evidence (AML Operations) queries.
+ * Deterministic A4 Financial Crime Operations (AML Operations) queries.
  *
  * No predicted disposition is stored or exposed anywhere in this module: it
  * reports backlog age, priority, and evidence completeness only
@@ -208,30 +208,30 @@ async function change(): Promise<SharedChangePayload | null> {
   if (!execution?.window_start || !execution?.window_end) return null;
 
   const expected = await scenarioExpectedDeltas(scenarioId);
-  const segment = (expected.segment as Record<string, string> | undefined) ?? {};
-  const label = segment.assigned_queue ?? segment.risk_band ?? "Injected alert cohort";
-
-  const totals = await backlogTotals();
+  const injected = await query<{ alerts: number; links: number; evidence: number }>(
+    `SELECT
+        (SELECT COUNT(*) FROM aml_alert WHERE run_id = ? AND scenario_id = ?) AS alerts,
+        (SELECT COUNT(*) FROM aml_alert_transaction WHERE run_id = ? AND scenario_id = ?) AS links,
+        (SELECT COUNT(*) FROM aml_evidence WHERE run_id = ? AND scenario_id = ?) AS evidence`,
+    [runId, scenarioId, runId, scenarioId, runId, scenarioId]
+  );
+  const row = injected[0];
 
   return buildChangePayload({
     scenarioId,
     execution,
     expected,
-    segmentLabel: String(label),
+    segmentLabel: "New correspondent-banking alert",
     specs: [
-      { label: "Open backlog", key: "open_alert_count", format: "count" },
-      { label: "High-priority count", key: "high_priority_count", format: "count" },
-      { label: "SLA-risk count", key: "sla_risk_count", format: "count" },
+      { label: "New high-priority alerts", key: "high_priority_delta", format: "count" },
+      { label: "Linked transactions", key: "linked_transaction_count", format: "count" },
+      { label: "Evidence records", key: "evidence_delta", format: "count" },
     ],
-    before: {
-      open_alert_count: null,
-      high_priority_count: null,
-      sla_risk_count: null,
-    },
+    before: { high_priority_delta: 0, linked_transaction_count: 0, evidence_delta: 0 },
     after: {
-      open_alert_count: totals.open_alert_count,
-      high_priority_count: totals.high_priority_count,
-      sla_risk_count: totals.sla_risk_count,
+      high_priority_delta: Number(row?.alerts ?? 0),
+      linked_transaction_count: Number(row?.links ?? 0),
+      evidence_delta: Number(row?.evidence ?? 0),
     },
   });
 }

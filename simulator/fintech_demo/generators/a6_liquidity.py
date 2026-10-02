@@ -1,4 +1,4 @@
-"""A6 Liquidity Command Center baseline: positions, settlements, and a forecast.
+"""A6 Liquidity and Funding Management baseline: positions, settlements, and a forecast.
 
 ``DELAY_ENTITY_ID`` / ``DELAY_CURRENCY`` name the entity and currency
 ``A6_SETTLEMENT_DELAY`` targets: the baseline seeds a USD 25,000,000 pending

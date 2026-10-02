@@ -8,7 +8,7 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "I cannot close cases or determine that fraud occurred. I have read-only access to case and alert data, and case disposition stays with fraud investigators.\n\nI can show you the evidence instead: device reuse, account age, and velocity for these cases. Ask and I will pull it.",
+      "text": "I cannot close cases or determine that fraud occurred. I have read-only access to case and alert data, and case disposition stays with fraud investigators.\n\nI can show you the evidence instead: reason codes, device reuse, and account age for these cases. Ask and I will pull it.",
       "sql": null,
       "table": null,
       "chart": null,

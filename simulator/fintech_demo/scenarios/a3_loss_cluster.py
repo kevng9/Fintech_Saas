@@ -9,6 +9,12 @@ exact:
 
     false_positive_rate = legitimate / (confirmed_fraud + legitimate)
                          = 7 / 12 = 0.583333...
+
+The cluster carries a pattern an investigator can find. All 12 alerts are
+card testing on card-not-present. The 5 confirmed-fraud alerts share one
+device and carry the ``velocity_breach`` and ``cvv_retry`` reason codes. The 7
+legitimate alerts each use a different device and were flagged on
+``geo_anomaly`` alone.
 """
 
 from __future__ import annotations
@@ -23,10 +29,9 @@ from ..generator import (
     World,
     payment_id_for,
 )
-from ..generators.a3_fraud import CHANNELS, FRAUD_TYPES, REASON_CODE_POOL
 from ..generators.shared_dims import DEVICE_COUNT, device_id
 from ..model import merchants_for_country_category, to_usd
-from ..rng import det_choice, det_int
+from ..rng import det_int
 from ..tables import TABLE_COLUMNS
 from .base import ScenarioDefinition, TableBatch
 
@@ -40,6 +45,10 @@ LOSS_PER_CASE = 500.00
 TOTAL_LOSS = LOSS_PER_CASE * CONFIRMED_FRAUD_COUNT
 DEMO_COUNTRY = "US"
 BURST_CATEGORY = "Electronics"
+CLUSTER_CHANNEL = "card_not_present"
+CLUSTER_FRAUD_TYPE = "card_testing"
+CONFIRMED_REASON_CODES = ("velocity_breach", "cvv_retry")
+LEGITIMATE_REASON_CODES = ("geo_anomaly",)
 
 DEFINITION = ScenarioDefinition(
     scenario_id=SCENARIO_ID,
@@ -54,7 +63,7 @@ DEFINITION = ScenarioDefinition(
     metric_window="T+10m from injection watermark",
     window_minutes=WINDOW_MINUTES,
     expected_deltas={
-        "segment": {"channel": CHANNELS[0]},
+        "segment": {"channel": CLUSTER_CHANNEL, "fraud_type": CLUSTER_FRAUD_TYPE},
         "rows_inserted": {
             "payment_event": TRANSACTION_COUNT,
             "fraud_alert": ALERT_COUNT,
@@ -70,8 +79,10 @@ DEFINITION = ScenarioDefinition(
         },
         "tolerance": {"confirmed_loss_usd": 0.005, "false_positive_rate": 0.0005},
         "narrative": (
-            "12 new alerts close as 5 confirmed fraud (USD 2,500 total loss) and 7 "
-            "legitimate: a 58.33 percent false-positive rate for the cohort."
+            "12 new card-testing alerts close as 5 confirmed fraud (USD 2,500 total "
+            "loss) and 7 legitimate: a 58.33 percent false-positive rate for the "
+            "cohort. Every confirmed case shares one device and carries "
+            "velocity_breach; every false positive was flagged on geo_anomaly alone."
         ),
     },
 )
@@ -130,6 +141,8 @@ def build_rows(world: World, run_id: int, start_minute: int) -> list[TableBatch]
             )
         )
 
+    shared_device_number = det_int(world.seed, SCENARIO_ID, "shared-device", low=1, high=DEVICE_COUNT)
+
     alert_rows: list[tuple] = []
     case_rows: list[tuple] = []
     evidence_rows: list[tuple] = []
@@ -137,10 +150,18 @@ def build_rows(world: World, run_id: int, start_minute: int) -> list[TableBatch]
         payment_id = payment_ids[index * (TRANSACTION_COUNT // ALERT_COUNT)]
         created_at = window_start + timedelta(minutes=1 + index % 5)
         alert_id = _alert_id(index)
-        device = device_id(det_int(world.seed, SCENARIO_ID, "device", index, low=1, high=DEVICE_COUNT))
-        channel = det_choice(CHANNELS, world.seed, SCENARIO_ID, "channel", index)
-        fraud_type = det_choice(FRAUD_TYPES, world.seed, SCENARIO_ID, "fraud-type", index)
-        reason_codes = [det_choice(REASON_CODE_POOL, world.seed, SCENARIO_ID, "reason", index)]
+        disposition = "confirmed_fraud" if index < CONFIRMED_FRAUD_COUNT else "legitimate"
+        if disposition == "confirmed_fraud":
+            device = device_id(shared_device_number)
+            reason_codes = list(CONFIRMED_REASON_CODES)
+        else:
+            # Offsets 1, 6, ..., 31 keep the seven legitimate devices distinct from each
+            # other and from the shared device.
+            offset = 1 + (index - CONFIRMED_FRAUD_COUNT) * 5
+            device = device_id((shared_device_number - 1 + offset) % DEVICE_COUNT + 1)
+            reason_codes = list(LEGITIMATE_REASON_CODES)
+        channel = CLUSTER_CHANNEL
+        fraud_type = CLUSTER_FRAUD_TYPE
         score = round(0.55 + (index % 5) * 0.08, 4)
         alert_rows.append(
             (
@@ -158,7 +179,6 @@ def build_rows(world: World, run_id: int, start_minute: int) -> list[TableBatch]
             )
         )
 
-        disposition = "confirmed_fraud" if index < CONFIRMED_FRAUD_COUNT else "legitimate"
         confirmed_loss = LOSS_PER_CASE if disposition == "confirmed_fraud" else 0.0
         opened_at = created_at + timedelta(minutes=2)
         closed_at = opened_at + timedelta(hours=2 + index % 6)
@@ -172,7 +192,11 @@ def build_rows(world: World, run_id: int, start_minute: int) -> list[TableBatch]
                 f"INV-{1 + index % 6:03d}",
                 disposition,
                 confirmed_loss,
-                f"Human review closed as {disposition}.",
+                (
+                    "Human review closed as confirmed_fraud: rapid repeat attempts from one device."
+                    if disposition == "confirmed_fraud"
+                    else "Human review closed as legitimate: customer confirmed the purchase."
+                ),
                 SCENARIO_ID,
             )
         )
@@ -183,7 +207,11 @@ def build_rows(world: World, run_id: int, start_minute: int) -> list[TableBatch]
                 _case_id(index),
                 "device_history",
                 device,
-                "linked to prior alerts in the burst window",
+                (
+                    f"shared by {CONFIRMED_FRAUD_COUNT} alerts in the burst window"
+                    if disposition == "confirmed_fraud"
+                    else "no other alerts in the burst window"
+                ),
                 opened_at,
                 SCENARIO_ID,
             )

@@ -11,9 +11,9 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "Dispute DSP-04471 was opened, the customer was contacted once for supporting evidence, and a provisional credit of $86.40 was issued while the case remains open.",
+      "text": "Dispute DISP-A5B-000012 (DUPLICATE_CHARGE, **$174.81**) has **2** recorded events and is due 2026-07-25 19:02.\n\n- The customer opened the dispute on 2026-07-22 19:02.\n- An inbound chat followed five minutes later.\n- No provisional credit has been recorded.\n\nThe case has had no agent activity since it was opened, which a reviewer may want to check before the deadline.",
       "sql": {
-        "command": "SELECT event_time, timeline_type, event_type, actor_type, amount\nFROM aa_dispute_timeline\nWHERE dispute_id = 'DSP-04471'\nORDER BY event_time",
+        "command": "SELECT event_time, timeline_type, event_type, actor_type, amount\nFROM aa_dispute_timeline\nWHERE dispute_id = 'DISP-A5B-000012'\nORDER BY event_time",
         "confidence_score": 0.9,
         "tables_used": [
           "aa_dispute_timeline"
@@ -28,25 +28,19 @@
         ],
         "rows": [
           [
-            "2026-07-24 09:10:00",
+            "2026-07-22 19:02:45",
             "case_event",
             "opened",
             null
           ],
           [
-            "2026-07-24 11:00:00",
+            "2026-07-22 19:07:45",
             "customer_contact",
-            "evidence_requested",
+            "chat_inbound",
             null
-          ],
-          [
-            "2026-07-24 14:20:00",
-            "provisional_credit",
-            "credited",
-            86.4
           ]
         ],
-        "row_count": 3,
+        "row_count": 2,
         "truncated": false
       },
       "chart": null,

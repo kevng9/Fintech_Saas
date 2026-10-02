@@ -9,7 +9,7 @@ Product status: Aura Analyst and the Analyst API are Preview features
 
 ## 1. Purpose
 
-Build one reusable fintech application that can demonstrate eight Aura Analyst anchor stories without maintaining eight separate demos. The presenter selects a persona and anchor, injects a controlled business event, investigates the resulting change with Aura Analyst, and resets the environment to a known baseline.
+Build one reusable fintech application that can demonstrate eight Aura Analyst anchor stories without maintaining eight separate demos. The customer view opens a role's story, injects one controlled business event, and pauses the logical clock at the end of that window. Aura investigates the same bounded event. An operator resumes the stream or resets to a known baseline after the story.
 
 The system must support short and long demo paths. A five-minute path uses one dashboard, one event, and one Aura question. A deeper session adds entity details, generated SQL, Domain context, access boundaries, the streaming API, and architecture.
 
@@ -61,16 +61,16 @@ The build is complete when a presenter can:
 
 ## 3. Anchor catalog
 
-| ID | Anchor | Target job title | Critical decision | Primary value |
+| ID | Anchor | Target job title | Critical question | Primary value |
 |---|---|---|---|---|
-| A1 | Digital Journey Intelligence | Head of Digital Banking | Where is digital conversion being lost, and which cohort is affected? | Revenue and operating cost |
-| A2 | Payment Pulse | Head of Payments | Where did approval performance or latency change? | Revenue, cost, and operational risk |
-| A3 | Trace the Loss | VP of Fraud Strategy | Which segments explain confirmed loss and false positives? | Risk, cost, and revenue protection |
-| A4 | Alert-to-Evidence | Head of AML Operations | Which alert cohorts need attention, and what evidence is available? | Risk and operating cost |
-| A5 | Dispute Resolution Lens | VP of Disputes Operations | Which queues will breach SLA, and what explains the pressure? | Cost, risk, and retention |
-| A6 | Liquidity Command Center | Corporate Treasurer | Where is near-term funding pressure forming? | Funding cost and settlement risk |
-| A7 | Credit Risk Pulse | Chief Credit Officer | What evidence and portfolio concentration should a reviewer consider? | Revenue, cost, and risk |
-| A8 | Explain My Money | Chief Product Officer | How can a customer receive a useful, scoped explanation inside the product? | Engagement, monetization, and support deflection |
+| A1 | Digital Funnel Performance | Head of Digital Banking | Where is digital conversion being lost, and which cohort is affected? | Revenue and operating cost |
+| A2 | Payment Performance Management | Head of Payments | Where did approval performance or latency change? | Revenue, cost, and operational risk |
+| A3 | Fraud Strategy Optimization | VP of Fraud Strategy | Which segments explain confirmed loss and false positives? | Risk, cost, and revenue protection |
+| A4 | Financial Crime Operations | Head of AML Operations | Which alert cohorts need attention, and what evidence is available? | Risk and operating cost |
+| A5 | Dispute Operations Performance | VP of Disputes Operations | Which queues will breach SLA, and what explains the pressure? | Cost, risk, and retention |
+| A6 | Liquidity and Funding Management | Corporate Treasurer | Where is near-term funding pressure forming? | Funding cost and settlement risk |
+| A7 | Credit and Exposure Management | Chief Credit Officer | What evidence and portfolio concentration should a reviewer consider? | Revenue, cost, and risk |
+| A8 | Embedded Insights Strategy | Chief Product Officer | How can a customer receive a useful, scoped explanation inside the product? | Engagement, monetization, and support deflection |
 
 ## 4. User roles and persona switching
 
@@ -108,7 +108,7 @@ Every page uses the same shell:
 | `/demo/[anchor]` | Anchor Overview | Render anchor KPI cards, primary visualization, change indicator, and opening prompt. |
 | `/demo/[anchor]/investigate` | Investigation Workspace | Combine filters, Aura conversation, result visualization, SQL disclosure, and evidence table. |
 | `/demo/[anchor]/entity/[entityType]/[entityId]` | Entity Detail | Render the selected application, payment segment, case, alert, dispute, entity, or customer timeline. |
-| `/demo/a8/customer/[customerId]` | Embedded Customer Experience | Customer-scoped “Explain My Money” UI with no presenter-only controls in the customer frame. |
+| `/demo/a8/customer/[customerId]` | Embedded Customer Experience | Customer-scoped “Embedded Insights Strategy” UI with no presenter-only controls in the customer frame. |
 | `/architecture` | Technical Architecture | Show live component status, request path, Domain mapping, current trace ID, and native versus custom boundaries. |
 | `/admin/scenarios` | Scenario Console | List scenarios, expected deltas, active run, seed, stream controls, and reset history. |
 | `/admin/domain-check` | Aura Readiness | Validate endpoint, key status, starter prompts, known questions, output shapes, and table access. Never display secrets. |
@@ -161,7 +161,7 @@ Required panels:
 * Follow-up prompts using the same Aura `session_id`.
 * “New investigation” control that clears local state and omits `session_id` on the next request.
 
-The UI must distinguish these states: idle, connecting, streaming, complete, failed, cancelled, timed out, empty result, and fixture response.
+The UI must distinguish these states: idle, connecting, streaming, complete, failed, canceled, timed out, empty result, and fixture response.
 
 ### 5.6 Entity Detail template
 
@@ -216,6 +216,7 @@ export interface AnchorDefinition {
   id: "a1" | "a2" | "a3" | "a4" | "a5" | "a6" | "a7" | "a8";
   name: string;
   jobTitle: string;
+  businessDecision: string;
   criticalBusinessIssue: string;
   takeaway: string;
   domainKey: string;
@@ -306,7 +307,7 @@ Client request:
 ```json
 {
   "anchor_id": "a2",
-  "message": "During the weakest authorization window, rank processors by approval-rate change.",
+  "message": "For P2 / Mastercard / GB in the incident window, compare approval and p95 latency with its prior seven-day baseline.",
   "output_modes": ["sql", "data", "chart"]
 }
 ```
@@ -449,7 +450,7 @@ Append-only technical event log with run ID, sequence, anchor, event type, logic
 |---|---|
 | `dim_customer` | run_id, customer_id, synthetic_name, segment, region, relationship_start, risk_tier, consent_scope |
 | `dim_account` | run_id, account_id, customer_id, account_type, currency, opened_at, status |
-| `dim_product` | run_id, product_id, product_family, product_name |
+| `dim_product` | run_id, product_id, product_family, product_name, annual_value_usd (illustrative first-year value per opened account) |
 | `dim_merchant` | run_id, merchant_id, merchant_category, region |
 | `dim_processor` | run_id, processor_id, processor_name, rail, contracted_sla_ms |
 | `dim_device` | run_id, device_id, first_seen_at, device_type, reuse_band |
@@ -545,7 +546,7 @@ Store the following definitions in both source-controlled Domain manifests and A
 * Manual-review referral rate: applications referred to manual review divided by submitted applications.
 * Authorization rate: approved payment attempts divided by all payment attempts.
 * p95 latency: 95th percentile authorization latency in milliseconds.
-* Confirmed fraud loss: sum of transaction loss for cases with human disposition `confirmed_fraud`.
+* Investigator-confirmed loss: sum of transaction loss for cases with human disposition `confirmed_fraud`. Chargeback-settled loss arrives 30 to 90 days later and is out of scope.
 * False-positive rate: cases with human disposition `legitimate` divided by all human-closed fraud cases.
 * AML SLA risk: open alerts with `sla_due_at` within the configured threshold.
 * Dispute SLA risk: open disputes due within the selected horizon.
@@ -602,9 +603,9 @@ The baseline checksum is SHA-256 over canonical UTF-8 JSON for all seeded dimens
 |---|---|---|
 | `A1_REVIEW_SPIKE` | Add 100 starts, 80 submissions, 40 manual-review referrals, and 20 openings for one high-intent cohort | Injected-cohort referral rate is 50% of submissions and submit-to-open conversion is 25%; exact dashboard comparisons use the versioned baseline fixture |
 | `A2_PROCESSOR_TIMEOUT` | Add a two-minute timeout burst for processor P2, Mastercard, GB | Affected approval rate falls from 96% to 88%, p95 latency rises from 180 ms to 680 ms, timeout declines rise from 1% to 7% |
-| `A3_LOSS_CLUSTER` | Add 100 transactions and 12 alerts; human fixtures close 5 as fraud and 7 as legitimate | Confirmed loss rises by $2,500 after human dispositions; injected-cohort false-positive rate is 58.33% |
+| `A3_LOSS_CLUSTER` | Add 100 transactions and 12 card-testing alerts on card-not-present; human fixtures close 5 as fraud and 7 as legitimate. The 5 confirmed cases share one device and carry `velocity_breach`; the 7 false positives carry `geo_anomaly` alone | Confirmed loss rises by $2,500 after human dispositions and card testing on card-not-present becomes the highest-loss segment; injected-cohort false-positive rate is 58.33% |
 | `A4_CORRESPONDENT_SPIKE` | Add 25 linked transactions and one high-priority alert | Open backlog, high-priority count, and SLA-risk count each rise by one; evidence count rises by 25 |
-| `A5_CASE_SURGE` | Add 20 disputes, including 12 due within 60 minutes, tagged `MERCHANT_OUTAGE` | Queue depth rises by 20 and SLA-risk count rises by 12 |
+| `A5_CASE_SURGE` | Add 20 `PAID_BY_OTHER_MEANS` disputes from one merchant terminal outage a week ago: 12 filed right after it reach the five-business-day provisional-credit target within 24 logical hours, and 8 arrive now | Queue depth rises by 20 and SLA-risk count rises by 12 |
 | `A6_SETTLEMENT_DELAY` | Delay a synthetic USD 25 million inbound settlement | Projected 24-hour liquidity falls by USD 25 million and settlement-at-risk rises by the same amount |
 | `A7_PENDING_EXPOSURE` | Add a pending USD 5 million Transportation, California application with two evidence exceptions | Pending amount rises by USD 5 million; illustrative concentration changes from 20.00% to 23.81%; booked exposure does not change |
 | `A8_DINING_SPIKE` | Add three dining transactions totaling $300 | Dining spend and outflows rise by $300; net cash flow falls by $300 |
@@ -672,6 +673,11 @@ Use the curated views and their documented relationships.
 Use the demo logical clock and active run exposed by the views.
 State the selected period, filters, and comparison baseline.
 Distinguish observed facts, calculated metrics, and interpretations.
+With every table, chart, or other dataset, write the commentary in Markdown using this shape:
+an opening sentence that states the main comparison and bolds the key figure; a bullet list
+of the key figures, with each figure in bold; and a closing sentence on what the pattern may
+mean, including any material limitation or missing context. Do not put Markdown inside table
+cells. In the commentary, round rates to two decimals and durations to one decimal.
 Do not infer causation from correlation.
 Do not make or recommend regulated decisions.
 Do not approve, decline, block, route, file, release, price, adjudicate, or contact a customer.
@@ -736,20 +742,20 @@ The manifest is the source of intent. The Portal remains the source of deployed 
 
 ### A1
 
-* Show the account-opening funnel by step and channel for the last 30 logical days.
+* Show the account-opening funnel by step and channel for the last 30 days, including completion and abandonment rates.
 * Compare manual review with straight-through applications.
-* Which high-intent cohort explains the largest conversion change?
+* Which intent cohort lost the most account openings, and at which journey stage?
 
 ### A2
 
 * Show authorization rate, p95 latency, and decline volume by hour.
-* During the weakest window, rank processors and rails against the prior seven-day baseline.
+* For P2 / Mastercard / GB in the incident window, compare approval and p95 latency with its prior seven-day baseline.
 * Break the largest change down by merchant category and response code.
 
 ### A3
 
 * Show confirmed fraud loss and false-positive rate by channel and fraud type.
-* For the highest-loss segment, compare device reuse, account age, merchant, and velocity.
+* For the highest-loss segment, compare reason codes, device reuse, account age, and merchant for confirmed fraud versus false positives.
 * List supporting cases for human investigator review.
 
 ### A4
@@ -761,20 +767,20 @@ The manifest is the source of intent. The Portal remains the source of deployed 
 ### A5
 
 * Show disputes at risk of SLA breach in the next 24 logical hours.
-* What explains the largest at-risk queue compared with the prior 30 days?
+* Which reason code and merchant are driving the largest at-risk queue, and when did those disputes arrive?
 * Show the timeline for the selected dispute.
 
 ### A6
 
 * Show current cash position, expected settlements, queued payments, and available liquidity by entity and currency.
-* Rank the drivers of the largest forecast variance.
+* Are we above the policy liquidity buffer, and which entity and currency explain any shortfall?
 * Which queued payments fall inside the next funding window?
 
 ### A7
 
-* Show application volume, manual-review rate, and time to decision by product and channel.
+* If pending applications book, how much headroom remains against the 25% segment concentration limit?
 * Summarize submitted evidence and missing items for the selected application.
-* Compare the pending request with current portfolio concentration without making a decision.
+* Show application volume, manual-review rate, and time to decision by product and channel.
 
 ### A8
 
@@ -1032,7 +1038,7 @@ These are demo engineering targets, not Aura product guarantees.
 | Launchpad first usable render | under 2 seconds on the demo network |
 | Deterministic Overview refresh | under 1.5 seconds p95 |
 | Scenario visible after injection | within two refresh intervals |
-| Pause acknowledgement | under 1 second |
+| Pause acknowledgment | under 1 second |
 | Reset to verified baseline | under 30 seconds |
 | Aura streaming first visible event | measure and display; rehearsal target under 10 seconds |
 | Entity Detail | under 2 seconds p95 |
@@ -1127,7 +1133,7 @@ Exit: deterministic baseline and controls work without Aura.
 
 ### Phase 2: First vertical slice
 
-Build A2 Payment Pulse end to end because it exercises live events, operational metrics, drill-down, `/query`, `/chat`, and a clear scenario.
+Build A2 Payment Performance Management end to end because it exercises live events, operational metrics, drill-down, `/query`, `/chat`, and a clear scenario.
 
 Exit: A2 passes all end-to-end and security tests.
 

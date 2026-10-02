@@ -1,6 +1,6 @@
 # Adding an anchor
 
-A2 Payment Pulse is built end to end so that the remaining anchors are additive.
+A2 Payment Performance Management is built end to end so that the remaining anchors are additive.
 Nothing in the foundation is A2-specific: the control plane, the logical clock,
 reset, the Aura proxy, live and fixture modes, and the admin pages all key off an
 anchor id.
@@ -8,7 +8,7 @@ anchor id.
 Adding an anchor means adding data, curated views, a Domain manifest, widgets,
 and a scenario. It does not mean touching the foundation. If you find yourself
 editing the simulator loop or the reset path, stop: that is a sign the anchor is
-being modelled in the wrong place.
+being modeled in the wrong place.
 
 ## The shape of one anchor
 
@@ -34,7 +34,7 @@ what keeps a wrong number from surviving to the screen.
 ### 1. Write the story first
 
 An anchor is a business narrative, not a dataset. Before any code, write down the
-job title, the business issue, the question the audience will ask, the moment
+job title, the business decision name, the business issue, the question the audience will ask, the moment
 something changes, and the single sentence they should leave with. If the change
 is not visible in one widget within two seconds of injection, the story is wrong,
 and no amount of implementation fixes that.
@@ -57,7 +57,7 @@ and `logical_time`. `preflight` fails if one does not, because an unscoped view
 lets Analyst read a stale run and report a number no widget can reproduce.
 
 Views are Analyst's entire world. Give columns names that answer questions
-directly, pre-compute the ratios you want presented, and normalise money to a
+directly, pre-compute the ratios you want presented, and normalize money to a
 single currency in a `*_usd` column rather than making Analyst do it.
 
 ### 4. Add the scenario with its expected deltas
@@ -124,7 +124,9 @@ under the same matching rule the app uses, in both demo states.
 Add the anchor's SQL to `app/src/lib/metrics/<anchor>.ts`. Widget SQL is
 deterministic and hand-written; it never comes from Analyst. It filters on the
 active run and the logical clock exactly as the views do, so a paused stream
-freezes the widgets too.
+freezes the widgets too. A buyer story pauses the clock at the end of the
+scenario window so the page and Aura keep the same evidence until an operator
+resumes.
 
 Reuse the existing components: `KpiTile`, the charts in `components/charts.tsx`,
 `ScenarioPanel`, `WhatChanged`, `AnalystWorkspace`, and the `ui.tsx` primitives.

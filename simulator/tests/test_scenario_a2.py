@@ -69,7 +69,7 @@ def test_burst_stays_inside_the_affected_lane(burst: list[tuple], column: Column
     assert {column(row, "currency") for row in burst} == {"GBP"}
 
 
-def test_burst_amounts_are_normalised_to_usd(burst: list[tuple], column: Columns) -> None:
+def test_burst_amounts_are_normalized_to_usd(burst: list[tuple], column: Columns) -> None:
     for row in burst:
         assert column(row, "amount_usd") == to_usd(column(row, "amount"), "GBP")
 

@@ -673,6 +673,6 @@ def verify_scenario(settings: Settings, cursor, scenario_id: str) -> list[Check]
     return checks
 
 
-def summarise(checks: list[Check]) -> tuple[int, int]:
+def summarize(checks: list[Check]) -> tuple[int, int]:
     passed = sum(1 for check in checks if check.passed)
     return passed, len(checks)

@@ -54,11 +54,16 @@ there is exactly one place to edit.
 
 Never commit `app/.env.local`. It is in `.gitignore`; keep it that way.
 
-You can complete the whole build with `ANALYST_MODE=fixture` (or `auto` without
-keys) and no Analyst credentials at all. The dashboard is fully live in that
-mode; only the Analyst answers are reviewed fixtures, labelled on screen.
+The customer demo ships with `ANALYST_MODE=live`. While that value is set, the
+server uses Aura and ignores a browser request to replay a stored answer.
+`fixture` and `auto` remain available for a build without Domain keys. In those
+modes the dashboard is still live and a stored answer is labeled on screen.
 `all_live_domains` on `/admin` stays incomplete until Domains are published and
-keyed — that is intentional and does not block fixture presentation.
+keyed — that is intentional and does not block fixture or auto development.
+
+A customer story pauses the logical clock when it injects. Resume from the
+operator view after the story, or after a reset, when the baseline should move
+again.
 
 ## 4. Python environment
 
@@ -121,6 +126,10 @@ which is what you want after injecting from the app. Do not use `--inject` while
 the simulator is running; it refuses rather than race the leader.
 
 ## 8. Start the two processes
+
+From the repository root, `scripts/startup.sh` does this and resumes the stream.
+`scripts/shutdown.sh` stops both processes and restores the verified baseline.
+To start them yourself:
 
 ```bash
 # terminal 1

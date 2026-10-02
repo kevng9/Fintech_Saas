@@ -8,9 +8,9 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "high_intent_promo drives the largest share of manual-review referrals: 40 of its 80 submitted applications were referred, a 50.0% referral rate.",
+      "text": "high_mobile explains the largest share of manual-review referrals: **58** of **84** (**69.05%**). Its referral rate is **34.94%**, with 58 of its 166 applications referred.",
       "sql": {
-        "command": "SELECT intent_cohort, referred_to_review, referral_rate FROM aa_digital_intent_cohort ORDER BY referral_rate DESC LIMIT 1",
+        "command": "SELECT intent_cohort, SUM(applications_submitted) AS applications_submitted, SUM(referred_to_review) AS referred_to_review, SUM(referred_to_review) / SUM(applications_submitted) AS referral_rate FROM aa_digital_intent_cohort GROUP BY intent_cohort ORDER BY referred_to_review DESC",
         "confidence_score": 0.9,
         "tables_used": [
           "aa_digital_intent_cohort"
@@ -19,17 +19,37 @@
       "table": {
         "columns": [
           "intent_cohort",
+          "applications_submitted",
           "referred_to_review",
           "referral_rate"
         ],
         "rows": [
           [
-            "high_intent_promo",
-            40,
-            0.5
+            "high_mobile",
+            166,
+            58,
+            0.3494
+          ],
+          [
+            "low_web",
+            46,
+            12,
+            0.2609
+          ],
+          [
+            "medium_web",
+            60,
+            7,
+            0.1167
+          ],
+          [
+            "medium_mobile",
+            70,
+            7,
+            0.1
           ]
         ],
-        "row_count": 1,
+        "row_count": 4,
         "truncated": false
       },
       "chart": null,

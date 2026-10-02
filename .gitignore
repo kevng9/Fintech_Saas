@@ -26,6 +26,13 @@ out/
 
 # Local simulator output
 *.log
+/artifacts/
+
+# Process ids and logs for scripts/startup.sh and scripts/shutdown.sh
+.demo/
+
+# Office lock files created while a deck is open
+~$*
 
 # fixtures/baseline/ is deliberately NOT ignored: the recorded baseline
 # fingerprint and checksum are the contract that reset verifies against.

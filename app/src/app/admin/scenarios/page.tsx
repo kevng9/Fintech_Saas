@@ -4,7 +4,7 @@
  * Scenario catalog and history.
  *
  * The full published contract for each scenario is shown here rather than
- * summarised, because these are the numbers a technical viewer will check
+ * summarized, because these are the numbers a technical viewer will check
  * against the widgets after an injection.
  */
 

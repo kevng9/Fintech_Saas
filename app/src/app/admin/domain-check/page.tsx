@@ -12,6 +12,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDemoState } from "@/components/DemoStateProvider";
+import { AnalystMarkdown } from "@/components/a2/AnalystMarkdown";
+import { presentAnalystAnswer } from "@/lib/analyst/commentary";
 import { AnalystTable } from "@/components/AnalystTable";
 import { Banner, Card, Empty, Pill, Skeleton, type Tone } from "@/components/ui";
 import { readChatStream, type StreamItem } from "@/lib/analyst/chatStream";
@@ -264,11 +266,17 @@ export default function DomainCheckPage() {
       ) : (
         questions.map((question) => {
           const outcome = outcomes[question.id];
-          const prose = (outcome?.items ?? [])
-            .filter((item) => item.kind === "text" && item.text.trim())
-            .map((item) => item.text)
-            .join("\n\n");
-          const table = (outcome?.items ?? []).find((item) => item.kind === "table")?.table;
+          const presented = presentAnalystAnswer({
+            texts: (outcome?.items ?? [])
+              .filter((item) => item.kind === "text" && item.text.trim())
+              .map((item) => item.text),
+            tables: (outcome?.items ?? [])
+              .filter((item) => item.kind === "table" && item.table)
+              .map((item) => item.table!),
+            streaming: outcome?.status === "running",
+          });
+          const prose = presented.prose;
+          const table = presented.tables[0];
           const sql = (outcome?.items ?? []).find((item) => item.sql)?.sql;
 
           return (
@@ -325,9 +333,10 @@ export default function DomainCheckPage() {
                   )}
 
                   {prose && (
-                    <p className="whitespace-pre-wrap text-[12px] leading-5 text-[var(--ink-soft)]">
-                      {prose}
-                    </p>
+                    <AnalystMarkdown
+                      text={prose}
+                      className="space-y-3 text-[12px] leading-5 text-[var(--ink-soft)]"
+                    />
                   )}
 
                   {table && (

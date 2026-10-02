@@ -50,20 +50,20 @@ export function AnalystChart({
 
   useEffect(() => {
     let element: HTMLElement | null = container.current;
-    let cancelled = false;
+    let canceled = false;
     void loadPlotly()
       .then((plotly) => {
-        if (cancelled || !element) return;
+        if (canceled || !element) return;
         return plotly.newPlot(element, data, { ...BASE_LAYOUT, ...layout }, {
           displayModeBar: false,
           responsive: true,
         });
       })
       .catch(() => {
-        if (!cancelled) setFailed(true);
+        if (!canceled) setFailed(true);
       });
     return () => {
-      cancelled = true;
+      canceled = true;
       if (element) {
         void loadPlotly().then((plotly) => {
           try {

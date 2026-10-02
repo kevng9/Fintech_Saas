@@ -1,4 +1,4 @@
-"""A7 Credit Risk Pulse baseline: booked exposure and application history.
+"""A7 Credit and Exposure Management baseline: booked exposure and application history.
 
 ``TARGET_INDUSTRY`` / ``TARGET_GEOGRAPHY`` name the segment
 ``A7_PENDING_EXPOSURE`` targets. The baseline books exactly USD 100,000,000

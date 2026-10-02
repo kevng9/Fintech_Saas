@@ -1,5 +1,5 @@
 {
-  "checksum": "cdb666fbd53c8735104c436c03a9e417927f7054cf36d09f6d84f1cf263897a5",
+  "checksum": "3ba4dc448c388c12f6be5271852402666e8c7234626f1c28f8aaba9f29bf0aa6",
   "fingerprint": {
     "baseline_days": 7,
     "fixture_version": "1.1.0",
@@ -112,6 +112,7 @@
         "rows": 4
       },
       "dim_product": {
+        "annual_value_usd_cents": 885000,
         "max_id": "PROD-012",
         "min_id": "PROD-001",
         "rows": 12

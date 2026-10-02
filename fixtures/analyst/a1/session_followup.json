@@ -8,9 +8,9 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "For high_intent_promo, the paid_search channel accounts for essentially all of the cohort's activity this period: 100 sessions, 80 applications, 40 referrals.",
+      "text": "high_mobile runs entirely through mobile_app: **226** sessions, **166** applications, and **58** referrals to manual review. It has no web activity to compare against.",
       "sql": {
-        "command": "SELECT channel, sessions_started, applications_submitted, referred_to_review FROM aa_digital_intent_cohort WHERE intent_cohort = 'high_intent_promo'",
+        "command": "SELECT channel, SUM(sessions_started) AS sessions_started, SUM(applications_submitted) AS applications_submitted, SUM(referred_to_review) AS referred_to_review FROM aa_digital_intent_cohort WHERE intent_cohort = 'high_mobile' GROUP BY channel",
         "confidence_score": 0.9,
         "tables_used": [
           "aa_digital_intent_cohort"
@@ -25,10 +25,10 @@
         ],
         "rows": [
           [
-            "paid_search",
-            100,
-            80,
-            40
+            "mobile_app",
+            226,
+            166,
+            58
           ]
         ],
         "row_count": 1,

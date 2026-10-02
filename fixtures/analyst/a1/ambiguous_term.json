@@ -8,9 +8,9 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "\"Best\" can mean the highest completion rate, the highest approval rate, or the lowest referral rate, and channels do not rank the same way on all three. Tell me which measure you mean and I will rank channels on it.",
+      "text": "\"Best\" depends on the measure, and the two channels rank differently. mobile_app has the higher completion rate (**72.84%** against **68.83%**), but web opens more of its applications (**75.47%** against **59.32%**). Tell me which measure you mean and I will rank on it.",
       "sql": {
-        "command": "SELECT channel, SUM(applications_submitted)/SUM(sessions_started) AS completion_rate FROM aa_digital_funnel GROUP BY channel",
+        "command": "SELECT channel, SUM(applications_submitted) / SUM(sessions_started) AS completion_rate, SUM(applications_approved) / SUM(applications_submitted) AS submit_to_open_rate FROM aa_digital_funnel GROUP BY channel",
         "confidence_score": 0.9,
         "tables_used": [
           "aa_digital_funnel"
@@ -19,23 +19,22 @@
       "table": {
         "columns": [
           "channel",
-          "completion_rate"
+          "completion_rate",
+          "submit_to_open_rate"
         ],
         "rows": [
           [
-            "organic",
-            0.65
+            "mobile_app",
+            0.7284,
+            0.5932
           ],
           [
-            "paid_search",
-            0.65
-          ],
-          [
-            "branch_referral",
-            0.65
+            "web",
+            0.6883,
+            0.7547
           ]
         ],
-        "row_count": 3,
+        "row_count": 2,
         "truncated": false
       },
       "chart": null,

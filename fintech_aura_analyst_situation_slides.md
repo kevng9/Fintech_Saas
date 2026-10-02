@@ -2,6 +2,8 @@
 
 **Job Title:** Head of Digital Banking
 
+**Business decision:** Digital Funnel Performance
+
 **Critical Business Issue:** Improve digital account-opening conversion and act on customer intent before opportunities are lost.
 
 **Problems / Reasons**
@@ -29,6 +31,8 @@
 # Slide 2: Head of Payments needs to identify revenue-impacting changes before customers feel them
 
 **Job Title:** Head of Payments
+
+**Business decision:** Payment Performance Management
 
 **Critical Business Issue:** Protect payment revenue and customer experience by maintaining approval rates and latency within acceptable thresholds.
 
@@ -58,6 +62,8 @@
 
 **Job Title:** VP of Fraud Strategy
 
+**Business decision:** Fraud Strategy Optimization
+
 **Critical Business Issue:** Reduce fraud loss while controlling false positives and preserving legitimate revenue.
 
 **Problems / Reasons**
@@ -85,6 +91,8 @@
 # Slide 4: Head of AML Operations needs reviewers working evidence, not gathering it
 
 **Job Title:** Head of AML Operations
+
+**Business decision:** Financial Crime Operations
 
 **Critical Business Issue:** Clear alerts within policy while improving review quality and preserving human disposition.
 
@@ -114,6 +122,8 @@
 
 **Job Title:** VP of Disputes Operations
 
+**Business decision:** Dispute Operations Performance
+
 **Critical Business Issue:** Resolve disputes within SLA at lower cost while protecting customer trust.
 
 **Problems / Reasons**
@@ -141,6 +151,8 @@
 # Slide 6: Corporate Treasurer needs earlier visibility into funding pressure
 
 **Job Title:** Corporate Treasurer
+
+**Business decision:** Liquidity and Funding Management
 
 **Critical Business Issue:** Maintain sufficient liquidity and meet settlement obligations at the lowest practical funding cost.
 
@@ -170,6 +182,8 @@
 
 **Job Title:** Chief Credit Officer
 
+**Business decision:** Credit and Exposure Management
+
 **Critical Business Issue:** Make timely, policy-compliant credit decisions while controlling concentration risk.
 
 **Problems / Reasons**
@@ -197,6 +211,8 @@
 # Slide 8: Chief Product Officer needs personalized insight that fits inside the product
 
 **Job Title:** Chief Product Officer
+
+**Business decision:** Embedded Insights Strategy
 
 **Critical Business Issue:** Increase digital engagement and monetization through trusted, personalized financial explanations.
 

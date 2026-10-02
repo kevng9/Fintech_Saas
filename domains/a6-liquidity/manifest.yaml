@@ -1,4 +1,4 @@
-# Aura Analyst Domain manifest for A6 Liquidity Command Center.
+# Aura Analyst Domain manifest for A6 Liquidity and Funding Management.
 #
 # This file is the source of INTENT. The SingleStore Cloud Portal remains the
 # source of DEPLOYED state: public context-management APIs are not documented,
@@ -8,7 +8,7 @@
 
 anchor: a6
 domain_name: a6_liquidity
-context_version: 1.0.0
+context_version: 1.3.0
 fixture_version: 1.0.0
 validated_at: null
 database: fintech_demo
@@ -33,10 +33,10 @@ tables:
       as_of_time: Logical time of the position snapshot.
       ledger_balance: Current ledger (book) balance in the account's local currency, before availability holds.
       available_balance: Current available balance in the account's local currency.
-      available_balance_usd: Current available balance, normalised to US dollars.
-      expected_inbound_settlements_usd: Expected inbound settlements in the next 24 hours, normalised to US dollars.
-      expected_outbound_settlements_usd: Expected outbound settlements in the next 24 hours, normalised to US dollars.
-      queued_payments_usd: Queued outbound payments not yet settled, normalised to US dollars.
+      available_balance_usd: Current available balance, normalized to US dollars.
+      expected_inbound_settlements_usd: Expected inbound settlements in the next 24 hours, normalized to US dollars.
+      expected_outbound_settlements_usd: Expected outbound settlements in the next 24 hours, normalized to US dollars.
+      queued_payments_usd: Queued outbound payments not yet settled, normalized to US dollars.
       available_liquidity_24h_usd: >-
         Projected liquidity 24 hours forward: available balance plus expected
         inbound, minus expected outbound and queued payments.
@@ -51,12 +51,12 @@ tables:
       entity_id: Synthetic legal-entity identifier.
       entity_name: Legal-entity display name.
       currency: Account currency.
-      expected_inflow_usd: Forecast inbound cash flow for the hour, normalised to US dollars.
-      expected_outflow_usd: Forecast outbound cash flow for the hour, normalised to US dollars.
-      forecast_net_flow_usd: Forecast net cash flow for the hour, normalised to US dollars.
-      actual_inflow_usd: Actual settled inbound cash flow for the hour, normalised to US dollars.
-      actual_outflow_usd: Actual settled outbound cash flow for the hour, normalised to US dollars.
-      actual_net_flow_usd: Actual net cash flow for the hour, normalised to US dollars.
+      expected_inflow_usd: Forecast inbound cash flow for the hour, normalized to US dollars.
+      expected_outflow_usd: Forecast outbound cash flow for the hour, normalized to US dollars.
+      forecast_net_flow_usd: Forecast net cash flow for the hour, normalized to US dollars.
+      actual_inflow_usd: Actual settled inbound cash flow for the hour, normalized to US dollars.
+      actual_outflow_usd: Actual settled outbound cash flow for the hour, normalized to US dollars.
+      actual_net_flow_usd: Actual net cash flow for the hour, normalized to US dollars.
       forecast_variance_usd: actual_net_flow_usd minus forecast_net_flow_usd.
       model_version: Version identifier of the forecasting model that produced the row.
 
@@ -71,7 +71,7 @@ tables:
       entity_name: Legal-entity display name.
       currency: Payment currency.
       amount: Payment amount in its original currency.
-      amount_usd: Payment amount, normalised to US dollars.
+      amount_usd: Payment amount, normalized to US dollars.
       due_at: Logical time the payment is due to settle.
       status: Payment status. Always queued for rows returned by this view.
       minutes_until_due: Minutes from the current logical time to due_at.
@@ -92,6 +92,11 @@ relationships:
 metric_definitions:
   available_liquidity_24h_usd: Available balance plus expected inbound settlements, minus expected outbound settlements and queued payments, for the next 24 hours.
   forecast_variance_usd: Actual net cash flow minus forecast net cash flow for the same hour, entity, and currency.
+  policy_liquidity_buffer_usd: >-
+    Illustrative group policy minimum for available 24-hour liquidity: USD
+    60,000,000 across every entity and currency. Headroom is the summed
+    available_liquidity_24h_usd minus this buffer; a negative value is a
+    shortfall. Label the buffer as illustrative.
   baseline_comparison: >-
     Unless the user names a period, compare the selected entity's current
     position against its forecast for the same hour.
@@ -102,24 +107,32 @@ instructions: |
   Use the demo logical clock exposed by the views. Never use wall-clock now().
   State the selected period, filters, and comparison baseline in the answer.
   Distinguish observed facts, calculated metrics, and interpretations.
+  With every table, chart, or other dataset, write the commentary in Markdown
+  using this shape: an opening sentence that states the main comparison and
+  bolds the key figure; a bullet list of the key figures, with each figure in
+  bold; and a closing sentence on what the pattern may mean, including any
+  material limitation or missing context. Do not put Markdown inside table cells.
+  In the commentary, round rates to two decimals and durations to one decimal.
   Do not infer causation from correlation. A correlated change is a candidate
   explanation for a human to confirm, not a cause.
   Do not release, stop, transfer, or recommend moving funds. Funding, release,
   and transfer decisions stay with treasury.
+  When asked about liquidity, state headroom against the illustrative policy
+  liquidity buffer.
   Positions exist in several currencies. Always aggregate value using the
-  *_usd columns, and say that amounts are normalised to US dollars.
+  *_usd columns, and say that amounts are normalized to US dollars.
   When evidence is incomplete, say what is missing.
   Never reveal or request secrets or direct identifiers.
   Prefer a concise answer with a supporting table or chart.
 
 starter_prompts:
   - Show current cash position, expected settlements, queued payments, and available liquidity by entity and currency.
-  - Rank the drivers of the largest forecast variance.
+  - Are we above the policy liquidity buffer, and which entity and currency explain any shortfall?
   - Which queued payments fall inside the next funding window?
 
 known_questions:
   - id: baseline_kpi
-    question: What is the available 24-hour liquidity across every entity and currency, normalised to USD?
+    question: What is the available 24-hour liquidity across every entity and currency, normalized to USD?
     expects:
       structure: single row or small table with a USD total
       checks:
@@ -131,7 +144,7 @@ known_questions:
       structure: a forecast value, an actual value, and the variance between them
       checks:
         - query reads aa_liquidity_variance
-        - the variance direction (favourable/unfavourable) is stated
+        - the variance direction (favorable/unfavorable) is stated
   - id: multi_table_drilldown
     question: For the entity with the tightest position, list queued payments due in the next funding window.
     expects:

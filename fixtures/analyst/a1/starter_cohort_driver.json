@@ -6,15 +6,16 @@
   "match": [
     "cohort driving manual review",
     "highest referral cohort",
-    "intent cohort ranking"
+    "intent cohort ranking",
+    "lost account openings stage"
   ],
-  "prompt": "Which high-intent cohort explains the largest conversion change?",
+  "prompt": "Which intent cohort lost the most account openings, and at which journey stage?",
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "high_intent_promo has the highest manual-review referral rate today at 50.0%, well above the other tracked cohorts, which sit between 10% and 18%. It is also the only cohort with scenario activity flagged in the current run.",
+      "text": "high_mobile lost the most account openings today, about **38**, worth an estimated **$26,103.70** in first-year revenue, and the loss happens at the **manual-review** stage, not at application start.\n\n- Demand is healthy: **85** applications today from **107** sessions.\n- **41** of those 85 applications (**48.24%**) were referred to manual review, against **20.99%** over the prior seven logical days.\n- Only **25** opened an account. At the cohort's own prior open rate of **74.07%**, about **63** would have.\n- The other three cohorts lost less than one opening each.\n\nThe dollar figure uses illustrative first-year product values set for this demo, not benchmarks. Which review rule is referring these applicants is not in this Domain and needs confirming with the onboarding team.",
       "sql": {
-        "command": "SELECT intent_cohort, channel, sessions_started, submit_rate, referral_rate\nFROM aa_digital_intent_cohort\nORDER BY referral_rate DESC LIMIT 5",
+        "command": "WITH prior AS (\n  SELECT intent_cohort, SUM(applications_opened) / SUM(applications_submitted) AS baseline_open_rate\n  FROM aa_digital_intent_cohort WHERE session_date < '2026-07-25' GROUP BY intent_cohort\n), today AS (\n  SELECT intent_cohort, SUM(applications_submitted) AS applications_today, SUM(applications_opened) AS opened_today, SUM(referred_to_review) AS referred_today, SUM(submitted_value_usd) AS submitted_value_usd, SUM(opened_value_usd) AS opened_value_usd\n  FROM aa_digital_intent_cohort WHERE session_date = '2026-07-25' GROUP BY intent_cohort\n)\nSELECT t.intent_cohort, t.applications_today, t.referred_today, t.opened_today, p.baseline_open_rate,\n  GREATEST(t.applications_today * p.baseline_open_rate - t.opened_today, 0) AS openings_lost,\n  GREATEST(t.submitted_value_usd * p.baseline_open_rate - t.opened_value_usd, 0) AS lost_value_usd\nFROM today t JOIN prior p ON p.intent_cohort = t.intent_cohort\nORDER BY lost_value_usd DESC",
         "confidence_score": 0.9,
         "tables_used": [
           "aa_digital_intent_cohort"
@@ -23,40 +24,57 @@
       "table": {
         "columns": [
           "intent_cohort",
-          "channel",
-          "sessions_started",
-          "submit_rate",
-          "referral_rate"
+          "applications_today",
+          "referred_today",
+          "opened_today",
+          "baseline_open_rate",
+          "openings_lost",
+          "lost_value_usd"
         ],
         "rows": [
           [
-            "high_intent_promo",
-            "paid_search",
-            100,
-            0.8,
-            0.5
+            "high_mobile",
+            85,
+            41,
+            25,
+            0.7407,
+            37.96,
+            26103.7
           ],
           [
-            "price_sensitive",
-            "organic",
-            340,
-            0.62,
-            0.18
+            "low_web",
+            2,
+            0,
+            1,
+            0.7273,
+            0.45,
+            136.36
           ],
           [
-            "returning_visitor",
-            "organic",
-            510,
-            0.71,
-            0.1
+            "medium_web",
+            6,
+            1,
+            5,
+            0.7778,
+            0,
+            0
+          ],
+          [
+            "medium_mobile",
+            5,
+            2,
+            4,
+            0.7846,
+            0,
+            0
           ]
         ],
-        "row_count": 3,
+        "row_count": 4,
         "truncated": false
       },
       "chart": null,
       "error": null
     }
   ],
-  "scenario_state": "any"
+  "scenario_state": "after_injection"
 }

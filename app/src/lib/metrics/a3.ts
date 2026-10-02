@@ -1,5 +1,5 @@
 /**
- * Deterministic A3 Trace the Loss (Fraud Strategy) queries.
+ * Deterministic A3 Fraud Strategy Optimization (Fraud Strategy) queries.
  *
  * Every loss and false-positive number is derived from
  * `fraud_case.human_disposition`, never from the alert score alone
@@ -53,6 +53,16 @@ const LOSS_COLUMNS = `
     SUM(CASE WHEN fc.human_disposition = 'legitimate' THEN 1 ELSE 0 END)
       / NULLIF(SUM(CASE WHEN fc.human_disposition IN ('confirmed_fraud', 'legitimate') THEN 1 ELSE 0 END), 0)
       AS false_positive_rate`;
+
+async function lossBefore(until: string): Promise<LossMetrics> {
+  const rows = await query<LossMetrics>(
+    `SELECT ${LOSS_COLUMNS}
+     FROM fraud_case fc ${ACTIVE_RUN_JOIN}
+     WHERE fc.opened_at > DATE_SUB(?, INTERVAL 7 DAY) AND fc.opened_at <= ?`,
+    [until, until]
+  );
+  return rows[0]?.cases_total ? rows[0] : EMPTY_LOSS;
+}
 
 async function lossBetween(from: string, to: string): Promise<LossMetrics> {
   const rows = await query<LossMetrics>(
@@ -125,8 +135,8 @@ export async function overview(windowMinutes: number): Promise<SharedOverviewDat
   const kpis: SharedOverviewData["kpis"] = [
     {
       id: "confirmed_loss",
-      title: "Confirmed fraud loss",
-      subtitle: `Cases opened in the last ${span} minutes`,
+      title: "Investigator-confirmed loss",
+      subtitle: `Cases opened in the last ${span} minutes; chargeback losses post later`,
       value: recent.confirmed_loss_usd,
       baseline: null,
       delta: null,
@@ -235,13 +245,13 @@ async function change(): Promise<SharedChangePayload | null> {
 
   const expected = await scenarioExpectedDeltas(scenarioId);
   const segment = (expected.segment as Record<string, string> | undefined) ?? {};
-  const label = segment.fraud_type ?? segment.channel ?? "Injected cohort";
+  const label =
+    segment.fraud_type === "card_testing" && segment.channel === "card_not_present"
+      ? "Card-testing burst, card not present"
+      : segment.fraud_type ?? segment.channel ?? "Injected cohort";
 
   const [before, after] = await Promise.all([
-    lossBetween(
-      new Date(new Date(execution.window_start).getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      execution.window_start
-    ),
+    lossBefore(execution.window_start),
     lossBetween(execution.window_start, execution.window_end),
   ]);
 
@@ -300,9 +310,11 @@ export async function entity(
     device_alert_count: number;
     customer_alert_count: number;
     amount_usd: number;
+    reason_codes: string[] | string | null;
   }>(
     `SELECT merchant_name, merchant_category, customer_id, customer_risk_tier, account_age_days,
-            device_type, device_risk_band, device_alert_count, customer_alert_count, amount_usd
+            device_type, device_risk_band, device_alert_count, customer_alert_count, amount_usd,
+            reason_codes
      FROM aa_fraud_segment_evidence
      WHERE case_id = ?
      LIMIT 1`,
@@ -324,6 +336,12 @@ export async function entity(
   );
 
   const proof = evidence[0];
+  const reasonCodes = (() => {
+    const raw = proof?.reason_codes;
+    if (raw === null || raw === undefined) return "none recorded";
+    const parsed = typeof raw === "string" ? (JSON.parse(raw) as unknown) : raw;
+    return Array.isArray(parsed) ? parsed.join(", ") : String(parsed);
+  })();
 
   return {
     entity_type: "case",
@@ -368,6 +386,7 @@ export async function entity(
         title: "Case evidence",
         fields: proof
           ? [
+              { label: "Alert reason codes", value: reasonCodes },
               { label: "Merchant", value: `${proof.merchant_name} (${proof.merchant_category})` },
               { label: "Customer", value: proof.customer_id, mono: true },
               { label: "Customer risk tier", value: proof.customer_risk_tier },

@@ -91,14 +91,14 @@ export default function SegmentDetailPage() {
     : "none";
 
   useEffect(() => {
-    let cancelled = false;
+    let canceled = false;
     (async () => {
       try {
         const response = await fetch(
           `/api/v1/anchors/a2/entities/segment/${encodeURIComponent(laneKey)}?window=60`,
           { cache: "no-store" }
         );
-        if (cancelled) return;
+        if (canceled) return;
         if (!response.ok) {
           const body = (await response.json().catch(() => ({}))) as {
             error?: { message?: string };
@@ -109,11 +109,11 @@ export default function SegmentDetailPage() {
         setDetail((await response.json()) as SegmentDetailPayload);
         setError(null);
       } catch {
-        if (!cancelled) setError("Cannot reach the demo API.");
+        if (!canceled) setError("Cannot reach the demo API.");
       }
     })();
     return () => {
-      cancelled = true;
+      canceled = true;
     };
   }, [laneKey, stateSignature]);
 
@@ -128,7 +128,7 @@ export default function SegmentDetailPage() {
     <div className="space-y-5">
       <nav className="text-[12px] text-[var(--ink-muted)]">
         <Link href="/anchors/a2" className="hover:underline">
-          A2 Payment Pulse
+          A2 Payment Performance Management
         </Link>
         <span className="mx-1.5">/</span>
         <span className="mono">{laneKey.split("|").join(" · ")}</span>
@@ -259,7 +259,7 @@ export default function SegmentDetailPage() {
                 Scenario events only
               </label>
             }
-            footnote="Every row is synthetic. Amounts are shown in the issuer currency with the normalised USD value used by the widgets."
+            footnote="Every row is synthetic. Amounts are shown in the issuer currency with the normalized USD value used by the widgets."
           >
             {events.length ? (
               <div className="scroll-thin max-h-[520px] overflow-auto">

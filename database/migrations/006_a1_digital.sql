@@ -7,6 +7,11 @@
 -- 'submitted' -> 'manual_review' -> 'decided', with outcome_status settling
 -- on 'pending', 'approved', or 'declined'. `manual_review.status` settles on
 -- 'open', 'approved', or 'declined'.
+--
+-- `submitted_value_usd` and `opened_value_usd` on aa_digital_intent_cohort
+-- price each application at its product's illustrative first-year value
+-- (dim_product.annual_value_usd). Lost value for a cohort is
+-- submitted_value_usd x its baseline submit-to-open rate - opened_value_usd.
 
 DROP VIEW IF EXISTS aa_digital_intent_cohort;
 
@@ -126,6 +131,8 @@ SELECT
     SUM(CASE WHEN a.outcome_status = 'approved' THEN 1 ELSE 0 END)
         / NULLIF(COUNT(DISTINCT a.application_id), 0) AS submit_to_open_rate,
     COUNT(DISTINCT mr.review_id) / NULLIF(COUNT(DISTINCT a.application_id), 0) AS referral_rate,
+    SUM(dp.annual_value_usd) AS submitted_value_usd,
+    SUM(CASE WHEN a.outcome_status = 'approved' THEN dp.annual_value_usd ELSE 0 END) AS opened_value_usd,
     MAX(CASE
         WHEN ds.scenario_id IS NOT NULL OR a.scenario_id IS NOT NULL OR mr.scenario_id IS NOT NULL THEN 1
         ELSE 0
@@ -136,5 +143,6 @@ LEFT JOIN application a
     ON a.run_id = ds.run_id AND a.session_id = ds.session_id AND a.submitted_at <= ar.logical_time
 LEFT JOIN manual_review mr
     ON mr.run_id = a.run_id AND mr.application_id = a.application_id AND mr.referred_at <= ar.logical_time
+LEFT JOIN dim_product dp ON dp.run_id = a.run_id AND dp.product_id = a.product_id
 WHERE ds.started_at <= ar.logical_time
 GROUP BY DATE(ds.started_at), ds.intent_cohort, ds.channel;

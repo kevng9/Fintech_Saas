@@ -8,9 +8,9 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "Session-to-application completion is 65.0% over the last 30 logical days: 8,400 sessions started and 5,460 applications were submitted.",
+      "text": "Session-to-application completion is **71.55%**: **478** sessions started and **342** applications were submitted. Only seven logical days of history exist (2026-07-18 to 2026-07-25), so that is the period used rather than 30 days.",
       "sql": {
-        "command": "SELECT SUM(sessions_started) AS sessions_started, SUM(applications_submitted) AS applications_submitted FROM aa_digital_funnel",
+        "command": "SELECT SUM(sessions_started) AS sessions_started, SUM(applications_submitted) AS applications_submitted, SUM(applications_submitted) / SUM(sessions_started) AS completion_rate FROM aa_digital_funnel",
         "confidence_score": 0.9,
         "tables_used": [
           "aa_digital_funnel"
@@ -24,9 +24,9 @@
         ],
         "rows": [
           [
-            8400,
-            5460,
-            0.65
+            478,
+            342,
+            0.7155
           ]
         ],
         "row_count": 1,

@@ -8,9 +8,9 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "core_ops has the most SLA risk. Its at-risk disputes break down as MERCHANT_OUTAGE (12), DUPLICATE_CHARGE (14), and SERVICE_NOT_RECEIVED (9).",
+      "text": "queue_disputes_escalated has the most SLA risk. Its at-risk disputes break down as PAID_BY_OTHER_MEANS (**12**, $7,022.94) and DUPLICATE_CHARGE (**1**, $174.81).",
       "sql": {
-        "command": "SELECT reason_code, sla_risk_count FROM aa_dispute_sla_risk WHERE queue_id = 'core_ops' ORDER BY sla_risk_count DESC",
+        "command": "SELECT reason_code, SUM(sla_risk_count) AS sla_risk_count, SUM(sla_risk_amount_total) AS sla_risk_amount_total FROM aa_dispute_sla_risk WHERE queue_id = 'queue_disputes_escalated' GROUP BY reason_code ORDER BY sla_risk_count DESC",
         "confidence_score": 0.9,
         "tables_used": [
           "aa_dispute_sla_risk"
@@ -19,23 +19,22 @@
       "table": {
         "columns": [
           "reason_code",
-          "sla_risk_count"
+          "sla_risk_count",
+          "sla_risk_amount_total"
         ],
         "rows": [
           [
+            "PAID_BY_OTHER_MEANS",
+            12,
+            7022.94
+          ],
+          [
             "DUPLICATE_CHARGE",
-            14
-          ],
-          [
-            "MERCHANT_OUTAGE",
-            12
-          ],
-          [
-            "SERVICE_NOT_RECEIVED",
-            9
+            1,
+            174.81
           ]
         ],
-        "row_count": 3,
+        "row_count": 2,
         "truncated": false
       },
       "chart": null,

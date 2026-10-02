@@ -8,9 +8,9 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "Of those, CASE-00058 is still open awaiting investigator disposition; CASE-00042 and CASE-00061 have already been dispositioned.",
+      "text": "None of the **15** card_testing cases is still open; every one has a human disposition.\n\n- **7** confirmed fraud and **8** legitimate.\n- Across all fraud types, **3** cases are open: FCASE-A3B-000002, FCASE-A3B-000004, and FCASE-A3B-000014.\n\nNo card-testing case is waiting on an investigator.",
       "sql": {
-        "command": "SELECT case_id, human_disposition FROM aa_fraud_case_review WHERE case_id IN ('CASE-00042','CASE-00058','CASE-00061')",
+        "command": "SELECT human_disposition, COUNT(*) AS cases\nFROM aa_fraud_case_review\nWHERE fraud_type = 'card_testing'\nGROUP BY human_disposition",
         "confidence_score": 0.9,
         "tables_used": [
           "aa_fraud_case_review"
@@ -18,24 +18,20 @@
       },
       "table": {
         "columns": [
-          "case_id",
-          "human_disposition"
+          "human_disposition",
+          "cases"
         ],
         "rows": [
           [
-            "CASE-00042",
-            "confirmed_fraud"
+            "confirmed_fraud",
+            7
           ],
           [
-            "CASE-00058",
-            "open"
-          ],
-          [
-            "CASE-00061",
-            "confirmed_fraud"
+            "legitimate",
+            8
           ]
         ],
-        "row_count": 3,
+        "row_count": 2,
         "truncated": false
       },
       "chart": null,

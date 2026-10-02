@@ -1,15 +1,16 @@
 import type { AnchorDefinition } from "./types";
 
 /**
- * A8 Explain My Money (Customer Money). This build supports one
+ * A8 Embedded Insights Strategy (Customer Money). This build supports one
  * customer-facing identity, seeded as CUST-0001. Every curated view this
  * anchor reads is physically filtered to that customer (spec section 12.3);
  * this definition never accepts a customer id from a URL, prompt, or session.
  */
 export const a8: AnchorDefinition = {
   id: "a8",
-  name: "Explain My Money",
+  name: "Embedded Insights Strategy",
   jobTitle: "Chief Product Officer",
+  businessDecision: "Embedded Insights Strategy",
   criticalBusinessIssue:
     "Increase digital engagement and monetization through trusted, personalized financial explanations.",
   takeaway: "Explain Engage Monetize",
@@ -23,7 +24,8 @@ export const a8: AnchorDefinition = {
   entityTypes: ["category"],
   guardrailText:
     "Aura Analyst explains this customer's own transaction history. It does not provide financial or investment advice.",
-  humanOwnership: null,
+  humanOwnership:
+    "Product teams own customer messaging and any offer. Aura explains the customer's own activity with inspectable evidence.",
   starterPrompts: [
     "Why did my dining spending change this month?",
     "Show the transactions that explain the change.",

@@ -19,6 +19,9 @@ CREATE ROWSTORE TABLE dim_product (
     product_name   VARCHAR(64) NOT NULL,
     product_family VARCHAR(32) NOT NULL,
     channel        VARCHAR(24) NOT NULL,
+    -- Illustrative first-year revenue per opened account, set per product
+    -- family. Used to put a dollar value on lost account openings (A1).
+    annual_value_usd DECIMAL(10,2) NOT NULL,
     PRIMARY KEY (run_id, product_id)
 );
 

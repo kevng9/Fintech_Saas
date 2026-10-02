@@ -1,14 +1,15 @@
 import type { AnchorDefinition } from "./types";
 
 /**
- * A3 Trace the Loss (Fraud Strategy). Confirmed loss and false-positive rate
+ * A3 Fraud Strategy Optimization (Fraud Strategy). Confirmed loss and false-positive rate
  * are always derived from a human investigator's disposition on a case, never
  * from an alert score alone.
  */
 export const a3: AnchorDefinition = {
   id: "a3",
-  name: "Trace the Loss",
+  name: "Fraud Strategy Optimization",
   jobTitle: "VP of Fraud Strategy",
+  businessDecision: "Fraud Strategy Optimization",
   criticalBusinessIssue:
     "Reduce fraud loss while controlling false positives and preserving legitimate revenue.",
   takeaway: "Trace Loss Faster",
@@ -25,14 +26,14 @@ export const a3: AnchorDefinition = {
   humanOwnership: "Case decisions and customer action stay with fraud investigators.",
   starterPrompts: [
     "Show confirmed fraud loss and false-positive rate by channel and fraud type.",
-    "For the highest-loss segment, compare device reuse, account age, merchant, and velocity.",
+    "For the highest-loss segment, compare reason codes, device reuse, account age, and merchant for confirmed fraud versus false positives.",
     "List supporting cases for human investigator review.",
   ],
   overviewWidgets: [
     {
       id: "confirmed_loss",
-      title: "Confirmed fraud loss",
-      subtitle: "Cases opened in the last 24 logical hours",
+      title: "Investigator-confirmed loss",
+      subtitle: "Cases opened in the last 24 logical hours; chargeback losses post later",
       metricFormat: "currency",
       backendRoute: "/api/v1/anchors/a3/overview",
       visualization: "kpi",
@@ -83,7 +84,7 @@ export const a3: AnchorDefinition = {
       backendRoute: "/api/v1/anchors/a3/overview",
       visualization: "ranked-bar",
       expectedBaseline: "Losses spread across channels and fraud types",
-      expectedScenarioDelta: "Injected fraud type leads confirmed loss",
+      expectedScenarioDelta: "Card testing on card-not-present takes the lead at $2,500",
       proofMode: "analyst-optional",
       sourceTables: ["aa_fraud_loss_summary"],
     },
@@ -94,7 +95,7 @@ export const a3: AnchorDefinition = {
       backendRoute: "/api/v1/anchors/a3/overview",
       visualization: "table",
       expectedBaseline: "Ranked by confirmed loss and score",
-      expectedScenarioDelta: "Injected cases appear at the top of the list",
+      expectedScenarioDelta: "Five injected confirmed-fraud cases join the list at $500 each",
       proofMode: "deterministic",
       sourceTables: ["aa_fraud_case_review"],
     },

@@ -21,6 +21,7 @@ export interface AnchorDefinition {
   id: AnchorId;
   name: string;
   jobTitle: string;
+  businessDecision: string;
   criticalBusinessIssue: string;
   takeaway: string;
   deltaHypothesis: string;
@@ -40,6 +41,7 @@ export interface AnchorSummary {
   id: AnchorId;
   name: string;
   jobTitle: string;
+  businessDecision: string;
   criticalBusinessIssue: string;
   takeaway: string;
   status: AnchorDefinition["status"];

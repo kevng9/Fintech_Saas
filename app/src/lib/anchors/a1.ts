@@ -1,14 +1,15 @@
 import type { AnchorDefinition } from "./types";
 
 /**
- * A1 Digital Journey Intelligence. Account-opening funnel from session start
+ * A1 Digital Funnel Performance. Account-opening funnel from session start
  * through manual review to a human or system outcome. No protected-
  * characteristic field is generated anywhere in this anchor's data.
  */
 export const a1: AnchorDefinition = {
   id: "a1",
-  name: "Digital Journey Intelligence",
+  name: "Digital Funnel Performance",
   jobTitle: "Head of Digital Banking",
+  businessDecision: "Digital Funnel Performance",
   criticalBusinessIssue:
     "Improve digital account-opening conversion and act on customer intent before opportunities are lost.",
   takeaway: "See Intent Earlier",
@@ -24,9 +25,9 @@ export const a1: AnchorDefinition = {
     "Aura Analyst explains measured account-opening activity. It does not approve, decline, or generate an adverse-action decision.",
   humanOwnership: null,
   starterPrompts: [
-    "Show the account-opening funnel by step and channel for the last 30 logical days.",
+    "Show the account-opening funnel by step and channel for the last 30 days, including completion and abandonment rates.",
     "Compare manual review with straight-through applications.",
-    "Which high-intent cohort explains the largest conversion change?",
+    "Which intent cohort lost the most account openings, and at which journey stage?",
   ],
   overviewWidgets: [
     {

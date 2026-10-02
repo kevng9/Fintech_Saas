@@ -27,6 +27,7 @@ export function toSummary(anchor: AnchorDefinition): AnchorSummary {
     id: anchor.id,
     name: anchor.name,
     jobTitle: anchor.jobTitle,
+    businessDecision: anchor.businessDecision,
     criticalBusinessIssue: anchor.criticalBusinessIssue,
     takeaway: anchor.takeaway,
     status: anchor.status,

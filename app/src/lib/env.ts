@@ -57,7 +57,7 @@ export const analystConfig = {
  * Analyst base URL for an anchor. Paths like `/chat`, `/query`, and
  * `/conversation-starters` are appended by the client, so an explicit
  * `ANALYST_A{N}_ENDPOINT` that already ends in one of those suffixes is
- * normalised back to the analyst root.
+ * normalized back to the analyst root.
  */
 export function normalizeAnalystBaseUrl(endpoint: string): string {
   return endpoint

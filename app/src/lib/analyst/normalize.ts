@@ -145,7 +145,7 @@ export function normalizeQueryResponse(payload: unknown): AnalystResult[] {
   if (results.length) return results;
   return [
     {
-      text: "Aura Analyst returned a response this build does not recognise.",
+      text: "Aura Analyst returned a response this build does not recognize.",
       sql: null,
       table: null,
       chart: null,

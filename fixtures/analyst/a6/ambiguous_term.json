@@ -8,9 +8,9 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "\"Tightest\" could mean the lowest available liquidity or the largest negative net settlement, and entities do not rank the same way on each. EMEA Funding Ltd. is tightest on both today, but tell me which measure you want and I will rank on it.",
+      "text": "\"Tightest\" could mean the lowest available liquidity or the lowest net expected settlement, and entities rank differently on each. On available 24-hour liquidity, Synthetic Entity 01 in USD is tightest at **USD 5.38 million**. On net expected settlement, Synthetic Entity 04 in CAD is lowest at **USD 0**. Tell me which measure you want.",
       "sql": {
-        "command": "SELECT entity_name, available_liquidity_24h_usd FROM aa_liquidity_position ORDER BY available_liquidity_24h_usd ASC",
+        "command": "SELECT entity_name, currency, available_liquidity_24h_usd, expected_inbound_settlements_usd - expected_outbound_settlements_usd AS net_expected_settlement_usd FROM aa_liquidity_position ORDER BY available_liquidity_24h_usd ASC",
         "confidence_score": 0.9,
         "tables_used": [
           "aa_liquidity_position"
@@ -19,19 +19,31 @@
       "table": {
         "columns": [
           "entity_name",
-          "available_liquidity_24h_usd"
+          "currency",
+          "available_liquidity_24h_usd",
+          "net_expected_settlement_usd"
         ],
         "rows": [
           [
-            "EMEA Funding Ltd.",
-            63000000
+            "Synthetic Entity 01",
+            "USD",
+            5376760.31,
+            844362.75
           ],
           [
-            "APAC Settlement Pte.",
-            62000000
+            "Synthetic Entity 04",
+            "CAD",
+            5861977.21,
+            0
+          ],
+          [
+            "Synthetic Entity 02",
+            "GBP",
+            7894490.53,
+            409292.11
           ]
         ],
-        "row_count": 2,
+        "row_count": 3,
         "truncated": false
       },
       "chart": null,

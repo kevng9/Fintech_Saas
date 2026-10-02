@@ -1,12 +1,12 @@
 """Scenario registry.
 
 Every anchor's named scenario registers here, so injection, idempotency,
-verification, and reset behaviour in ``injection.py`` and ``verify.py`` work
+verification, and reset behavior in ``injection.py`` and ``verify.py`` work
 identically for all eight without further changes to those modules.
 
 Builders may return either ``Sequence[TableBatch]`` (every scenario should
 prefer this) or a bare ``Sequence[tuple]`` of payment_event rows for backward
-compatibility; :func:`build_rows` normalises either shape to
+compatibility; :func:`build_rows` normalizes either shape to
 ``list[TableBatch]`` so callers never branch on which form a builder chose.
 """
 

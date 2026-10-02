@@ -1,14 +1,15 @@
 import type { AnchorDefinition } from "./types";
 
 /**
- * A2 Payment Pulse. Phase 2 of the build ships this anchor end to end because
+ * A2 Payment Performance Management. Phase 2 of the build ships this anchor end to end because
  * it exercises live events, operational metrics, drill-down, /query, /chat and
  * a scenario with exact expected deltas.
  */
 export const a2: AnchorDefinition = {
   id: "a2",
-  name: "Payment Pulse",
+  name: "Payment Performance Management",
   jobTitle: "Head of Payments",
+  businessDecision: "Payment Performance Management",
   criticalBusinessIssue:
     "Protect payment revenue and customer experience by keeping approval rates and latency within acceptable thresholds.",
   takeaway: "Protect Every Payment",
@@ -25,7 +26,7 @@ export const a2: AnchorDefinition = {
   humanOwnership: "Routing and processor decisions stay with payment operations.",
   starterPrompts: [
     "Show authorization rate, p95 latency, and decline volume by hour.",
-    "During the weakest window, rank processors and rails against the prior seven-day baseline.",
+    "For P2 / Mastercard / GB in the incident window, compare approval and p95 latency with its prior seven-day baseline.",
     "Break the largest change down by merchant category and response code.",
   ],
   overviewWidgets: [

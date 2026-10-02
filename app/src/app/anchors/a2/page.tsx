@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * A2 Payment Pulse.
+ * A2 Payment Performance Management.
  *
  * The page is ordered the way the story is told: headline metrics, the trend
  * that shows when it moved, the ranked lanes that show where, the decline mix
@@ -11,13 +11,15 @@
  */
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AnalystWorkspace } from "@/components/a2/AnalystWorkspace";
 import { KpiTile } from "@/components/a2/KpiTile";
 import { LaneTable } from "@/components/a2/LaneTable";
 import { ScenarioPanel } from "@/components/a2/ScenarioPanel";
 import { WhatChanged } from "@/components/a2/WhatChanged";
 import { DivergingBars, DualAxisChart } from "@/components/charts";
 import { useDemoState } from "@/components/DemoStateProvider";
+import { LiveUpdatesBanner } from "@/components/LiveUpdatesBanner";
 import { Banner, Card, Empty, Skeleton } from "@/components/ui";
 import { count, logicalTime, milliseconds, percent, points, usd } from "@/lib/format";
 import type { OverviewPayload } from "@/lib/apiTypes";
@@ -25,19 +27,17 @@ import type { OverviewPayload } from "@/lib/apiTypes";
 const WINDOW_CHOICES = [15, 60, 180, 720];
 const ANCHOR_ID = "a2";
 
-export default function PaymentPulsePage() {
-  const { envelope, persona, presentationMode } = useDemoState();
+export default function PaymentPerformancePage() {
+  const { envelope, persona, presentationMode, busyAction, inject } = useDemoState();
   const [windowMinutes, setWindowMinutes] = useState(60);
   const [overview, setOverview] = useState<OverviewPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [storyMessage, setStoryMessage] = useState<string | null>(null);
   const [selectedLane, setSelectedLane] = useState<string | null>(null);
+  const storyStartedRef = useRef(false);
 
   // Re-reading on every state poll keeps the widgets in step with the logical
   // clock, and makes a pause visibly freeze the page.
-  const stateSignature = envelope
-    ? `${envelope.state.run_id}:${envelope.state.logical_time}:${envelope.state.state_version}`
-    : "none";
-
   const load = useCallback(async () => {
     try {
       const response = await fetch(
@@ -60,7 +60,9 @@ export default function PaymentPulsePage() {
 
   useEffect(() => {
     void load();
-  }, [load, stateSignature]);
+    const timer = window.setInterval(() => void load(), 15_000);
+    return () => window.clearInterval(timer);
+  }, [load, envelope?.state.run_id, envelope?.state.state_version]);
 
   const widgets = overview?.widgets;
 
@@ -96,10 +98,40 @@ export default function PaymentPulsePage() {
   );
 
   const declineRows = widgets?.decline_mix.rows ?? [];
-  const totalDeclines = declineRows.reduce((sum, row) => sum + Number(row.declines), 0);
+  const totalDeclines = Number(widgets?.declined_value.declines ?? 0);
+  const displayedDeclines = declineRows.reduce((sum, row) => sum + Number(row.declines), 0);
   const scenarioActive = (envelope?.executions ?? []).some(
     (execution) => execution.scenario_id === "A2_PROCESSOR_TIMEOUT" && execution.status === "complete"
   );
+  const incidentBusy = busyAction === "inject:A2_PROCESSOR_TIMEOUT";
+  const comparison = widgets?.what_changed.comparison ?? null;
+  const incidentDeclinedValue = comparison?.after.declined_amount ?? null;
+  const incidentApproval = comparison?.after.approval_rate ?? null;
+  const incidentApprovalDelta =
+    comparison?.after.approval_rate !== null &&
+    comparison?.after.approval_rate !== undefined &&
+    comparison?.baseline.approval_rate !== null
+      ? comparison.after.approval_rate - comparison.baseline.approval_rate
+      : null;
+  const incidentLatency = comparison?.after.p95_latency_ms ?? null;
+  const incidentAttempts = comparison?.after.attempts ?? null;
+
+  const startIncident = useCallback(async () => {
+    setStoryMessage(null);
+    const result = await inject("A2_PROCESSOR_TIMEOUT");
+    if (!result.ok) {
+      setStoryMessage(result.message ?? "The controlled incident could not be started.");
+      return;
+    }
+    setStoryMessage("The incident is now visible. Follow the change from signal to cause to action.");
+  }, [inject]);
+
+  useEffect(() => {
+    if (storyStartedRef.current || !envelope?.state || scenarioActive) return;
+    if (new URLSearchParams(window.location.search).get("story") !== "incident") return;
+    storyStartedRef.current = true;
+    void startIncident();
+  }, [envelope?.state, scenarioActive, startIncident]);
 
   return (
     <div className="space-y-6">
@@ -108,7 +140,9 @@ export default function PaymentPulsePage() {
           Overview
         </Link>
         <span>/</span>
-        <span className="text-[var(--ink)]">Payment operations</span>
+        <span className="text-[var(--ink)]">
+          {overview?.anchor.businessDecision ?? "Payment Performance Management"}
+        </span>
       </div>
 
       <header className="business-hero px-7 py-7 lg:px-9">
@@ -128,7 +162,9 @@ export default function PaymentPulsePage() {
                 {scenarioActive ? "Operational change detected" : "Authorization network healthy"}
               </span>
             </div>
-            <h1 className="mt-3 text-[34px] font-semibold tracking-[-0.05em]">Payment Pulse</h1>
+            <h1 className="mt-3 text-[34px] font-semibold tracking-[-0.05em]">
+              {overview?.anchor.name ?? "Payment Performance Management"}
+            </h1>
             <p className="mt-2 max-w-[68ch] text-[13px] leading-6 text-white/58">
               {overview?.anchor.criticalBusinessIssue ??
                 "Protect payment revenue and customer experience by keeping approval rates and latency within acceptable thresholds."}
@@ -180,10 +216,71 @@ export default function PaymentPulsePage() {
       </header>
 
       {error && <Banner tone="bad">{error}</Banner>}
-      {overview && !overview.state.leader_alive && (
-        <Banner tone="warn">
-          Live payment updates are paused. Open Demo controls to resume the environment.
-        </Banner>
+      {overview && (
+        <LiveUpdatesBanner
+          leaderAlive={overview.state.leader_alive}
+          streamStatus={overview.state.stream_status}
+          label="Live payment updates"
+        />
+      )}
+
+      {presentationMode && (
+        <Card
+          title={scenarioActive ? "Revenue-risk incident detected" : "See the decision moment"}
+          subtitle={
+            scenarioActive
+              ? "Aura and the operating view use the same current payment foundation"
+              : "Start a controlled processor timeout to see the signal, cause, evidence, and accountable action"
+          }
+        >
+          {scenarioActive ? (
+            <div className="space-y-4">
+              <div>
+                <p className="text-[18px] font-semibold tracking-[-0.025em]">
+                  {comparison?.lane ?? "One payment route"} is the decision lane.
+                </p>
+                <p className="mt-2 max-w-[78ch] text-[13px] leading-6 text-[var(--ink-soft)]">
+                  These values use the controlled two-minute incident window. Network-wide
+                  60-minute context remains below.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {[
+                  ["Incident approval", percent(incidentApproval), points(incidentApprovalDelta)],
+                  ["Incident p95", milliseconds(incidentLatency), "affected route"],
+                  ["Incident attempts", count(incidentAttempts), "same bounded window"],
+                  ["Declined value", usd(incidentDeclinedValue), "observed in incident"],
+                ].map(([label, value, detail]) => (
+                  <div key={label} className="rounded-[14px] bg-[var(--danger-soft)] p-4">
+                    <p className="label">{label}</p>
+                    <p className="mt-2 text-[26px] font-semibold tracking-[-0.04em] text-[var(--danger)]">
+                      {value}
+                    </p>
+                    <p className="mt-1 text-[11px] text-[var(--ink-muted)]">{detail}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <p className="max-w-[76ch] text-[13px] leading-6 text-[var(--ink-soft)]">
+                Watch a route degrade, quantify the exposure, identify the cause, and ask Aura for
+                an inspectable explanation. All activity is synthetic; people retain payment actions.
+              </p>
+              <button
+                type="button"
+                className="btn btn-primary min-h-11 shrink-0 px-5"
+                disabled={incidentBusy}
+                onClick={() => void startIncident()}
+              >
+                {incidentBusy ? "Starting incident…" : "Reveal the incident"}
+              </button>
+            </div>
+          )}
+          {storyMessage && (
+            <p className="mt-3 text-[12px] text-[var(--ink-soft)]">{storyMessage}</p>
+          )}
+        </Card>
       )}
 
       <div>
@@ -272,6 +369,55 @@ export default function PaymentPulsePage() {
         {widgets ? <WhatChanged comparison={widgets.what_changed.comparison} /> : <Skeleton rows={4} />}
       </Card>
 
+      {scenarioActive && overview && (
+        <Card
+          title="From evidence to accountable action"
+          subtitle="The operating team sees what changed, why it matters, and what remains theirs to decide"
+        >
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-[14px] bg-[var(--surface-sunk)] p-4">
+              <p className="label">What changed</p>
+              <p className="mt-2 text-[13px] leading-5">
+                Approval fell and timeout latency increased on{" "}
+                <span className="font-semibold">{comparison?.lane ?? "the affected route"}</span>.
+              </p>
+            </div>
+            <div className="rounded-[14px] bg-[var(--surface-sunk)] p-4">
+              <p className="label">Why it matters</p>
+              <p className="mt-2 text-[13px] leading-5">
+                The affected route produced {usd(incidentDeclinedValue)} in declined value during
+                the controlled incident window.
+              </p>
+            </div>
+            <div className="rounded-[14px] bg-[var(--surface-sunk)] p-4">
+              <p className="label">Who acts</p>
+              <p className="mt-2 text-[13px] leading-5">
+                Payments operations validates the evidence and chooses the response. Aura explains;
+                it does not reroute or retry payments.
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {scenarioActive && overview && (
+        <section className="space-y-3">
+          <div>
+            <p className="label">Aura Analyst</p>
+            <h2 className="section-title mt-1">Ask what changed and inspect the evidence</h2>
+            <p className="mt-2 max-w-[80ch] text-[13px] leading-6 text-[var(--ink-soft)]">
+              Ask in business language, continue the investigation, and open the generated SQL.
+              The answer uses governed payment context; your team owns the operational decision.
+            </p>
+          </div>
+          <AnalystWorkspace
+            anchorId={ANCHOR_ID}
+            guardrailText={overview.anchor.guardrailText}
+            humanOwnership={overview.anchor.humanOwnership}
+          />
+        </section>
+      )}
+
       <div className="grid gap-4 xl:grid-cols-2">
         <Card
           title="Payment routes"
@@ -286,7 +432,7 @@ export default function PaymentPulsePage() {
 
         <Card
           title="Why payments declined"
-          subtitle={`${count(totalDeclines)} declines grouped by business reason`}
+          subtitle={`${count(displayedDeclines)} of ${count(totalDeclines)} declines grouped by business reason`}
         >
           {widgets ? (
             declineRows.length ? (

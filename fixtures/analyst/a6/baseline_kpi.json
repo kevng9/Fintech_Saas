@@ -4,11 +4,11 @@
   "id": "baseline_kpi",
   "latency_ms": 1800,
   "match": [],
-  "prompt": "What is the available 24-hour liquidity across every entity and currency, normalised to USD?",
+  "prompt": "What is the available 24-hour liquidity across every entity and currency, normalized to USD?",
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "Available 24-hour liquidity across every entity and currency is USD 387 million.",
+      "text": "Available 24-hour liquidity across every entity and currency is **USD 52.16 million**, normalized to US dollars, as of the demo logical clock. That is USD 7.84 million below the USD 60 million illustrative policy buffer.",
       "sql": {
         "command": "SELECT SUM(available_liquidity_24h_usd) AS available_liquidity_24h_usd FROM aa_liquidity_position",
         "confidence_score": 0.9,
@@ -22,7 +22,7 @@
         ],
         "rows": [
           [
-            387000000
+            52163043.06
           ]
         ],
         "row_count": 1,

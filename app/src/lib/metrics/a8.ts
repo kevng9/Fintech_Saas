@@ -1,5 +1,5 @@
 /**
- * Deterministic A8 Explain My Money (Customer Money) queries.
+ * Deterministic A8 Embedded Insights Strategy (Customer Money) queries.
  *
  * Every curated view this module reads is physically filtered to the single
  * demo customer `CUST-0001` in the migration itself
@@ -188,29 +188,40 @@ async function change(): Promise<SharedChangePayload | null> {
   const segment = (expected.segment as Record<string, string> | undefined) ?? {};
   const category = segment.category ?? "dining";
 
-  const rows = await query<{ spend: number; net_flow_change: number }>(
+  const rows = await query<{ spend: number; transaction_count: number }>(
     `SELECT
-        SUM(ct.amount_usd) AS spend
+        SUM(ct.amount_usd) AS spend,
+        COUNT(*) AS transaction_count
      FROM customer_transaction ct
      JOIN demo_active_run ar ON ar.singleton_id = 1 AND ar.run_id = ct.run_id
      WHERE ct.customer_id = ? AND ct.category = ? AND ct.direction = 'outflow'
-       AND ct.event_time > ? AND ct.event_time <= ?`,
+       AND ct.event_time >= ? AND ct.event_time <= ?`,
     [CUSTOMER_ID, category, execution.window_start, execution.window_end]
   );
 
   const spend = rows[0]?.spend ? Number(rows[0].spend) : 0;
+  const transactionCount = Number(rows[0]?.transaction_count ?? 0);
 
   return buildChangePayload({
     scenarioId,
     execution,
     expected,
-    segmentLabel: `Category: ${category}`,
+    segmentLabel: "Dining spend for this customer",
     specs: [
-      { label: `${category} spend`, key: "category_spend_usd", format: "currency" },
-      { label: "Net cash flow impact", key: "net_flow_change_usd", format: "currency" },
+      { label: "Dining spend", key: "dining_spend_delta_usd", format: "currency" },
+      { label: "Net cash flow impact", key: "net_flow_delta_usd", format: "currency" },
+      { label: "Transactions explained", key: "transactions_explained", format: "count" },
     ],
-    before: { category_spend_usd: null, net_flow_change_usd: null },
-    after: { category_spend_usd: spend, net_flow_change_usd: -spend },
+    before: {
+      dining_spend_delta_usd: 0,
+      net_flow_delta_usd: 0,
+      transactions_explained: 0,
+    },
+    after: {
+      dining_spend_delta_usd: spend,
+      net_flow_delta_usd: -spend,
+      transactions_explained: transactionCount,
+    },
   });
 }
 

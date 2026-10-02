@@ -8,7 +8,7 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "There is no data for fraud_type = 'INSURANCE_CLAIM' in this dataset. The fraud types present are account_takeover, synthetic_identity, card_testing, and authorized_push_payment, so the filter returns no rows rather than a low value.",
+      "text": "There is no data for fraud_type = 'INSURANCE_CLAIM' in this dataset. The fraud types present are account_takeover, card_testing, synthetic_identity, and first_party, so the filter returns no rows rather than a low value.",
       "sql": {
         "command": "SELECT * FROM aa_fraud_loss_summary WHERE fraud_type = 'INSURANCE_CLAIM'",
         "confidence_score": 0.9,

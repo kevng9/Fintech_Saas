@@ -1,0 +1,60 @@
+{
+  "anchor": "a3",
+  "fixture_version": "1.0.0",
+  "id": "starter_segment_pattern_baseline",
+  "latency_ms": 1800,
+  "match": [
+    "reason codes device reuse account age merchant",
+    "confirmed fraud versus false positives"
+  ],
+  "prompt": "For the highest-loss segment, compare reason codes, device reuse, account age, and merchant for confirmed fraud versus false positives.",
+  "recorded_at": "2026-07-25T00:00:00Z",
+  "results": [
+    {
+      "text": "The highest-loss segment, **ATM first-party fraud**, has **2** confirmed cases and no false positives, so there is nothing to contrast yet.\n\n- FCASE-A3B-000020: **$1,018.01**, reason code geo_anomaly, device used on 1 alert, account 2,441 days old, Silverline Ride Markets.\n- FCASE-A3B-000008: **$501.74**, reason code device_mismatch, device used on 1 alert, account 678 days old, Copperfield Electronics Retail.\n\nThe two cases share no reason code, device, or merchant, and two cases are too few to call a pattern.",
+      "sql": {
+        "command": "SELECT case_id, reason_codes, device_id, device_alert_count, account_age_days, merchant_name, confirmed_loss_usd\nFROM aa_fraud_segment_evidence\nWHERE channel = 'atm' AND fraud_type = 'first_party'\nORDER BY confirmed_loss_usd DESC",
+        "confidence_score": 0.9,
+        "tables_used": [
+          "aa_fraud_segment_evidence"
+        ]
+      },
+      "table": {
+        "columns": [
+          "case_id",
+          "reason_codes",
+          "device_id",
+          "device_alert_count",
+          "account_age_days",
+          "merchant_name",
+          "confirmed_loss_usd"
+        ],
+        "rows": [
+          [
+            "FCASE-A3B-000020",
+            "[\"geo_anomaly\"]",
+            "DEV-0034",
+            1,
+            2441,
+            "Silverline Ride Markets",
+            1018.01
+          ],
+          [
+            "FCASE-A3B-000008",
+            "[\"device_mismatch\"]",
+            "DEV-0001",
+            1,
+            678,
+            "Copperfield Electronics Retail",
+            501.74
+          ]
+        ],
+        "row_count": 2,
+        "truncated": false
+      },
+      "chart": null,
+      "error": null
+    }
+  ],
+  "scenario_state": "baseline"
+}

@@ -3,7 +3,7 @@
 One elected leader owns the logical clock, event emission, and every control
 transition. The web tier never writes demo state directly: it enqueues commands
 in ``demo_command`` and the leader applies them, so pause, speed, injection and
-reset are always serialised behind the same writer.
+reset are always serialized behind the same writer.
 
 Speed semantics: 1x emits one logical minute of events per wall-clock second.
 The event set for a logical minute is a pure function of the run seed and the
@@ -229,6 +229,7 @@ class Simulator:
             actor_role=actor_role,
             request_id=request_id,
             world=self._active_world(),
+            freeze_after=bool(payload.get("freeze_after")),
         )
         self._minute_budget = 0.0
         return result
