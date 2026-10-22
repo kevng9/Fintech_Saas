@@ -196,6 +196,7 @@ ANCHOR_FACT_TABLES: tuple[TableSpec, ...] = (
             "human_disposition",
             "confirmed_loss",
             "notes",
+            "notes_embedding",
             "scenario_id",
         ),
         id_column="case_id",

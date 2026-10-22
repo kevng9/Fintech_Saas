@@ -8,7 +8,7 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "None of the **15** card_testing cases is still open; every one has a human disposition.\n\n- **7** confirmed fraud and **8** legitimate.\n- Across all fraud types, **3** cases are open: FCASE-A3B-000002, FCASE-A3B-000004, and FCASE-A3B-000014.\n\nNo card-testing case is waiting on an investigator.",
+      "text": "None of the **18** card_testing cases is still open; every one has a human disposition.\n\n- **7** confirmed fraud and **11** legitimate.\n- Across all fraud types, **3** cases are open: FCASE-A3B-000002, FCASE-A3B-000004, and FCASE-A3B-000014.\n\nNo card-testing case is waiting on an investigator.",
       "sql": {
         "command": "SELECT human_disposition, COUNT(*) AS cases\nFROM aa_fraud_case_review\nWHERE fraud_type = 'card_testing'\nGROUP BY human_disposition",
         "confidence_score": 0.9,
@@ -28,7 +28,7 @@
           ],
           [
             "legitimate",
-            8
+            11
           ]
         ],
         "row_count": 2,

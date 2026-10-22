@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
 
   // There are lockfiles above this directory on some machines, and an inferred
   // root outside the repository would trace the wrong files into the standalone
-  // build.
+  // build. Next.js requires this to match outputFileTracingRoot.
   turbopack: { root: path.join(__dirname, "..") },
   outputFileTracingRoot: path.join(__dirname, ".."),
 

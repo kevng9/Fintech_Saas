@@ -11,7 +11,7 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "My answer has changed since the last run: **card testing on card-not-present** is now the highest-loss segment at **$2,500**, ahead of ATM first-party fraud at $1,519.75.\n\n- The segment had no confirmed loss before; **12** cases arrived in the last few minutes and investigators confirmed **5** as fraud.\n- Its false-positive rate is **58.33%** (7 of 12 dispositioned cases were legitimate).\n- Total confirmed loss rose from $3,792.91 to **$6,292.91**.\n\nA new segment overtaking the ranking within minutes is worth an investigator's attention; the next step is to see what separates its confirmed fraud from its false positives. Amounts are normalized to US dollars.",
+      "text": "My answer has changed since the last run: **card testing on card-not-present** is now the highest-loss segment at **$2,581.34**, ahead of first-party fraud on card-not-present at $595.18.\n\n- The segment held only $81.34 of confirmed loss before; **12** cases arrived in the last few minutes and investigators confirmed **5** of them as fraud, adding **$2,500.00**.\n- Its false-positive rate is **61.11%** (11 of 18 dispositioned cases were legitimate).\n- Total confirmed loss rose from $999.19 to **$3,499.19**.\n\nA segment jumping to the top within minutes is worth an investigator's attention; the next step is to see what separates its confirmed fraud from its false positives. Amounts are normalized to US dollars.",
       "sql": {
         "command": "SELECT channel, fraud_type, cases_total, confirmed_fraud_cases, confirmed_loss_usd, false_positive_rate\nFROM aa_fraud_loss_summary\nORDER BY confirmed_loss_usd DESC",
         "confidence_score": 0.9,
@@ -32,53 +32,61 @@
           [
             "card_not_present",
             "card_testing",
-            12,
-            5,
-            2500.0,
-            0.5833
+            18,
+            7,
+            2581.34,
+            0.6111
           ],
           [
-            "atm",
+            "card_not_present",
             "first_party",
             2,
-            2,
-            1519.75,
-            0.0
+            1,
+            595.18,
+            0.5
           ],
           [
-            "card_present",
-            "card_testing",
+            "online_banking",
+            "synthetic_identity",
+            2,
             1,
-            1,
-            840.84,
-            0.0
+            175.44,
+            0.5
           ],
           [
             "card_not_present",
             "account_takeover",
+            5,
             1,
-            1,
-            526.16,
-            0.0
+            76.28,
+            0.75
           ],
           [
-            "card_not_present",
-            "first_party",
+            "card_present",
+            "synthetic_identity",
             3,
             1,
-            524.86,
+            70.95,
             0.6667
           ],
           [
-            "atm",
-            "card_testing",
+            "online_banking",
+            "account_takeover",
+            2,
+            0,
+            0.0,
+            null
+          ],
+          [
+            "card_present",
+            "first_party",
             1,
-            1,
-            381.3,
-            0.0
+            0,
+            0.0,
+            1.0
           ]
         ],
-        "row_count": 6,
+        "row_count": 7,
         "truncated": false
       },
       "chart": null,

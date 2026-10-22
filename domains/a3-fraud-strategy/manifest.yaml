@@ -8,7 +8,7 @@
 
 anchor: a3
 domain_name: a3_fraud_strategy
-context_version: 1.4.0
+context_version: 1.6.0
 fixture_version: 1.0.0
 validated_at: null
 database: fintech_demo
@@ -27,7 +27,7 @@ tables:
       and false-positive questions.
     grain: channel x fraud type
     columns:
-      channel: Transaction channel. One of card_not_present, card_present, atm, online_banking.
+      channel: Transaction channel. One of card_not_present, card_present, online_banking.
       fraud_type: Fraud typology. One of account_takeover, card_testing, synthetic_identity, first_party.
       cases_total: All cases opened for the group, regardless of disposition.
       confirmed_fraud_cases: Cases with human_disposition = confirmed_fraud.
@@ -78,7 +78,10 @@ tables:
         device_mismatch, geo_anomaly (location unusual for the customer),
         cvv_retry (repeated security-code failures), and known_bad_device.
         Filter with JSON_ARRAY_CONTAINS_STRING(reason_codes, 'velocity_breach').
-        Count by code with JOIN TABLE(JSON_TO_ARRAY(reason_codes)).
+        JSON_TO_ARRAY is table-valued. Never use it in SELECT, WHERE, GROUP BY,
+        ORDER BY, or an aggregate; SingleStore error 1994 rejects that shape.
+        Count by code only with JOIN TABLE(JSON_TO_ARRAY(e.reason_codes)) rc
+        and TRIM(BOTH '"' FROM rc.table_col) AS reason_code.
       merchant_id: Synthetic merchant identifier on the flagged transaction.
       merchant_name: Merchant on the flagged transaction.
       merchant_category: Merchant category.
@@ -96,6 +99,57 @@ tables:
       human_disposition: One of open, confirmed_fraud, legitimate.
       confirmed_loss_usd: Confirmed loss on the case, normalized to US dollars. Zero unless confirmed_fraud.
 
+  - name: aa_fraud_case_notes
+    description: >-
+      Investigator notes with their embedding vectors, for finding cases whose
+      observed behavior is similar to a reference case.
+    grain: one row per fraud case
+    columns:
+      case_id: Synthetic case identifier.
+      channel: Transaction channel.
+      fraud_type: Fraud typology.
+      human_disposition: One of open, confirmed_fraud, legitimate.
+      confirmed_loss_usd: Confirmed loss on the case, normalized to US dollars. Zero unless confirmed_fraud.
+      notes: Free-text investigator notes describing observed behavior.
+      notes_embedding: >-
+        VECTOR(384, F32) embedding of the observed-behavior part of the notes,
+        never the outcome. Vectors are unit length, so
+        DOT_PRODUCT(a.notes_embedding, b.notes_embedding) is cosine similarity
+        between 0 and 1. Never select the raw vector; select the similarity.
+        Never load the reference vector with a scalar subquery such as
+        (SELECT notes_embedding FROM aa_fraud_case_notes WHERE case_id = ...).
+        SingleStore error 1749 rejects that inside ORDER BY or GROUP BY.
+        Join the reference row instead.
+
+  - name: aa_fraud_alert_timeline
+    description: >-
+      One row per fraud alert with its timestamp, for alert velocity over time
+      by device. Use for questions about bursts or alerts per time window.
+    grain: one row per fraud alert
+    columns:
+      alert_id: Alert identifier.
+      case_id: Case opened from the alert, or null if no case was opened.
+      device_id: Synthetic device identifier on the alert.
+      channel: Transaction channel.
+      fraud_type: Fraud typology.
+      created_at: Logical time the alert fired.
+      score: Alert risk score. Already a ratio between 0 and 1.
+      reason_codes: JSON array of the reasons the alert fired. Same rules as in aa_fraud_segment_evidence.
+
+  - name: aa_fraud_device_velocity
+    description: >-
+      Exact peak alert count in any rolling 10-minute interval per device,
+      calculated only from alerts at or before the active run's logical time.
+      Use this instead of fixed TIME_BUCKET intervals when a question says
+      "any 10-minute window."
+    grain: one row per device
+    columns:
+      device_id: Synthetic device identifier.
+      peak_alerts_10m: >-
+        Maximum alerts in any rolling 10-minute interval ending no later than
+        through_logical_time. This is not a clock-aligned bucket.
+      through_logical_time: Logical-time cutoff applied to every counted alert.
+
 relationships:
   - from: aa_fraud_case_review
     to: aa_fraud_loss_summary
@@ -107,6 +161,24 @@ relationships:
     join: case_id
     cardinality: one-to-one
     note: The evidence row is the supporting detail for exactly one case.
+  - from: aa_fraud_case_notes
+    to: aa_fraud_segment_evidence
+    join: case_id
+    cardinality: one-to-one
+    note: The note embedding for the same case.
+  - from: aa_fraud_alert_timeline
+    to: aa_fraud_segment_evidence
+    join: device_id
+    cardinality: many-to-many
+    note: >-
+      Every alert on the device behind a case. Aggregate the timeline per
+      device first, then join, so case rows are not duplicated.
+  - from: aa_fraud_device_velocity
+    to: aa_fraud_segment_evidence
+    join: device_id
+    cardinality: one-to-many
+    note: >-
+      One live rolling-window velocity metric for the device behind each case.
 
 metric_definitions:
   confirmed_loss: >-
@@ -151,6 +223,31 @@ instructions: |
   them as percentages with two decimals.
   Always aggregate value using the *_usd columns, and say that amounts are
   normalized to US dollars.
+  reason_codes is a JSON array. JSON_TO_ARRAY returns a table, not a value.
+  Never use JSON_TO_ARRAY in SELECT, WHERE, GROUP BY, ORDER BY, or an aggregate.
+  To test one code, use JSON_ARRAY_CONTAINS_STRING(e.reason_codes, 'code').
+  To count every code, join it as a table:
+  JOIN TABLE(JSON_TO_ARRAY(e.reason_codes)) rc
+  and select TRIM(BOTH '"' FROM rc.table_col) AS reason_code.
+  For similar cases, join aa_fraud_case_notes n to aa_fraud_case_notes ref
+  ON ref.case_id = '<reference case id>' and rank by
+  DOT_PRODUCT(n.notes_embedding, ref.notes_embedding) DESC, excluding the
+  reference itself. Never write (SELECT notes_embedding ...) inside DOT_PRODUCT,
+  ORDER BY, or GROUP BY; SingleStore error 1749 rejects that scalar subselect.
+  Report similarity, never the vector.
+  For a fixed, clock-aligned 10-minute bucket, use TIME_BUCKET('10m',
+  created_at) on aa_fraud_alert_timeline. For the peak in any rolling
+  10-minute interval, do not use TIME_BUCKET. Join aa_fraud_device_velocity on
+  device_id and use peak_alerts_10m. The view has already applied
+  through_logical_time as the cutoff.
+  When one question asks for note similarity, JSON reason codes, and a
+  rolling 10-minute device peak together, independently build one short query.
+  Join aa_fraud_case_notes n to a one-row aa_fraud_case_notes ref, then join
+  aa_fraud_segment_evidence e on case_id and aa_fraud_device_velocity v on
+  device_id. Rank by DOT_PRODUCT(n.notes_embedding, ref.notes_embedding),
+  select e.reason_codes and v.peak_alerts_10m, and calculate the requested
+  window totals. Do not reconstruct the rolling interval from the timeline in
+  this query. Do not stop before the final ORDER BY.
   When evidence is incomplete, say what is missing.
   When asked what to change, suggest candidate rule adjustments for the fraud
   strategy team to review and test, state how many cases the pattern rests

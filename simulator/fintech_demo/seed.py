@@ -329,6 +329,16 @@ _EXPLICITLY_CLONED_TABLES = frozenset(
     {"dim_processor", "dim_merchant", "dim_customer", "dim_account", "payment_event"}
 )
 
+# These columns store payment_event.payment_id. The payment clone rewrites
+# PAY-<template run>-<sequence> to the new run, so a straight copy would point
+# at payments that do not exist on the new run and the fraud, AML, and dispute
+# joins would return no rows.
+_PAYMENT_ID_REWRITES = (
+    ("fraud_alert", "payment_id"),
+    ("aml_alert_transaction", "payment_id"),
+    ("dispute_case", "payment_id"),
+)
+
 
 def clone_template_into(cursor, new_run_id: int) -> dict[str, int]:
     counts: dict[str, int] = {}
@@ -400,7 +410,21 @@ def clone_template_into(cursor, new_run_id: int) -> dict[str, int]:
         if spec.name in _EXPLICITLY_CLONED_TABLES or spec.name not in present:
             continue
         counts[spec.name] = _generic_clone(cursor, spec, new_run_id)
+    _rewrite_cloned_payment_ids(cursor, new_run_id, present)
     return counts
+
+
+def _rewrite_cloned_payment_ids(cursor, new_run_id: int, present: set[str]) -> None:
+    """Point cloned payment references at this run's rewritten payment ids."""
+    for table, column in _PAYMENT_ID_REWRITES:
+        if table not in present:
+            continue
+        cursor.execute(
+            f"UPDATE {table} "
+            f"SET {column} = CONCAT('PAY-', %s, '-', SUBSTRING_INDEX({column}, '-', -1)) "
+            f"WHERE run_id = %s AND {column} LIKE 'PAY-{TEMPLATE_RUN_ID}-%%'",
+            (new_run_id, new_run_id),
+        )
 
 
 def reset(

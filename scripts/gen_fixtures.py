@@ -469,12 +469,25 @@ A3_LOSS_SQL = (
     "false_positive_rate\nFROM aa_fraud_loss_summary\nORDER BY confirmed_loss_usd DESC"
 )
 A3_LOSS_COLUMNS = ["channel", "fraud_type", "cases_total", "confirmed_fraud_cases", "confirmed_loss_usd", "false_positive_rate"]
+A3_LOSS_ROWS_BASELINE_TAIL = [
+    ["card_not_present", "first_party", 2, 1, 595.18, 0.5],
+    ["online_banking", "synthetic_identity", 2, 1, 175.44, 0.5],
+]
+A3_LOSS_ROWS_BASELINE_REST = [
+    ["card_not_present", "account_takeover", 5, 1, 76.28, 0.75],
+    ["card_present", "synthetic_identity", 3, 1, 70.95, 0.6667],
+    ["online_banking", "account_takeover", 2, 0, 0.00, None],
+    ["card_present", "first_party", 1, 0, 0.00, 1.0],
+]
 A3_LOSS_ROWS_BASELINE = [
-    ["atm", "first_party", 2, 2, 1519.75, 0.0],
-    ["card_present", "card_testing", 1, 1, 840.84, 0.0],
-    ["card_not_present", "account_takeover", 1, 1, 526.16, 0.0],
-    ["card_not_present", "first_party", 3, 1, 524.86, 0.6667],
-    ["atm", "card_testing", 1, 1, 381.30, 0.0],
+    *A3_LOSS_ROWS_BASELINE_TAIL,
+    ["card_not_present", "card_testing", 6, 2, 81.34, 0.6667],
+    *A3_LOSS_ROWS_BASELINE_REST,
+]
+A3_LOSS_ROWS_AFTER = [
+    ["card_not_present", "card_testing", 18, 7, 2581.34, 0.6111],
+    *A3_LOSS_ROWS_BASELINE_TAIL,
+    *A3_LOSS_ROWS_BASELINE_REST,
 ]
 A3_PATTERN_SQL = (
     "SELECT human_disposition, COUNT(*) AS cases,\n"
@@ -507,11 +520,12 @@ a3_starters = [
         "baseline",
         [
             result(
-                "Over the seven baseline days, **ATM first-party fraud** leads investigator-confirmed "
-                "loss at **$1,519.75** from 2 confirmed cases.\n\n"
-                "- Total confirmed loss: **$3,792.91** across **21** cases.\n"
+                "Over the seven baseline days, **first-party fraud on card-not-present** leads "
+                "investigator-confirmed loss at **$595.18**, from a single confirmed case.\n\n"
+                "- Total confirmed loss: **$999.19** across **21** cases.\n"
                 "- Overall false-positive rate: **66.67%** (12 legitimate of 18 dispositioned cases).\n"
-                "- No segment has more than **2** confirmed cases.\n\n"
+                "- No segment has more than **2** confirmed cases, and most confirmed losses are "
+                "under $100.\n\n"
                 "Loss is spread thinly across segments, so no single cluster stands out yet. Amounts "
                 "are normalized to US dollars.",
                 sql=A3_LOSS_SQL,
@@ -530,19 +544,20 @@ a3_starters = [
         [
             result(
                 "My answer has changed since the last run: **card testing on card-not-present** is "
-                "now the highest-loss segment at **$2,500**, ahead of ATM first-party fraud at "
-                "$1,519.75.\n\n"
-                "- The segment had no confirmed loss before; **12** cases arrived in the last few "
-                "minutes and investigators confirmed **5** as fraud.\n"
-                "- Its false-positive rate is **58.33%** (7 of 12 dispositioned cases were legitimate).\n"
-                "- Total confirmed loss rose from $3,792.91 to **$6,292.91**.\n\n"
-                "A new segment overtaking the ranking within minutes is worth an investigator's "
-                "attention; the next step is to see what separates its confirmed fraud from its "
-                "false positives. Amounts are normalized to US dollars.",
+                "now the highest-loss segment at **$2,581.34**, ahead of first-party fraud on "
+                "card-not-present at $595.18.\n\n"
+                "- The segment held only $81.34 of confirmed loss before; **12** cases arrived in "
+                "the last few minutes and investigators confirmed **5** of them as fraud, adding "
+                "**$2,500.00**.\n"
+                "- Its false-positive rate is **61.11%** (11 of 18 dispositioned cases were legitimate).\n"
+                "- Total confirmed loss rose from $999.19 to **$3,499.19**.\n\n"
+                "A segment jumping to the top within minutes is worth an investigator's attention; "
+                "the next step is to see what separates its confirmed fraud from its false "
+                "positives. Amounts are normalized to US dollars.",
                 sql=A3_LOSS_SQL,
                 tables_used=["aa_fraud_loss_summary"],
                 columns=A3_LOSS_COLUMNS,
-                rows=[["card_not_present", "card_testing", 12, 5, 2500.00, 0.5833], *A3_LOSS_ROWS_BASELINE],
+                rows=A3_LOSS_ROWS_AFTER,
             )
         ],
     ),
@@ -554,25 +569,26 @@ a3_starters = [
         "baseline",
         [
             result(
-                "The highest-loss segment, **ATM first-party fraud**, has **2** confirmed cases and "
-                "no false positives, so there is nothing to contrast yet.\n\n"
-                "- FCASE-A3B-000020: **$1,018.01**, reason code geo_anomaly, device used on 1 alert, "
-                "account 2,441 days old, Silverline Ride Markets.\n"
-                "- FCASE-A3B-000008: **$501.74**, reason code device_mismatch, device used on 1 alert, "
-                "account 678 days old, Copperfield Electronics Retail.\n\n"
-                "The two cases share no reason code, device, or merchant, and two cases are too few "
-                "to call a pattern.",
+                "The highest-loss segment, **first-party fraud on card-not-present**, has only "
+                "**2** cases: one confirmed fraud and one false positive. That is too few to call "
+                "a pattern.\n\n"
+                "- FCASE-A3B-000015 (confirmed fraud, **$595.18**): reason codes geo_anomaly and "
+                "velocity_breach, device used on 2 alerts, account 1,291 days old, Copperfield "
+                "Electronics Retail.\n"
+                "- FCASE-A3B-000021 (legitimate): reason code velocity_breach, device used on 1 "
+                "alert, account 1,118 days old, Alder Travel Markets.\n\n"
+                "Both carry velocity_breach, so that code does not tell them apart here.",
                 sql=(
-                    "SELECT case_id, reason_codes, device_id, device_alert_count, account_age_days, "
-                    "merchant_name, confirmed_loss_usd\nFROM aa_fraud_segment_evidence\n"
-                    "WHERE channel = 'atm' AND fraud_type = 'first_party'\n"
+                    "SELECT case_id, human_disposition, reason_codes, device_id, device_alert_count, "
+                    "account_age_days, merchant_name, confirmed_loss_usd\nFROM aa_fraud_segment_evidence\n"
+                    "WHERE channel = 'card_not_present' AND fraud_type = 'first_party'\n"
                     "ORDER BY confirmed_loss_usd DESC"
                 ),
                 tables_used=["aa_fraud_segment_evidence"],
-                columns=["case_id", "reason_codes", "device_id", "device_alert_count", "account_age_days", "merchant_name", "confirmed_loss_usd"],
+                columns=["case_id", "human_disposition", "reason_codes", "device_id", "device_alert_count", "account_age_days", "merchant_name", "confirmed_loss_usd"],
                 rows=[
-                    ["FCASE-A3B-000020", '["geo_anomaly"]', "DEV-0034", 1, 2441, "Silverline Ride Markets", 1018.01],
-                    ["FCASE-A3B-000008", '["device_mismatch"]', "DEV-0001", 1, 678, "Copperfield Electronics Retail", 501.74],
+                    ["FCASE-A3B-000015", "confirmed_fraud", '["geo_anomaly", "velocity_breach"]', "DEV-0007", 2, 1291, "Copperfield Electronics Retail", 595.18],
+                    ["FCASE-A3B-000021", "legitimate", '["velocity_breach"]', "DEV-0039", 1, 1118, "Alder Travel Markets", 0.00],
                 ],
             )
         ],
@@ -585,27 +601,26 @@ a3_starters = [
         "after_injection",
         [
             result(
-                "In **card testing on card-not-present**, reason codes and device reuse separate "
-                "confirmed fraud from false positives cleanly: all **5** confirmed cases carry "
-                "velocity_breach and share **one device**, while all **7** false positives were "
-                "flagged on geo_anomaly alone.\n\n"
-                "- Confirmed fraud: **5 of 5** carry velocity_breach and cvv_retry; one device "
-                "appears on all **5** alerts; accounts average **1,645.4** days old.\n"
-                "- False positives: **7 of 7** carry only geo_anomaly; **7** different devices, none "
-                "on more than **2** alerts; accounts average **760.9** days old.\n"
-                "- Merchant does not separate them: all 12 are Electronics merchants, with 3 of the "
-                "5 confirmed cases at Harbor Electronics Retail and 4 of the 7 false positives at "
-                "Brightside Electronics Direct.\n\n"
-                "Rapid repeat attempts from one device on established accounts fit a card-testing "
-                "pattern rather than new-account fraud, and location alone flagged only legitimate "
-                "purchases here. This rests on 12 cases from one burst, so an investigator should "
-                "confirm it against a longer window.",
+                "In **card testing on card-not-present**, no single signal separates confirmed fraud "
+                "from false positives, but two together do: velocity plus a reused device.\n\n"
+                "- Confirmed fraud (**7** cases, $2,581.34): **7 of 7** carry velocity_breach and "
+                "none carry geo_anomaly. One device, **DEV-0008**, appears on **5** of them; "
+                "accounts average **1,559.7** days old.\n"
+                "- False positives (**11** cases): **4** also carry velocity_breach, so velocity "
+                "alone is not enough. **7** were flagged on geo_anomaly alone, and every one was "
+                "legitimate. They use **10** different devices, none on more than **2** alerts; "
+                "accounts average **1,106.6** days old.\n"
+                "- Merchant does not separate them: the burst cases on both sides are at "
+                "Electronics merchants.\n\n"
+                "Repeated attempts from one device on established accounts fit card testing rather "
+                "than new-account fraud. Most of these cases come from one burst, so an "
+                "investigator should confirm the pattern against a longer window.",
                 sql=A3_PATTERN_SQL,
                 tables_used=["aa_fraud_segment_evidence"],
                 columns=A3_PATTERN_COLUMNS,
                 rows=[
-                    ["confirmed_fraud", 5, 5, 0, 1, 5, 1645.4, 2500.00],
-                    ["legitimate", 7, 0, 7, 7, 2, 760.9, 0.00],
+                    ["confirmed_fraud", 7, 7, 0, 3, 5, 1559.7, 2581.34],
+                    ["legitimate", 11, 4, 7, 10, 2, 1106.6, 0.00],
                 ],
             )
         ],
@@ -619,29 +634,29 @@ a3_starters = [
         [
             result(
                 "The **12** highest-loss cases are ranked below by confirmed loss, then alert score; "
-                "the largest is **FCASE-A3B-000020** at **$1,018.01**.\n\n"
-                "- The five card-testing burst cases (FCASE-A3LC-000 to -004) are **$500** each and "
-                "rank behind five larger baseline losses.\n"
+                "the largest is **FCASE-A3LC-003** at **$601.22**.\n\n"
+                "- Five of the top six are the card-testing burst (FCASE-A3LC-000 to -004), "
+                "between $412.37 and $601.22 each.\n"
                 "- **3** cases are still open and need a disposition: FCASE-A3B-000002, "
                 "FCASE-A3B-000004, and FCASE-A3B-000014.\n\n"
-                "Ranking by loss favors single large cases; ranking by segment surfaces the burst "
-                "sooner. Dispositions stay with fraud investigators.",
+                "Ranking by loss favors single large cases; ranking by segment shows the burst as "
+                "one problem. Dispositions stay with fraud investigators.",
                 sql=A3_REVIEW_SQL,
                 tables_used=["aa_fraud_case_review"],
                 columns=["case_id", "fraud_type", "channel", "score", "human_disposition", "confirmed_loss_usd"],
                 rows=[
-                    ["FCASE-A3B-000020", "first_party", "atm", 0.723, "confirmed_fraud", 1018.01],
-                    ["FCASE-A3B-000007", "card_testing", "card_present", 0.9405, "confirmed_fraud", 840.84],
-                    ["FCASE-A3B-000005", "account_takeover", "card_not_present", 0.4028, "confirmed_fraud", 526.16],
-                    ["FCASE-A3B-000006", "first_party", "card_not_present", 0.4119, "confirmed_fraud", 524.86],
-                    ["FCASE-A3B-000008", "first_party", "atm", 0.6932, "confirmed_fraud", 501.74],
-                    ["FCASE-A3LC-004", "card_testing", "card_not_present", 0.87, "confirmed_fraud", 500.00],
-                    ["FCASE-A3LC-003", "card_testing", "card_not_present", 0.79, "confirmed_fraud", 500.00],
-                    ["FCASE-A3LC-002", "card_testing", "card_not_present", 0.71, "confirmed_fraud", 500.00],
-                    ["FCASE-A3LC-001", "card_testing", "card_not_present", 0.63, "confirmed_fraud", 500.00],
-                    ["FCASE-A3LC-000", "card_testing", "card_not_present", 0.55, "confirmed_fraud", 500.00],
-                    ["FCASE-A3B-000015", "card_testing", "atm", 0.3921, "confirmed_fraud", 381.30],
-                    ["FCASE-A3B-000003", "synthetic_identity", "atm", 0.9747, "legitimate", 0.00],
+                    ["FCASE-A3LC-003", "card_testing", "card_not_present", 0.79, "confirmed_fraud", 601.22],
+                    ["FCASE-A3B-000015", "first_party", "card_not_present", 0.3921, "confirmed_fraud", 595.18],
+                    ["FCASE-A3LC-001", "card_testing", "card_not_present", 0.63, "confirmed_fraud", 538.90],
+                    ["FCASE-A3LC-002", "card_testing", "card_not_present", 0.71, "confirmed_fraud", 487.15],
+                    ["FCASE-A3LC-004", "card_testing", "card_not_present", 0.87, "confirmed_fraud", 460.36],
+                    ["FCASE-A3LC-000", "card_testing", "card_not_present", 0.55, "confirmed_fraud", 412.37],
+                    ["FCASE-A3B-000008", "synthetic_identity", "online_banking", 0.6932, "confirmed_fraud", 175.44],
+                    ["FCASE-A3B-000005", "account_takeover", "card_not_present", 0.4028, "confirmed_fraud", 76.28],
+                    ["FCASE-A3B-000006", "synthetic_identity", "card_present", 0.4119, "confirmed_fraud", 70.95],
+                    ["FCASE-A3B-000007", "card_testing", "card_not_present", 0.9405, "confirmed_fraud", 46.26],
+                    ["FCASE-A3B-000020", "card_testing", "card_not_present", 0.723, "confirmed_fraud", 35.08],
+                    ["FCASE-A3B-000003", "account_takeover", "card_not_present", 0.9747, "legitimate", 0.00],
                 ],
             )
         ],
@@ -654,18 +669,18 @@ a3_starters = [
         "after_injection",
         [
             result(
-                "In card testing on card-not-present, **velocity_breach** appears on all **5** "
-                "confirmed fraud cases and none of the 7 false positives, while **geo_anomaly** "
-                "flagged all **7** false positives and no confirmed fraud.\n\n"
-                "- velocity_breach: **5** confirmed fraud, **0** false positives.\n"
-                "- cvv_retry: **5** confirmed fraud, **0** false positives.\n"
+                "In card testing on card-not-present, **geo_anomaly** flagged **7** cases and every "
+                "one was legitimate, while **velocity_breach** caught all **7** confirmed fraud cases "
+                "but also **4** legitimate ones.\n\n"
+                "- velocity_breach: **7** confirmed fraud, **4** false positives.\n"
+                "- cvv_retry: **6** confirmed fraud, **1** false positive.\n"
                 "- geo_anomaly: **0** confirmed fraud, **7** false positives.\n\n"
                 "Two candidates for your fraud strategy team to test: raise case priority when "
-                "velocity_breach fires on a device already linked to other alerts, and test "
-                "whether a geo_anomaly alert with no other reason code could go to step-up "
-                "authentication instead of a case. This rests on 12 cases from one burst, so "
-                "back-test both against a longer window before changing a rule. I have not "
-                "changed any rule.",
+                "velocity_breach and cvv_retry fire together on a device already linked to other "
+                "alerts, and test whether a geo_anomaly alert with no other reason code could go to "
+                "step-up authentication instead of a case. This rests on 18 cases, most from one "
+                "burst, so back-test both against a longer window before changing a rule. I have "
+                "not changed any rule.",
                 sql=(
                     "SELECT TRIM(BOTH '\"' FROM rc.table_col) AS reason_code,\n"
                     "  SUM(e.human_disposition = 'confirmed_fraud') AS confirmed_fraud_cases,\n"
@@ -678,8 +693,8 @@ a3_starters = [
                 tables_used=["aa_fraud_segment_evidence"],
                 columns=["reason_code", "confirmed_fraud_cases", "false_positive_cases"],
                 rows=[
-                    ["velocity_breach", 5, 0],
-                    ["cvv_retry", 5, 0],
+                    ["velocity_breach", 7, 4],
+                    ["cvv_retry", 6, 1],
                     ["geo_anomaly", 0, 7],
                 ],
             )
@@ -689,10 +704,10 @@ a3_starters = [
 a3_answers = {
     "baseline_kpi": dict(
         text=(
-            "In the last 24 logical hours, investigator-confirmed fraud loss is **$3,518.01** and "
+            "In the last 24 logical hours, investigator-confirmed fraud loss is **$2,535.08** and "
             "the false-positive rate is **60.00%**.\n\n"
             "- **15** cases opened: **6** confirmed fraud and **9** legitimate.\n"
-            "- **$2,500** of the loss comes from the card-testing burst on card-not-present.\n\n"
+            "- **$2,500.00** of the loss comes from the card-testing burst on card-not-present.\n\n"
             "The window runs back 24 hours from the latest case. Amounts are normalized to US "
             "dollars, and chargeback-settled loss arrives later and is not included."
         ),
@@ -705,14 +720,15 @@ a3_answers = {
         ),
         tables_used=["aa_fraud_case_review"],
         columns=["confirmed_loss_usd", "false_positive_rate"],
-        rows=[[3518.01, 0.6]],
+        rows=[[2535.08, 0.6]],
     ),
     "comparison": dict(
         text=(
-            "**Card testing on card-not-present** leads confirmed loss at **$2,500** "
-            "(**39.73%** of the total), ahead of ATM first-party fraud at **$1,519.75** (24.15%).\n\n"
-            "- Total confirmed loss: **$6,292.91**.\n"
-            "- The top two segments hold **63.88%** of all confirmed loss.\n\n"
+            "**Card testing on card-not-present** leads confirmed loss at **$2,581.34** "
+            "(**73.77%** of the total), ahead of first-party fraud on card-not-present at "
+            "**$595.18** (17.01%).\n\n"
+            "- Total confirmed loss: **$3,499.19**.\n"
+            "- The top two segments hold **90.78%** of all confirmed loss.\n\n"
             "The leading segment is new in the last few minutes, so its share reflects one burst "
             "rather than a long-run trend. Amounts are normalized to US dollars."
         ),
@@ -724,24 +740,23 @@ a3_answers = {
         tables_used=["aa_fraud_loss_summary"],
         columns=["channel", "fraud_type", "confirmed_loss_usd", "share_of_loss"],
         rows=[
-            ["card_not_present", "card_testing", 2500.00, 0.3973],
-            ["atm", "first_party", 1519.75, 0.2415],
-            ["card_present", "card_testing", 840.84, 0.1336],
-            ["card_not_present", "account_takeover", 526.16, 0.0836],
-            ["card_not_present", "first_party", 524.86, 0.0834],
-            ["atm", "card_testing", 381.30, 0.0606],
+            ["card_not_present", "card_testing", 2581.34, 0.7377],
+            ["card_not_present", "first_party", 595.18, 0.1701],
+            ["online_banking", "synthetic_identity", 175.44, 0.0501],
+            ["card_not_present", "account_takeover", 76.28, 0.0218],
+            ["card_present", "synthetic_identity", 70.95, 0.0203],
         ],
     ),
     "multi_table_drilldown": dict(
         text=(
-            "The highest-loss fraud type is **card_testing** at **$3,722.14** across 7 confirmed "
-            "cases.\n\n"
-            "- Five cases on card-not-present share device **DEV-0008**, which appears on **5** "
-            "alerts, and every one carries velocity_breach.\n"
-            "- The two remaining cases, FCASE-A3B-000007 ($840.84) and FCASE-A3B-000015 ($381.30), "
-            "use devices seen on at most **2** alerts and have no velocity_breach.\n\n"
-            "Device reuse and velocity evidence concentrate in the card-not-present burst; the "
-            "two older cases look unrelated to it."
+            "The highest-loss fraud type is **card_testing** at **$2,581.34** across 7 confirmed "
+            "cases, all on card-not-present.\n\n"
+            "- Five cases share device **DEV-0008**, which appears on **5** alerts, and every one "
+            "carries velocity_breach. Together they lost **$2,500.00**.\n"
+            "- The two baseline cases, FCASE-A3B-000007 ($46.26) and FCASE-A3B-000020 ($35.08), "
+            "also carry velocity_breach but use devices seen on at most **2** alerts.\n\n"
+            "Velocity is common to all seven; the shared device is what marks the burst as one "
+            "attacker."
         ),
         sql=(
             "SELECT r.case_id, r.channel, r.confirmed_loss_usd, e.device_id, e.device_alert_count,\n"
@@ -754,20 +769,20 @@ a3_answers = {
         tables_used=["aa_fraud_case_review", "aa_fraud_segment_evidence"],
         columns=["case_id", "channel", "confirmed_loss_usd", "device_id", "device_alert_count", "velocity_breach"],
         rows=[
-            ["FCASE-A3B-000007", "card_present", 840.84, "DEV-0017", 1, 0],
-            ["FCASE-A3LC-004", "card_not_present", 500.00, "DEV-0008", 5, 1],
-            ["FCASE-A3LC-003", "card_not_present", 500.00, "DEV-0008", 5, 1],
-            ["FCASE-A3LC-002", "card_not_present", 500.00, "DEV-0008", 5, 1],
-            ["FCASE-A3LC-001", "card_not_present", 500.00, "DEV-0008", 5, 1],
-            ["FCASE-A3LC-000", "card_not_present", 500.00, "DEV-0008", 5, 1],
-            ["FCASE-A3B-000015", "atm", 381.30, "DEV-0007", 2, 0],
+            ["FCASE-A3LC-003", "card_not_present", 601.22, "DEV-0008", 5, 1],
+            ["FCASE-A3LC-001", "card_not_present", 538.90, "DEV-0008", 5, 1],
+            ["FCASE-A3LC-002", "card_not_present", 487.15, "DEV-0008", 5, 1],
+            ["FCASE-A3LC-004", "card_not_present", 460.36, "DEV-0008", 5, 1],
+            ["FCASE-A3LC-000", "card_not_present", 412.37, "DEV-0008", 5, 1],
+            ["FCASE-A3B-000007", "card_not_present", 46.26, "DEV-0017", 1, 1],
+            ["FCASE-A3B-000020", "card_not_present", 35.08, "DEV-0034", 2, 1],
         ],
     ),
     "session_followup": dict(
         text=(
-            "None of the **15** card_testing cases is still open; every one has a human "
+            "None of the **18** card_testing cases is still open; every one has a human "
             "disposition.\n\n"
-            "- **7** confirmed fraud and **8** legitimate.\n"
+            "- **7** confirmed fraud and **11** legitimate.\n"
             "- Across all fraud types, **3** cases are open: FCASE-A3B-000002, FCASE-A3B-000004, "
             "and FCASE-A3B-000014.\n\n"
             "No card-testing case is waiting on an investigator."
@@ -778,16 +793,16 @@ a3_answers = {
         ),
         tables_used=["aa_fraud_case_review"],
         columns=["human_disposition", "cases"],
-        rows=[["confirmed_fraud", 7], ["legitimate", 8]],
+        rows=[["confirmed_fraud", 7], ["legitimate", 11]],
     ),
     "ambiguous_term": dict(
         text=(
             "\"Worst\" could mean the most confirmed loss, the most cases, or the highest "
             "false-positive rate, and fraud types rank differently on each. By loss, "
-            "**card_testing** is worst at **$3,722.14**.\n\n"
-            "- By false-positive rate, **synthetic_identity** is worst at **100.00%**: all 7 "
+            "**card_testing** is worst at **$2,581.34**.\n\n"
+            "- By false-positive rate, **account_takeover** is worst at **75.00%**: 3 of its 4 "
             "dispositioned cases were legitimate.\n"
-            "- By case count, card_testing leads with **15**.\n\n"
+            "- By case count, card_testing leads with **18**.\n\n"
             "Tell me which measure you mean and I will rank on it."
         ),
         sql=(
@@ -798,10 +813,10 @@ a3_answers = {
         tables_used=["aa_fraud_loss_summary"],
         columns=["fraud_type", "cases_total", "confirmed_loss_usd", "false_positive_rate"],
         rows=[
-            ["card_testing", 15, 3722.14, 0.5333],
-            ["first_party", 8, 2044.61, 0.5714],
-            ["account_takeover", 2, 526.16, 0.0],
-            ["synthetic_identity", 8, 0.00, 1.0],
+            ["card_testing", 18, 2581.34, 0.6111],
+            ["first_party", 3, 595.18, 0.6667],
+            ["synthetic_identity", 5, 246.39, 0.6],
+            ["account_takeover", 7, 76.28, 0.75],
         ],
     ),
     "unsupported_action": dict(

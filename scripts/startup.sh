@@ -164,6 +164,60 @@ sim_process_alive() {
   process_alive "$pid"
 }
 
+# Turbopack writes absolute paths into app/.next. After this checkout moves,
+# those paths miss node_modules/next and every page compile panics with
+# "Next.js package not found" while API routes keep returning 200.
+discard_moved_next_cache() {
+  local cache="$ROOT/app/.next"
+  [[ -d "$cache" ]] || return 0
+  local verdict
+  verdict="$("$PYTHON" - "$cache" <<'PY'
+import os
+import sys
+
+cache = sys.argv[1]
+candidates = []
+manifest = os.path.join(cache, "required-server-files.json")
+if os.path.isfile(manifest):
+    candidates.append(manifest)
+chunks = os.path.join(cache, "dev", "static", "chunks")
+if os.path.isdir(chunks):
+    maps = sorted(name for name in os.listdir(chunks) if name.endswith(".map"))
+    candidates.extend(os.path.join(chunks, name) for name in maps[:8])
+
+def next_dirs(text):
+    needle = "/node_modules/next"
+    start = 0
+    while True:
+        index = text.find(needle, start)
+        if index < 0:
+            return
+        begin = index
+        while begin > 0 and text[begin - 1] not in "\"' \n\t":
+            begin -= 1
+        if text.startswith("/", begin):
+            yield text[begin : index + len(needle)]
+        start = index + len(needle)
+
+for path in candidates:
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as handle:
+            text = handle.read(2_000_000)
+    except OSError:
+        continue
+    for directory in next_dirs(text):
+        if not os.path.isdir(directory):
+            print("stale")
+            raise SystemExit(0)
+print("ok")
+PY
+)"
+  if [[ "$verdict" == "stale" ]]; then
+    echo "Removing app/.next. It still points at a previous location of this project."
+    rm -rf "$cache"
+  fi
+}
+
 # Keep the terminal attached: stream both logs, report a process that exits,
 # and run the normal shutdown on Ctrl+C so the database returns to baseline.
 stay_attached() {
@@ -239,6 +293,7 @@ if [[ "$leader_ready" -ne 1 ]]; then
   exit 1
 fi
 
+discard_moved_next_cache
 echo "Starting the app on port ${DEMO_PORT}..."
 spawn_detached "$APP_PID_FILE" "$APP_LOG" "$ROOT/app" "$(command -v npm)" run dev -- -p "$DEMO_PORT"
 app_ready=0

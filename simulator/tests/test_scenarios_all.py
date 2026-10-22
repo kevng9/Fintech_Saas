@@ -24,6 +24,8 @@ ALL_SCENARIO_IDS = [
     "A1_REVIEW_SPIKE",
     "A2_PROCESSOR_TIMEOUT",
     "A3_LOSS_CLUSTER",
+    "A3_LIVE_CLEARS",
+    "A3_LIVE_CONFIRMS",
     "A4_CORRESPONDENT_SPIKE",
     "A5_CASE_SURGE",
     "A6_SETTLEMENT_DELAY",
@@ -162,6 +164,81 @@ def test_a3_cluster_separates_fraud_from_false_positives(world: World) -> None:
     assert len(legitimate_devices) == len(legitimate)
     assert field(confirmed[0], "device_id") not in legitimate_devices
     assert all(json.loads(field(a, "reason_codes")) == ["geo_anomaly"] for a in legitimate)
+
+
+def _assert_row_widths(batches) -> None:
+    for batch in batches:
+        width = len(TABLE_COLUMNS[batch.table])
+        assert all(len(row) == width for row in batch.rows)
+
+
+def test_a3_live_clears_approves_the_same_payment(world: World) -> None:
+    batches = scenarios.build_rows("A3_LIVE_CLEARS", world, run_id=1, start_minute=world.baseline_minutes)
+    _assert_row_widths(batches)
+    payments = scenarios.rows_for_table(batches, "payment_event")
+    alerts = scenarios.rows_for_table(batches, "fraud_alert")
+    cases = scenarios.rows_for_table(batches, "fraud_case")
+    evidence = scenarios.rows_for_table(batches, "fraud_evidence")
+
+    response_index = _column_index("payment_event", "response_code")
+    approved_index = _column_index("payment_event", "approved")
+    amount_index = _column_index("payment_event", "amount")
+    event_index = _column_index("payment_event", "event_time")
+    disposition_index = _column_index("fraud_case", "human_disposition")
+    loss_index = _column_index("fraud_case", "confirmed_loss")
+    observed_index = _column_index("fraud_evidence", "observed_at")
+
+    assert [row[response_index] for row in payments] == ["RISK_DECLINE", "APPROVED"]
+    assert [row[approved_index] for row in payments] == [0, 1]
+    assert payments[0][amount_index] == payments[1][amount_index] == pytest.approx(186.40)
+    assert payments[1][event_index] > payments[0][event_index]
+    assert cases[0][disposition_index] == "legitimate"
+    assert cases[0][loss_index] == 0
+    assert alerts[0][_column_index("fraud_alert", "payment_id")] == payments[0][1]
+    value_index = _column_index("fraud_evidence", "observed_value")
+    assert evidence[1][observed_index] > evidence[0][observed_index]
+    assert all(len(row[value_index]) <= 256 for row in evidence)
+    assert len(cases[0][_column_index("fraud_case", "notes")]) <= 512
+
+
+def test_a3_live_confirms_declines_the_later_attempts(world: World) -> None:
+    batches = scenarios.build_rows("A3_LIVE_CONFIRMS", world, run_id=1, start_minute=world.baseline_minutes)
+    _assert_row_widths(batches)
+    payments = scenarios.rows_for_table(batches, "payment_event")
+    alerts = scenarios.rows_for_table(batches, "fraud_alert")
+    cases = scenarios.rows_for_table(batches, "fraud_case")
+
+    response_index = _column_index("payment_event", "response_code")
+    approved_index = _column_index("payment_event", "approved")
+    amount_index = _column_index("payment_event", "amount")
+    event_index = _column_index("payment_event", "event_time")
+    device_index = _column_index("fraud_alert", "device_id")
+    disposition_index = _column_index("fraud_case", "human_disposition")
+    loss_index = _column_index("fraud_case", "confirmed_loss")
+    closed_index = _column_index("fraud_case", "closed_at")
+
+    assert payments[0][response_index] == "APPROVED" and payments[0][approved_index] == 1
+    assert payments[0][amount_index] == pytest.approx(2.00)
+    later = payments[1:]
+    assert [row[response_index] for row in later] == ["INVALID_CVV", "INVALID_CVV", "INVALID_CVV", "RISK_DECLINE"]
+    assert all(row[approved_index] == 0 for row in later)
+    assert later[-1][amount_index] == pytest.approx(214.60)
+    assert later[-1][event_index] - payments[0][event_index] <= timedelta(minutes=6)
+    assert len({row[device_index] for row in alerts}) == 1
+    assert len(alerts) == 4
+    assert alerts[0][_column_index("fraud_alert", "payment_id")] != payments[0][1]
+    assert cases[0][disposition_index] == "open"
+    assert cases[0][loss_index] == 0
+    assert cases[0][closed_index] is None
+
+
+def test_a3_live_scenarios_do_not_share_payment_sequences(world: World) -> None:
+    start = world.baseline_minutes
+    sequences = []
+    for scenario_id in ("A3_LOSS_CLUSTER", "A3_LIVE_CLEARS", "A3_LIVE_CONFIRMS"):
+        batches = scenarios.build_rows(scenario_id, world, run_id=1, start_minute=start)
+        sequences.extend(_values(batches, "payment_event", "sequence_no"))
+    assert len(sequences) == len(set(sequences))
 
 
 # --- A4_CORRESPONDENT_SPIKE --------------------------------------------------

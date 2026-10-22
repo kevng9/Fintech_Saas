@@ -57,7 +57,13 @@ function CapabilityCard({ anchor }: { anchor: AnchorSummaryPayload }) {
 
   return (
     <Link
-      href={anchor.id === "a2" ? "/anchors/a2?story=incident" : `/anchors/${anchor.id}?story=decision`}
+      href={
+        anchor.id === "a2"
+          ? "/anchors/a2?story=incident"
+          : anchor.id === "a3"
+            ? "/anchors/a3"
+            : `/anchors/${anchor.id}?story=decision`
+      }
       className={cardClass}
     >
       {content}

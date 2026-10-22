@@ -7,6 +7,7 @@ account identifier appears in this file or in anything generated from it.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 
 from .rng import det_choice, det_int
 
@@ -185,23 +186,27 @@ def build_merchants(seed: int) -> list[dict]:
     return merchants
 
 
-def build_customers(seed: int, epoch_year: int) -> list[dict]:
+def build_customers(seed: int, epoch: date) -> list[dict]:
     customers: list[dict] = []
     for index in range(1, CUSTOMER_COUNT + 1):
         first = det_choice(CUSTOMER_FIRST_NAMES, seed, "cust-first", index)
         last = det_choice(CUSTOMER_LAST_NAMES, seed, "cust-last", index)
         country = GEOGRAPHIES[(index - 1) % len(GEOGRAPHIES)][1]
+        start = date(
+            epoch.year - det_int(seed, "cust-tenure", index, low=0, high=8),
+            det_int(seed, "cust-month", index, low=1, high=12),
+            det_int(seed, "cust-day", index, low=1, high=28),
+        )
+        # A customer cannot join after the demo's first day.
+        if start > epoch:
+            start = start.replace(year=start.year - 1)
         customers.append(
             {
                 "customer_id": customer_id(index),
                 "synthetic_name": f"{first} {last}",
                 "segment": det_choice(CUSTOMER_SEGMENTS, seed, "cust-segment", index),
                 "region": REGION_BY_COUNTRY[country],
-                "relationship_start": "{:04d}-{:02d}-{:02d}".format(
-                    epoch_year - det_int(seed, "cust-tenure", index, low=0, high=8),
-                    det_int(seed, "cust-month", index, low=1, high=12),
-                    det_int(seed, "cust-day", index, low=1, high=28),
-                ),
+                "relationship_start": start.isoformat(),
                 "risk_tier": det_choice(RISK_TIERS, seed, "cust-risk", index),
                 "consent_scope": "demo_synthetic",
                 "country": country,

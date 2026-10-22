@@ -11,7 +11,7 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "In **card testing on card-not-present**, reason codes and device reuse separate confirmed fraud from false positives cleanly: all **5** confirmed cases carry velocity_breach and share **one device**, while all **7** false positives were flagged on geo_anomaly alone.\n\n- Confirmed fraud: **5 of 5** carry velocity_breach and cvv_retry; one device appears on all **5** alerts; accounts average **1,645.4** days old.\n- False positives: **7 of 7** carry only geo_anomaly; **7** different devices, none on more than **2** alerts; accounts average **760.9** days old.\n- Merchant does not separate them: all 12 are Electronics merchants, with 3 of the 5 confirmed cases at Harbor Electronics Retail and 4 of the 7 false positives at Brightside Electronics Direct.\n\nRapid repeat attempts from one device on established accounts fit a card-testing pattern rather than new-account fraud, and location alone flagged only legitimate purchases here. This rests on 12 cases from one burst, so an investigator should confirm it against a longer window.",
+      "text": "In **card testing on card-not-present**, no single signal separates confirmed fraud from false positives, but two together do: velocity plus a reused device.\n\n- Confirmed fraud (**7** cases, $2,581.34): **7 of 7** carry velocity_breach and none carry geo_anomaly. One device, **DEV-0008**, appears on **5** of them; accounts average **1,559.7** days old.\n- False positives (**11** cases): **4** also carry velocity_breach, so velocity alone is not enough. **7** were flagged on geo_anomaly alone, and every one was legitimate. They use **10** different devices, none on more than **2** alerts; accounts average **1,106.6** days old.\n- Merchant does not separate them: the burst cases on both sides are at Electronics merchants.\n\nRepeated attempts from one device on established accounts fit card testing rather than new-account fraud. Most of these cases come from one burst, so an investigator should confirm the pattern against a longer window.",
       "sql": {
         "command": "SELECT human_disposition, COUNT(*) AS cases,\n  SUM(JSON_ARRAY_CONTAINS_STRING(reason_codes, 'velocity_breach')) AS velocity_breach_cases,\n  SUM(JSON_ARRAY_CONTAINS_STRING(reason_codes, 'geo_anomaly')) AS geo_anomaly_cases,\n  COUNT(DISTINCT device_id) AS distinct_devices,\n  MAX(device_alert_count) AS max_device_alert_count,\n  ROUND(AVG(account_age_days), 1) AS avg_account_age_days,\n  SUM(confirmed_loss_usd) AS confirmed_loss_usd\nFROM aa_fraud_segment_evidence\nWHERE channel = 'card_not_present' AND fraud_type = 'card_testing'\n  AND human_disposition IN ('confirmed_fraud', 'legitimate')\nGROUP BY human_disposition",
         "confidence_score": 0.9,
@@ -33,22 +33,22 @@
         "rows": [
           [
             "confirmed_fraud",
-            5,
-            5,
+            7,
+            7,
             0,
-            1,
+            3,
             5,
-            1645.4,
-            2500.0
+            1559.7,
+            2581.34
           ],
           [
             "legitimate",
+            11,
+            4,
             7,
-            0,
-            7,
-            7,
+            10,
             2,
-            760.9,
+            1106.6,
             0.0
           ]
         ],

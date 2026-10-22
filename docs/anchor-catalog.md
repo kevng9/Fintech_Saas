@@ -5,9 +5,10 @@ This catalog gives presenters a consistent talk track for every anchor.
 
 ## Delivery status
 
-- **A1–A8** are available end to end: deterministic data, an atomic named
-  scenario, business-specific widgets, Analyst investigation, and source-level
-  evidence.
+- **A1–A8** are available end to end: deterministic data, a named scenario,
+  business-specific widgets, Analyst investigation, and source-level evidence.
+  A3 keeps `A3_LOSS_CLUSTER` as the story the page starts, and adds two
+  authorization decisions beside it.
 - Dashboard and fixture modes work without Aura. Live Analyst mode requires the
   corresponding separately scoped Domain and API key.
 
@@ -16,8 +17,11 @@ This catalog gives presenters a consistent talk track for every anchor.
 Every anchor follows the same five-part narrative:
 
 1. Establish normal performance against the business's own baseline.
-2. Open that role's story. The page introduces one deterministic event and
-   pauses the logical clock at the end of the window.
+2. Open that role's story. For A1 and A4 through A8 the use-case card starts
+   the event. For A2, **See a revenue-risk incident** starts it. Fraud
+   Strategy does not start on open. The presenter chooses **Start live data**,
+   which injects `A3_LOSS_CLUSTER`. The page pauses the logical clock at the
+   end of the window.
 3. Read the decision card. The measured change matches the published contract.
 4. Ask Aura Analyst the guided question for that same window.
 5. Reach source-level evidence while a named human owner retains the decision.
@@ -116,13 +120,50 @@ not as an absolute alarm level.
 
 **Planted pattern:** All 12 injected alerts are card testing on
 card-not-present. The five confirmed-fraud cases share one device and carry the
-`velocity_breach` and `cvv_retry` reason codes. The seven false positives each
-use a different device and were flagged on `geo_anomaly` alone. Before
-injection, ATM first-party fraud leads confirmed loss at $1,519.75. After it,
-card testing on card-not-present leads at $2,500, so re-asking the same
-question gives a different answer. The reason codes are a JSON array in
+`velocity_breach` and `cvv_retry` reason codes; each writes off its flagged
+purchase ($412.37 to $601.22, $2,500 in total). The seven false positives each
+use a different device and were flagged on `geo_anomaly` alone. The segment
+already holds six baseline cases, four of them legitimate cases that also
+tripped `velocity_breach`, so velocity alone does not separate fraud from false
+positives; the shared device does. Before injection, first-party fraud on
+card-not-present leads confirmed loss at $595.18. After it, card testing on
+card-not-present leads at $2,581.34, so re-asking the same question gives a
+different answer. The reason codes are a JSON array in
 `aa_fraud_segment_evidence.reason_codes`, so the generated SQL reads JSON,
 joins five tables, and aggregates in one statement.
+
+**Baseline realism:** Baseline alerts are raised only on approved payments.
+Channel follows the payment rail, fraud type is one that fits the channel,
+reason codes fit the fraud type, and confirmed loss equals the flagged payment
+amount.
+
+**One-query panel:** The A3 page shows one SQL statement that combines vector
+similarity on investigator notes (`fraud_case.notes_embedding`), a JSON read of
+the reason codes, each device's exact peak alerts in any 10-minute window
+through logical time (`aa_fraud_device_velocity`, not `TIME_BUCKET`), the
+relational joins, and window aggregation, with each part highlighted by the
+job a separate system would usually do. The statement is visible before it
+runs. **Run query** executes it through `/api/v1/anchors/a3/one-query`, and
+the matches appear only after that click. Aura Analyst does not see the vector
+column. Vectors come from the all-MiniLM-L6-v2 sentence-embedding model.
+Sentence vectors are committed with the simulator, and a note's vector is the
+normalized mean of its sentence vectors. Only the observed-behavior sentences
+are embedded, never the outcome sentence, so similarity cannot leak the label.
+Notes are written in several paraphrased forms, so matches rely on meaning
+rather than shared words.
+
+**Additional scenarios:** These sit on the same page and do not replace
+`A3_LOSS_CLUSTER`. Neither books confirmed loss.
+
+- `A3_LIVE_CLEARS` stops a $186.40 card-not-present charge that scores 0.88
+  from an unfamiliar country, then approves the same payment after the
+  customer confirms it from the phone registered to the account. The case
+  closes legitimate. The first response code is `RISK_DECLINE`, because the
+  demo has no authentication-required code. The evidence records the step-up.
+- `A3_LIVE_CONFIRMS` approves a $2 authorization, then declines three
+  security-code failures and a $214.60 charge from the same device within a
+  few minutes. Four alerts are opened and one case stays open for review.
+  Confirmed loss stays zero.
 
 **Suggested investigation:**
 

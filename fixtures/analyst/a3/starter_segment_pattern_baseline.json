@@ -11,9 +11,9 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "The highest-loss segment, **ATM first-party fraud**, has **2** confirmed cases and no false positives, so there is nothing to contrast yet.\n\n- FCASE-A3B-000020: **$1,018.01**, reason code geo_anomaly, device used on 1 alert, account 2,441 days old, Silverline Ride Markets.\n- FCASE-A3B-000008: **$501.74**, reason code device_mismatch, device used on 1 alert, account 678 days old, Copperfield Electronics Retail.\n\nThe two cases share no reason code, device, or merchant, and two cases are too few to call a pattern.",
+      "text": "The highest-loss segment, **first-party fraud on card-not-present**, has only **2** cases: one confirmed fraud and one false positive. That is too few to call a pattern.\n\n- FCASE-A3B-000015 (confirmed fraud, **$595.18**): reason codes geo_anomaly and velocity_breach, device used on 2 alerts, account 1,291 days old, Copperfield Electronics Retail.\n- FCASE-A3B-000021 (legitimate): reason code velocity_breach, device used on 1 alert, account 1,118 days old, Alder Travel Markets.\n\nBoth carry velocity_breach, so that code does not tell them apart here.",
       "sql": {
-        "command": "SELECT case_id, reason_codes, device_id, device_alert_count, account_age_days, merchant_name, confirmed_loss_usd\nFROM aa_fraud_segment_evidence\nWHERE channel = 'atm' AND fraud_type = 'first_party'\nORDER BY confirmed_loss_usd DESC",
+        "command": "SELECT case_id, human_disposition, reason_codes, device_id, device_alert_count, account_age_days, merchant_name, confirmed_loss_usd\nFROM aa_fraud_segment_evidence\nWHERE channel = 'card_not_present' AND fraud_type = 'first_party'\nORDER BY confirmed_loss_usd DESC",
         "confidence_score": 0.9,
         "tables_used": [
           "aa_fraud_segment_evidence"
@@ -22,6 +22,7 @@
       "table": {
         "columns": [
           "case_id",
+          "human_disposition",
           "reason_codes",
           "device_id",
           "device_alert_count",
@@ -31,22 +32,24 @@
         ],
         "rows": [
           [
-            "FCASE-A3B-000020",
-            "[\"geo_anomaly\"]",
-            "DEV-0034",
-            1,
-            2441,
-            "Silverline Ride Markets",
-            1018.01
+            "FCASE-A3B-000015",
+            "confirmed_fraud",
+            "[\"geo_anomaly\", \"velocity_breach\"]",
+            "DEV-0007",
+            2,
+            1291,
+            "Copperfield Electronics Retail",
+            595.18
           ],
           [
-            "FCASE-A3B-000008",
-            "[\"device_mismatch\"]",
-            "DEV-0001",
+            "FCASE-A3B-000021",
+            "legitimate",
+            "[\"velocity_breach\"]",
+            "DEV-0039",
             1,
-            678,
-            "Copperfield Electronics Retail",
-            501.74
+            1118,
+            "Alder Travel Markets",
+            0.0
           ]
         ],
         "row_count": 2,

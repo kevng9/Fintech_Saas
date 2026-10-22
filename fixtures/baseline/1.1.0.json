@@ -1,5 +1,5 @@
 {
-  "checksum": "3ba4dc448c388c12f6be5271852402666e8c7234626f1c28f8aaba9f29bf0aa6",
+  "checksum": "ece2acd93d9d54348516d8029523475cfc5c98acb4f508cefa1e6b8dd51af27f",
   "fingerprint": {
     "baseline_days": 7,
     "fixture_version": "1.1.0",
@@ -134,7 +134,7 @@
         "rows": 21
       },
       "fraud_case": {
-        "confirmed_loss_cents": 379291,
+        "confirmed_loss_cents": 99919,
         "max_id": "FCASE-A3B-000021",
         "min_id": "FCASE-A3B-000001",
         "rows": 21

@@ -71,7 +71,7 @@ class World:
         self.baseline_days = baseline_days
         self.baseline_from = epoch - timedelta(days=baseline_days)
         self.merchants = build_merchants(seed)
-        self.customers = build_customers(seed, epoch.year)
+        self.customers = build_customers(seed, epoch.date())
         self.accounts = build_accounts(self.customers)
         self._merchants_by_country = {
             country: merchants_for_country(self.merchants, country)

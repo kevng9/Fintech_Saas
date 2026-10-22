@@ -95,6 +95,35 @@ export async function analystQuery(
   });
 }
 
+/** Aura returns this while the agent container is still booting. */
+export function isInitializingContainerError(error: unknown): boolean {
+  if (!(error instanceof AnalystUpstreamError) || error.status < 500) return false;
+  const message = error.message.toLowerCase();
+  return (
+    message.includes("app is initializing") ||
+    message.includes("container initialization failed") ||
+    message.includes("initializenovacontainer")
+  );
+}
+
+function delay(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new DOMException("Aborted", "AbortError"));
+      return;
+    }
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
 /** Aura returns this when a prior chat session_id is stale or unknown. */
 export function isStaleChatSessionError(error: unknown): boolean {
   if (!(error instanceof AnalystUpstreamError)) return false;
@@ -149,16 +178,37 @@ export async function analystChat(
   includedEvents: string[]
 ): Promise<Response> {
   const { url, apiKey } = endpoint(anchorId, "/chat");
-  return withTimeout(async (signal) => {
-    try {
-      return await postChat(url, apiKey, message, sessionId, includedEvents, signal);
-    } catch (error) {
-      // A stale Aura conversation cookie/session must not poison the demo: drop
-      // the session and retry once as a fresh conversation.
-      if (!sessionId || !isStaleChatSessionError(error)) throw error;
-      return postChat(url, apiKey, message, null, includedEvents, signal);
+  let sawInitializing = false;
+  try {
+    return await withTimeout(async (signal) => {
+      let session = sessionId;
+      for (;;) {
+        try {
+          return await postChat(url, apiKey, message, session, includedEvents, signal);
+        } catch (error) {
+          // A stale Aura conversation cookie/session must not poison the demo.
+          if (session && isStaleChatSessionError(error)) {
+            session = null;
+            continue;
+          }
+          // The Nova container often 500s for a short window after the first
+          // question. Keep the presenter on "working" and try again.
+          if (!isInitializingContainerError(error)) throw error;
+          sawInitializing = true;
+          await delay(4000, signal);
+        }
+      }
+    });
+  } catch (error) {
+    if (sawInitializing && error instanceof AnalystTimeoutError) {
+      throw new AnalystUpstreamError(
+        "Aura is still starting its workspace. Wait a few seconds and ask again.",
+        500,
+        null
+      );
     }
-  });
+    throw error;
+  }
 }
 
 export async function conversationStarters(anchorId: string): Promise<RawAnalystResponse> {

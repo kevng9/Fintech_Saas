@@ -8,7 +8,7 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "\"Worst\" could mean the most confirmed loss, the most cases, or the highest false-positive rate, and fraud types rank differently on each. By loss, **card_testing** is worst at **$3,722.14**.\n\n- By false-positive rate, **synthetic_identity** is worst at **100.00%**: all 7 dispositioned cases were legitimate.\n- By case count, card_testing leads with **15**.\n\nTell me which measure you mean and I will rank on it.",
+      "text": "\"Worst\" could mean the most confirmed loss, the most cases, or the highest false-positive rate, and fraud types rank differently on each. By loss, **card_testing** is worst at **$2,581.34**.\n\n- By false-positive rate, **account_takeover** is worst at **75.00%**: 3 of its 4 dispositioned cases were legitimate.\n- By case count, card_testing leads with **18**.\n\nTell me which measure you mean and I will rank on it.",
       "sql": {
         "command": "SELECT fraud_type, SUM(cases_total) AS cases_total, SUM(confirmed_loss_usd) AS confirmed_loss_usd,\n  SUM(legitimate_cases) / NULLIF(SUM(confirmed_fraud_cases + legitimate_cases), 0) AS false_positive_rate\nFROM aa_fraud_loss_summary\nGROUP BY fraud_type\nORDER BY confirmed_loss_usd DESC",
         "confidence_score": 0.9,
@@ -26,27 +26,27 @@
         "rows": [
           [
             "card_testing",
-            15,
-            3722.14,
-            0.5333
+            18,
+            2581.34,
+            0.6111
           ],
           [
             "first_party",
-            8,
-            2044.61,
-            0.5714
-          ],
-          [
-            "account_takeover",
-            2,
-            526.16,
-            0.0
+            3,
+            595.18,
+            0.6667
           ],
           [
             "synthetic_identity",
-            8,
-            0.0,
-            1.0
+            5,
+            246.39,
+            0.6
+          ],
+          [
+            "account_takeover",
+            7,
+            76.28,
+            0.75
           ]
         ],
         "row_count": 4,

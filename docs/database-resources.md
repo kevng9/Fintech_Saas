@@ -113,8 +113,11 @@ inventory for these tables.
 - **`fraud_alert`** — one scored alert linked to a payment and optional device;
   an alert is not a fraud disposition. **Shard:** `(run_id, alert_id)`;
   **sort:** `(run_id, created_at)`.
-- **`fraud_case`** — one investigator case with human disposition and confirmed
-  loss. **Shard:** `(run_id, case_id)`; **sort:** `(run_id, opened_at)`.
+- **`fraud_case`** — one investigator case with human disposition, confirmed
+  loss, investigator notes, and `notes_embedding`, a unit-length
+  `VECTOR(384, F32)` all-MiniLM-L6-v2 embedding of the observed-behavior part
+  of the notes (never the outcome) for similar-case search.
+  **Shard:** `(run_id, case_id)`; **sort:** `(run_id, opened_at)`.
 - **`fraud_evidence`** — one observed evidence item attached to a case.
   **Shard:** `(run_id, evidence_id)`; **sort:** `(run_id, observed_at)`.
 
@@ -206,6 +209,12 @@ not attached to Domains.
   are visible through logical time.
 - **`aa_fraud_case_review`** — one case with alert and evidence counts for human
   review; cases are visible through logical time.
+- **`aa_fraud_case_notes`** — one case with investigator notes and their
+  `VECTOR(384, F32)` embedding for similarity search; through logical time.
+- **`aa_fraud_alert_timeline`** — one alert with device, timestamp, and JSON
+  reason codes for time-bucketed velocity; through logical time.
+- **`aa_fraud_device_velocity`** — one device with its exact peak alerts in
+  any rolling 10-minute interval, cut off at the active logical time.
 
 ### A4 — Financial Crime Operations
 
@@ -298,7 +307,8 @@ anchor has repository status `available`.
 
 - **Portal/source name:** `a3_fraud_strategy`
 - **Views:** `aa_fraud_loss_summary`, `aa_fraud_case_review`,
-  `aa_fraud_segment_evidence`
+  `aa_fraud_segment_evidence`, `aa_fraud_case_notes`,
+  `aa_fraud_alert_timeline`, `aa_fraud_device_velocity`
 - **Domain-scoped secret variables:** `ANALYST_A3_API_KEY`,
   `ANALYST_A3_ENDPOINT`
 - **Deployment record:** not built; key not configured; no known-question

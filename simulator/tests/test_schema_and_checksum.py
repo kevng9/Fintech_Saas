@@ -41,6 +41,9 @@ EXPECTED_VIEWS_BY_DOMAIN = {
         "aa_fraud_loss_summary",
         "aa_fraud_case_review",
         "aa_fraud_segment_evidence",
+        "aa_fraud_case_notes",
+        "aa_fraud_alert_timeline",
+        "aa_fraud_device_velocity",
     },
     "a4-aml-operations": {
         "aa_aml_backlog",

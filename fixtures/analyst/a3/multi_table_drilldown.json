@@ -8,7 +8,7 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "The highest-loss fraud type is **card_testing** at **$3,722.14** across 7 confirmed cases.\n\n- Five cases on card-not-present share device **DEV-0008**, which appears on **5** alerts, and every one carries velocity_breach.\n- The two remaining cases, FCASE-A3B-000007 ($840.84) and FCASE-A3B-000015 ($381.30), use devices seen on at most **2** alerts and have no velocity_breach.\n\nDevice reuse and velocity evidence concentrate in the card-not-present burst; the two older cases look unrelated to it.",
+      "text": "The highest-loss fraud type is **card_testing** at **$2,581.34** across 7 confirmed cases, all on card-not-present.\n\n- Five cases share device **DEV-0008**, which appears on **5** alerts, and every one carries velocity_breach. Together they lost **$2,500.00**.\n- The two baseline cases, FCASE-A3B-000007 ($46.26) and FCASE-A3B-000020 ($35.08), also carry velocity_breach but use devices seen on at most **2** alerts.\n\nVelocity is common to all seven; the shared device is what marks the burst as one attacker.",
       "sql": {
         "command": "SELECT r.case_id, r.channel, r.confirmed_loss_usd, e.device_id, e.device_alert_count,\n  JSON_ARRAY_CONTAINS_STRING(e.reason_codes, 'velocity_breach') AS velocity_breach\nFROM aa_fraud_case_review r\nJOIN aa_fraud_segment_evidence e ON e.case_id = r.case_id\nWHERE r.fraud_type = 'card_testing' AND r.human_disposition = 'confirmed_fraud'\nORDER BY r.confirmed_loss_usd DESC, r.score DESC",
         "confidence_score": 0.9,
@@ -28,33 +28,9 @@
         ],
         "rows": [
           [
-            "FCASE-A3B-000007",
-            "card_present",
-            840.84,
-            "DEV-0017",
-            1,
-            0
-          ],
-          [
-            "FCASE-A3LC-004",
-            "card_not_present",
-            500.0,
-            "DEV-0008",
-            5,
-            1
-          ],
-          [
             "FCASE-A3LC-003",
             "card_not_present",
-            500.0,
-            "DEV-0008",
-            5,
-            1
-          ],
-          [
-            "FCASE-A3LC-002",
-            "card_not_present",
-            500.0,
+            601.22,
             "DEV-0008",
             5,
             1
@@ -62,7 +38,23 @@
           [
             "FCASE-A3LC-001",
             "card_not_present",
-            500.0,
+            538.9,
+            "DEV-0008",
+            5,
+            1
+          ],
+          [
+            "FCASE-A3LC-002",
+            "card_not_present",
+            487.15,
+            "DEV-0008",
+            5,
+            1
+          ],
+          [
+            "FCASE-A3LC-004",
+            "card_not_present",
+            460.36,
             "DEV-0008",
             5,
             1
@@ -70,18 +62,26 @@
           [
             "FCASE-A3LC-000",
             "card_not_present",
-            500.0,
+            412.37,
             "DEV-0008",
             5,
             1
           ],
           [
-            "FCASE-A3B-000015",
-            "atm",
-            381.3,
-            "DEV-0007",
+            "FCASE-A3B-000007",
+            "card_not_present",
+            46.26,
+            "DEV-0017",
+            1,
+            1
+          ],
+          [
+            "FCASE-A3B-000020",
+            "card_not_present",
+            35.08,
+            "DEV-0034",
             2,
-            0
+            1
           ]
         ],
         "row_count": 7,

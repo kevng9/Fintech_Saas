@@ -16,6 +16,7 @@ import { AnalystTable } from "@/components/AnalystTable";
 import { AnalystMarkdown } from "@/components/a2/AnalystMarkdown";
 import { presentAnalystAnswer } from "@/lib/analyst/commentary";
 import { useDemoState } from "@/components/DemoStateProvider";
+import { ProofSql } from "@/components/analyst/ProofSql";
 import { Banner, Card, Pill, type Tone } from "@/components/ui";
 import { readChatStream, type StreamItem } from "@/lib/analyst/chatStream";
 import {
@@ -23,6 +24,7 @@ import {
   entityLabel,
   type AnalystPageContext,
 } from "@/lib/analyst/pageContext";
+import { analystResetFor } from "@/lib/analyst/sqlProof";
 import {
   isUnsupportedSinglestoreSqlError,
   SINGLESTORE_SQL_RETRY_HINT,
@@ -38,6 +40,7 @@ interface Turn {
   latencyMs: number | null;
   error: string | null;
   streaming: boolean;
+  phase: "before" | "after" | null;
 }
 
 const SOURCE_TONE: Record<string, Tone> = { live: "good", fixture: "warn" };
@@ -82,7 +85,7 @@ function SqlBlock({ sql }: { sql: string }) {
   );
 }
 
-function TurnBody({ turn }: { turn: Turn }) {
+function TurnBody({ turn, anchorId }: { turn: Turn; anchorId: string }) {
   const prose = turn.items.filter((item) => item.kind === "text" && item.text.trim());
   const tables = turn.items.filter((item) => item.kind === "table" && item.table);
   const charts = turn.items.filter((item) => item.kind === "chart" && item.chart);
@@ -116,7 +119,7 @@ function TurnBody({ turn }: { turn: Turn }) {
         <p className="text-[12px] text-[var(--ink-muted)]">Analyst is working…</p>
       )}
 
-      {sql && <SqlBlock sql={sql} />}
+      {sql && (anchorId === "a3" ? <ProofSql sql={sql} /> : <SqlBlock sql={sql} />)}
     </div>
   );
 }
@@ -134,11 +137,15 @@ export function AnalystWorkspace({
   guardrailText,
   humanOwnership,
   pageContext = null,
+  proofPhase = null,
+  proofQuestion = null,
 }: {
   anchorId: string;
   guardrailText: string;
   humanOwnership: string | null;
   pageContext?: AnalystPageContext | null;
+  proofPhase?: "before" | "after" | null;
+  proofQuestion?: string | null;
 }) {
   const { analystMode, envelope, config, tabId, persona } = useDemoState();
   const [curatedStarters, setCuratedStarters] = useState<string[]>([]);
@@ -154,6 +161,7 @@ export function AnalystWorkspace({
   const anchorSummary = config?.anchors.find((anchor) => anchor.id === anchorId);
   const configured = anchorSummary?.analyst_configured ?? false;
   const contextKey = pageContext ? `${pageContext.entityType}:${pageContext.entityId}` : "";
+  const seenPhase = useRef(proofPhase);
 
   const displayCuratedStarters = useMemo(
     () =>
@@ -199,18 +207,31 @@ export function AnalystWorkspace({
     };
   }, [anchorId]);
 
-  // A reset produces a new run, which invalidates the conversation: the data
-  // behind the previous answers no longer exists. Changing the open entity
-  // also starts a fresh thread so prior answers do not imply the wrong id.
-  useEffect(() => {
-    setTurns([]);
+  const resetAnalystSession = useCallback(() => {
     if (runId === null) return;
     void fetch("/api/v1/analyst/session/reset", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-demo-tab-id": tabId },
       body: JSON.stringify({ anchor: anchorId }),
     }).catch(() => undefined);
-  }, [runId, anchorId, tabId, contextKey]);
+  }, [anchorId, runId, tabId]);
+
+  // A reset produces a new run, which invalidates the conversation: the data
+  // behind the previous answers no longer exists. Changing the open entity
+  // also starts a fresh thread so prior answers do not imply the wrong id.
+  useEffect(() => {
+    if (analystResetFor("run").clearTurns) setTurns([]);
+    if (analystResetFor("run").resetSession) resetAnalystSession();
+  }, [runId, anchorId, tabId, contextKey, resetAnalystSession]);
+
+  // Live fraud activity must not erase the baseline answer. Drop only the
+  // Aura session so the next identical question is not answered from it.
+  useEffect(() => {
+    if (seenPhase.current === proofPhase) return;
+    seenPhase.current = proofPhase;
+    if (!proofPhase) return;
+    if (analystResetFor("phase").resetSession) resetAnalystSession();
+  }, [proofPhase, resetAnalystSession]);
 
   // Keep the transcript pinned inside its own scroller. Never use
   // scrollIntoView — that scrolls the whole page and makes the layout bounce
@@ -243,6 +264,7 @@ export function AnalystWorkspace({
           latencyMs: null,
           error: null,
           streaming: true,
+          phase: proofPhase,
         },
       ]);
       setQuestion("");
@@ -378,8 +400,9 @@ export function AnalystWorkspace({
           return;
         }
 
-        // Aura sometimes emits MySQL GROUP_CONCAT shapes SingleStore rejects
-        // (error 1706). Retry once on the same turn with an explicit SQL constraint.
+        // Aura sometimes emits SQL SingleStore rejects (error 1706 GROUP_CONCAT,
+        // error 1749 scalar subselect in ORDER BY, error 1994 JSON_TO_ARRAY
+        // used as a scalar, error 1064 truncated statement). Retry once.
         if (result.source === "live" && turnLooksLikeDialectError(result.items, result.error)) {
           patch({ items: [], error: null, streaming: true });
           result = await runOnce(
@@ -418,7 +441,7 @@ export function AnalystWorkspace({
         setPending(false);
       }
     },
-    [analystMode, anchorId, config, pageContext, pending, pinTranscript, tabId]
+    [analystMode, anchorId, config, pageContext, pending, pinTranscript, proofPhase, tabId]
   );
 
   const modeNote = useMemo(() => {
@@ -479,6 +502,17 @@ export function AnalystWorkspace({
           </Banner>
         )}
 
+        {proofPhase === "after" && proofQuestion && (
+          <button
+            type="button"
+            className="btn btn-primary min-h-11"
+            disabled={pending}
+            onClick={() => void ask(proofQuestion)}
+          >
+            Ask again with current data
+          </button>
+        )}
+
         <div className="grid gap-2">
           {displayCuratedStarters.map((starter) => (
             <button
@@ -532,6 +566,8 @@ export function AnalystWorkspace({
               <header className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-[13px] font-semibold">{turn.question}</p>
                 <div className="flex items-center gap-1.5">
+                  {turn.phase === "before" && <Pill tone="neutral">Before live activity</Pill>}
+                  {turn.phase === "after" && <Pill tone="accent">After live activity</Pill>}
                   {turn.source && (
                     <Pill tone={SOURCE_TONE[turn.source] ?? "neutral"}>
                       {turn.source === "fixture" ? "reviewed answer" : "live Analyst"}
@@ -559,7 +595,7 @@ export function AnalystWorkspace({
                 {turn.error ? (
                   <Banner tone="bad">{turn.error}</Banner>
                 ) : (
-                  <TurnBody turn={turn} />
+                  <TurnBody turn={turn} anchorId={anchorId} />
                 )}
               </div>
             </article>

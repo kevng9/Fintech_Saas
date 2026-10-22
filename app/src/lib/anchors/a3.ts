@@ -1,5 +1,13 @@
 import type { AnchorDefinition } from "./types";
 
+/** One question that reads vectors, JSON, rolling velocity, relational evidence, aggregates, and live data. */
+export const A3_PROOF_QUESTION =
+  "For the highest-loss segment, use the confirmed-fraud case with the largest loss as the reference. " +
+  "In one result, list the other cases most similar by investigator-note embedding. For each match, " +
+  "show its JSON reason codes, whether the device is reused, that device's peak alerts in any " +
+  "10-minute window up to the current logical time, account age, merchant, human disposition, and " +
+  "confirmed loss. Also show total confirmed loss and the false-positive count across those matches.";
+
 /**
  * A3 Fraud Strategy Optimization (Fraud Strategy). Confirmed loss and false-positive rate
  * are always derived from a human investigator's disposition on a case, never
@@ -25,9 +33,9 @@ export const a3: AnchorDefinition = {
     "Aura Analyst assembles and explains evidence. It does not determine that a customer committed fraud.",
   humanOwnership: "Case decisions and customer action stay with fraud investigators.",
   starterPrompts: [
+    A3_PROOF_QUESTION,
     "Show confirmed fraud loss and false-positive rate by channel and fraud type.",
     "For the highest-loss segment, compare reason codes, device reuse, account age, and merchant for confirmed fraud versus false positives.",
-    "List supporting cases for human investigator review.",
   ],
   overviewWidgets: [
     {
@@ -84,7 +92,7 @@ export const a3: AnchorDefinition = {
       backendRoute: "/api/v1/anchors/a3/overview",
       visualization: "ranked-bar",
       expectedBaseline: "Losses spread across channels and fraud types",
-      expectedScenarioDelta: "Card testing on card-not-present takes the lead at $2,500",
+      expectedScenarioDelta: "Card testing on card-not-present takes the lead at $2,581.34",
       proofMode: "analyst-optional",
       sourceTables: ["aa_fraud_loss_summary"],
     },
@@ -95,7 +103,7 @@ export const a3: AnchorDefinition = {
       backendRoute: "/api/v1/anchors/a3/overview",
       visualization: "table",
       expectedBaseline: "Ranked by confirmed loss and score",
-      expectedScenarioDelta: "Five injected confirmed-fraud cases join the list at $500 each",
+      expectedScenarioDelta: "Five injected confirmed-fraud cases, $412.37 to $601.22 each, join the top of the list",
       proofMode: "deterministic",
       sourceTables: ["aa_fraud_case_review"],
     },

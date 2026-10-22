@@ -18,6 +18,8 @@ from ..generator import PAYMENT_EVENT_COLUMNS, World
 from . import (
     a1_review_spike,
     a2_processor_timeout,
+    a3_live_clears,
+    a3_live_confirms,
     a3_loss_cluster,
     a4_correspondent_spike,
     a5_case_surge,
@@ -36,6 +38,8 @@ _REGISTRY: dict[str, tuple[ScenarioDefinition, BuildRows]] = {
         a2_processor_timeout.build_rows,
     ),
     a3_loss_cluster.SCENARIO_ID: (a3_loss_cluster.DEFINITION, a3_loss_cluster.build_rows),
+    a3_live_clears.SCENARIO_ID: (a3_live_clears.DEFINITION, a3_live_clears.build_rows),
+    a3_live_confirms.SCENARIO_ID: (a3_live_confirms.DEFINITION, a3_live_confirms.build_rows),
     a4_correspondent_spike.SCENARIO_ID: (
         a4_correspondent_spike.DEFINITION,
         a4_correspondent_spike.build_rows,

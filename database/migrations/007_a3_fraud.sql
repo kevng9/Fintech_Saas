@@ -5,6 +5,12 @@
 -- `confirmed_loss` is non-zero only when human_disposition = 'confirmed_fraud';
 -- the simulator enforces this at generation time, not the schema.
 
+DROP VIEW IF EXISTS aa_fraud_device_velocity;
+
+DROP VIEW IF EXISTS aa_fraud_alert_timeline;
+
+DROP VIEW IF EXISTS aa_fraud_case_notes;
+
 DROP VIEW IF EXISTS aa_fraud_case_review;
 
 DROP VIEW IF EXISTS aa_fraud_segment_evidence;
@@ -43,6 +49,9 @@ CREATE TABLE fraud_case (
     human_disposition VARCHAR(24)   NOT NULL,
     confirmed_loss    DECIMAL(12,2) NOT NULL DEFAULT 0,
     notes             VARCHAR(512)  NULL,
+    -- all-MiniLM-L6-v2 embedding of the observed-behavior sentences only (never
+    -- the outcome), unit length so DOT_PRODUCT is cosine similarity.
+    notes_embedding   VECTOR(384, F32) NULL,
     scenario_id       VARCHAR(64)   NULL,
     SHARD KEY (run_id, case_id),
     SORT KEY (run_id, opened_at)
@@ -134,3 +143,65 @@ GROUP BY
     fc.case_id, fc.alert_id, fa.fraud_type, fa.channel, fa.score,
     fc.opened_at, fc.closed_at, fc.investigator_id, fc.human_disposition,
     fc.confirmed_loss, fc.notes;
+
+-- Investigator-note embeddings for similarity search. Unit length, so
+-- DOT_PRODUCT between two rows is cosine similarity.
+CREATE VIEW aa_fraud_case_notes AS
+SELECT
+    fc.case_id AS case_id,
+    fa.channel AS channel,
+    fa.fraud_type AS fraud_type,
+    fc.human_disposition AS human_disposition,
+    fc.confirmed_loss AS confirmed_loss_usd,
+    fc.notes AS notes,
+    fc.notes_embedding AS notes_embedding
+FROM fraud_case fc
+JOIN fraud_alert fa ON fa.run_id = fc.run_id AND fa.alert_id = fc.alert_id
+JOIN demo_active_run ar ON ar.singleton_id = 1 AND ar.run_id = fc.run_id
+WHERE fc.opened_at <= ar.logical_time;
+
+-- One row per alert with its timestamp, so velocity can be bucketed by device.
+CREATE VIEW aa_fraud_alert_timeline AS
+SELECT
+    fa.alert_id AS alert_id,
+    fc.case_id AS case_id,
+    fa.device_id AS device_id,
+    fa.channel AS channel,
+    fa.fraud_type AS fraud_type,
+    fa.created_at AS created_at,
+    fa.score AS score,
+    fa.reason_codes AS reason_codes
+FROM fraud_alert fa
+JOIN demo_active_run ar ON ar.singleton_id = 1 AND ar.run_id = fa.run_id
+LEFT JOIN fraud_case fc ON fc.run_id = fa.run_id AND fc.alert_id = fa.alert_id
+WHERE fa.created_at <= ar.logical_time;
+
+-- Exact peak in any rolling 10-minute interval through the logical clock.
+-- Anchoring each interval on an alert is sufficient: a maximum-count rolling
+-- interval can always move its start to its first alert without losing rows.
+CREATE VIEW aa_fraud_device_velocity AS
+SELECT
+    windows.device_id AS device_id,
+    MAX(windows.alerts_10m) AS peak_alerts_10m,
+    MAX(windows.logical_time) AS through_logical_time
+FROM (
+    SELECT
+        anchor.device_id AS device_id,
+        anchor.created_at AS window_start,
+        ar.logical_time AS logical_time,
+        COUNT(candidate.alert_id) AS alerts_10m
+    FROM fraud_alert anchor
+    JOIN demo_active_run ar
+        ON ar.singleton_id = 1
+       AND ar.run_id = anchor.run_id
+    JOIN fraud_alert candidate
+        ON candidate.run_id = anchor.run_id
+       AND candidate.device_id = anchor.device_id
+       AND candidate.created_at >= anchor.created_at
+       AND candidate.created_at < DATE_ADD(anchor.created_at, INTERVAL 10 MINUTE)
+       AND candidate.created_at <= ar.logical_time
+    WHERE anchor.device_id IS NOT NULL
+      AND anchor.created_at <= ar.logical_time
+    GROUP BY anchor.device_id, anchor.created_at, ar.logical_time
+) windows
+GROUP BY windows.device_id;

@@ -3,9 +3,9 @@
 100 new ``payment_event`` rows (tagged ``A3_LOSS_CLUSTER``) stand in for the
 "100 transactions" spec section 9.4 calls for. 12 of them each get a
 ``fraud_alert`` and a ``fraud_case``: human fixtures close 5 as
-``confirmed_fraud`` at USD 500 of loss each (USD 2,500 total) and 7 as
-``legitimate`` with zero loss, so the false-positive rate for this cohort is
-exact:
+``confirmed_fraud``, each writing off its flagged purchase (USD 2,500 total),
+and 7 as ``legitimate`` with zero loss, so the false-positive rate for this
+cohort is exact:
 
     false_positive_rate = legitimate / (confirmed_fraud + legitimate)
                          = 7 / 12 = 0.583333...
@@ -29,6 +29,7 @@ from ..generator import (
     World,
     payment_id_for,
 )
+from ..generators.a3_fraud import case_note
 from ..generators.shared_dims import DEVICE_COUNT, device_id
 from ..model import merchants_for_country_category, to_usd
 from ..rng import det_int
@@ -41,8 +42,10 @@ TRANSACTION_COUNT = 100
 ALERT_COUNT = 12
 CONFIRMED_FRAUD_COUNT = 5
 LEGITIMATE_COUNT = 7
-LOSS_PER_CASE = 500.00
-TOTAL_LOSS = LOSS_PER_CASE * CONFIRMED_FRAUD_COUNT
+ALERT_STRIDE = TRANSACTION_COUNT // ALERT_COUNT
+# Amounts of the five fraudulent purchases; each is written off in full.
+CONFIRMED_LOSSES = (412.37, 538.90, 487.15, 601.22, 460.36)
+TOTAL_LOSS = round(sum(CONFIRMED_LOSSES), 2)
 DEMO_COUNTRY = "US"
 BURST_CATEGORY = "Electronics"
 CLUSTER_CHANNEL = "card_not_present"
@@ -56,8 +59,8 @@ DEFINITION = ScenarioDefinition(
     name="Fraud loss cluster",
     description=(
         "100 new transactions and 12 fraud alerts land together; human fixtures "
-        "close 5 cases as confirmed fraud at USD 500 each and 7 as legitimate, "
-        "so confirmed loss rises by USD 2,500 and the cohort's false-positive "
+        "close 5 cases as confirmed fraud and 7 as legitimate, so confirmed "
+        "loss rises by USD 2,500 and the cohort's false-positive "
         "rate is exact."
     ),
     metric_window="T+10m from injection watermark",
@@ -118,6 +121,8 @@ def build_rows(world: World, run_id: int, start_minute: int) -> list[TableBatch]
         merchant = merchants[det_int(world.seed, SCENARIO_ID, "merchant", position, low=0, high=len(merchants) - 1)]
         customer = world.pick_customer(DEMO_COUNTRY, SCENARIO_ID, "customer", position)
         amount = world.amount_for(merchant["merchant_category"], SCENARIO_ID, "amount", position)
+        if position % ALERT_STRIDE == 0 and position // ALERT_STRIDE < CONFIRMED_FRAUD_COUNT:
+            amount = CONFIRMED_LOSSES[position // ALERT_STRIDE]
         event_time = window_start + timedelta(seconds=(position * 60.0 * WINDOW_MINUTES / TRANSACTION_COUNT))
         payment_rows.append(
             (
@@ -147,7 +152,7 @@ def build_rows(world: World, run_id: int, start_minute: int) -> list[TableBatch]
     case_rows: list[tuple] = []
     evidence_rows: list[tuple] = []
     for index in range(ALERT_COUNT):
-        payment_id = payment_ids[index * (TRANSACTION_COUNT // ALERT_COUNT)]
+        payment_id = payment_ids[index * ALERT_STRIDE]
         created_at = window_start + timedelta(minutes=1 + index % 5)
         alert_id = _alert_id(index)
         disposition = "confirmed_fraud" if index < CONFIRMED_FRAUD_COUNT else "legitimate"
@@ -179,9 +184,10 @@ def build_rows(world: World, run_id: int, start_minute: int) -> list[TableBatch]
             )
         )
 
-        confirmed_loss = LOSS_PER_CASE if disposition == "confirmed_fraud" else 0.0
+        confirmed_loss = CONFIRMED_LOSSES[index] if disposition == "confirmed_fraud" else 0.0
         opened_at = created_at + timedelta(minutes=2)
         closed_at = opened_at + timedelta(hours=2 + index % 6)
+        note = case_note(reason_codes, disposition, world.seed, SCENARIO_ID, index)
         case_rows.append(
             (
                 run_id,
@@ -192,11 +198,8 @@ def build_rows(world: World, run_id: int, start_minute: int) -> list[TableBatch]
                 f"INV-{1 + index % 6:03d}",
                 disposition,
                 confirmed_loss,
-                (
-                    "Human review closed as confirmed_fraud: rapid repeat attempts from one device."
-                    if disposition == "confirmed_fraud"
-                    else "Human review closed as legitimate: customer confirmed the purchase."
-                ),
+                note.text,
+                note.embedding_sql,
                 SCENARIO_ID,
             )
         )

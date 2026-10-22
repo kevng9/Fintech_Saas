@@ -11,7 +11,11 @@ import { findFixture, fixtureUnavailableResult } from "@/lib/analyst/fixtures";
 import { canGoLive, fixtureFallbackReason, resolveMode, scenarioState } from "@/lib/analyst/mode";
 import { withPageContext, type AnalystPageContext } from "@/lib/analyst/pageContext";
 import { DATA_COMMENTARY_HINT } from "@/lib/analyst/promptGuidance";
-import { logicalClockHint, SINGLESTORE_SQL_LIVE_HINT } from "@/lib/analyst/singlestoreSql";
+import {
+  fraudMultiModelHint,
+  logicalClockHint,
+  SINGLESTORE_SQL_LIVE_HINT,
+} from "@/lib/analyst/singlestoreSql";
 import { clearSession, getSession, rememberSession } from "@/lib/analyst/sessionStore";
 import { fixtureStream, tapSessionId } from "@/lib/analyst/sse";
 import { latestExecution, readDemoState } from "@/lib/demoState";
@@ -93,17 +97,19 @@ export async function POST(req: NextRequest) {
   // Live Analyst has no browser selection; attach the open entity id when present.
   // Also remind the model of SingleStore SQL limits — Aura still emits GROUP_CONCAT
   // patterns that fail with error 1706 until Domain instructions are republished.
+  const fraudSqlHint = fraudMultiModelHint(anchorId, message);
   const liveMessage = clampString(
     [
       DATA_COMMENTARY_HINT,
       withPageContext(message, pageContext),
       guidedPaymentHint,
+      fraudSqlHint,
       logicalClockHint(state?.logicalTime),
       SINGLESTORE_SQL_LIVE_HINT,
     ]
       .filter(Boolean)
       .join("\n\n"),
-    analystConfig.maxMessageChars + 2000
+    analystConfig.maxMessageChars + (fraudSqlHint ? 6000 : 2000)
   );
 
   if (canGoLive(anchorId, mode)) {

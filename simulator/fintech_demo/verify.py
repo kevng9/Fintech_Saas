@@ -419,6 +419,90 @@ def _verify_a3(cursor, run_id: int, definition: "scenarios.ScenarioDefinition", 
     ]
 
 
+def _verify_a3_live(cursor, run_id: int, definition: "scenarios.ScenarioDefinition", execution: dict) -> list[Check]:
+    """Live authorization scenarios can alert more attempts than they case.
+
+    ``_verify_a3`` requires one case per alert. Card testing opens one review
+    case for several declined attempts, so that check does not apply here.
+    """
+    scenario_id = definition.scenario_id
+    expected = definition.expected_deltas["after"]
+    tolerance = definition.expected_deltas["tolerance"]
+    rows_inserted = definition.expected_deltas["rows_inserted"]
+    where = "run_id = %s AND scenario_id = %s"
+    params = (run_id, scenario_id)
+
+    payments = _count(cursor, "payment_event", where, params)
+    alerts = _count(cursor, "fraud_alert", where, params)
+    cases = _count(cursor, "fraud_case", where, params)
+    evidence = _count(cursor, "fraud_evidence", where, params)
+    confirmed = _count(cursor, "fraud_case", where + " AND human_disposition = 'confirmed_fraud'", params)
+    legitimate = _count(cursor, "fraud_case", where + " AND human_disposition = 'legitimate'", params)
+    open_cases = _count(cursor, "fraud_case", where + " AND human_disposition = 'open'", params)
+    loss = _sum(cursor, "fraud_case", "confirmed_loss", where, params)
+    checks = [
+        Check(
+            f"{scenario_id} payments inserted",
+            payments == rows_inserted["payment_event"],
+            rows_inserted["payment_event"],
+            payments,
+        ),
+        Check(
+            f"{scenario_id} alerts inserted",
+            alerts == rows_inserted["fraud_alert"],
+            rows_inserted["fraud_alert"],
+            alerts,
+        ),
+        Check(
+            f"{scenario_id} cases inserted",
+            cases == expected["cases_total"],
+            expected["cases_total"],
+            cases,
+        ),
+        Check(
+            f"{scenario_id} evidence inserted",
+            evidence == rows_inserted["fraud_evidence"],
+            rows_inserted["fraud_evidence"],
+            evidence,
+        ),
+        Check(
+            f"{scenario_id} confirmed fraud cases",
+            confirmed == expected["confirmed_fraud_cases"],
+            expected["confirmed_fraud_cases"],
+            confirmed,
+        ),
+        Check(
+            f"{scenario_id} legitimate cases",
+            legitimate == expected["legitimate_cases"],
+            expected["legitimate_cases"],
+            legitimate,
+        ),
+        Check(
+            f"{scenario_id} open cases",
+            open_cases == expected["open_cases"],
+            expected["open_cases"],
+            open_cases,
+        ),
+        Check(
+            f"{scenario_id} confirmed loss",
+            _close(loss, expected["confirmed_loss_usd"], tolerance["confirmed_loss_usd"]),
+            expected["confirmed_loss_usd"],
+            loss,
+        ),
+    ]
+    if "false_positive_rate" in expected:
+        fp_rate = _rate(legitimate, confirmed + legitimate)
+        checks.append(
+            Check(
+                f"{scenario_id} false-positive rate",
+                _close(fp_rate, expected["false_positive_rate"], tolerance["false_positive_rate"]),
+                expected["false_positive_rate"],
+                fp_rate,
+            )
+        )
+    return checks
+
+
 def _verify_a4(cursor, run_id: int, definition: "scenarios.ScenarioDefinition", execution: dict) -> list[Check]:
     scenario_id = definition.scenario_id
     where = "run_id = %s AND scenario_id = %s"
@@ -629,6 +713,8 @@ _SCENARIO_VERIFIERS: dict[str, Callable[[Any, int, Any, dict], list[Check]]] = {
     "A1_REVIEW_SPIKE": _verify_a1,
     "A2_PROCESSOR_TIMEOUT": _verify_a2,
     "A3_LOSS_CLUSTER": _verify_a3,
+    "A3_LIVE_CLEARS": _verify_a3_live,
+    "A3_LIVE_CONFIRMS": _verify_a3_live,
     "A4_CORRESPONDENT_SPIKE": _verify_a4,
     "A5_CASE_SURGE": _verify_a5,
     "A6_SETTLEMENT_DELAY": _verify_a6,

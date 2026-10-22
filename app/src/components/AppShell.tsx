@@ -156,7 +156,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         {children}
       </main>
 
-      {!pathname.startsWith("/anchors/a2") && <FloatingAnalystChat />}
+      {!pathname.startsWith("/anchors/a2") && pathname !== "/anchors/a3/copy-path" && (
+        <FloatingAnalystChat />
+      )}
 
       <footer className="border-t border-[var(--line)] bg-[var(--surface)]">
         <div className="mx-auto flex max-w-[1480px] flex-col gap-2 px-4 py-4 text-[10px] leading-4 text-[var(--ink-muted)] sm:flex-row sm:items-center sm:justify-between sm:px-6">

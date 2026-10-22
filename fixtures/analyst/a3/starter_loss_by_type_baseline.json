@@ -11,7 +11,7 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "Over the seven baseline days, **ATM first-party fraud** leads investigator-confirmed loss at **$1,519.75** from 2 confirmed cases.\n\n- Total confirmed loss: **$3,792.91** across **21** cases.\n- Overall false-positive rate: **66.67%** (12 legitimate of 18 dispositioned cases).\n- No segment has more than **2** confirmed cases.\n\nLoss is spread thinly across segments, so no single cluster stands out yet. Amounts are normalized to US dollars.",
+      "text": "Over the seven baseline days, **first-party fraud on card-not-present** leads investigator-confirmed loss at **$595.18**, from a single confirmed case.\n\n- Total confirmed loss: **$999.19** across **21** cases.\n- Overall false-positive rate: **66.67%** (12 legitimate of 18 dispositioned cases).\n- No segment has more than **2** confirmed cases, and most confirmed losses are under $100.\n\nLoss is spread thinly across segments, so no single cluster stands out yet. Amounts are normalized to US dollars.",
       "sql": {
         "command": "SELECT channel, fraud_type, cases_total, confirmed_fraud_cases, confirmed_loss_usd, false_positive_rate\nFROM aa_fraud_loss_summary\nORDER BY confirmed_loss_usd DESC",
         "confidence_score": 0.9,
@@ -30,47 +30,63 @@
         ],
         "rows": [
           [
-            "atm",
+            "card_not_present",
             "first_party",
             2,
-            2,
-            1519.75,
-            0.0
+            1,
+            595.18,
+            0.5
           ],
           [
-            "card_present",
+            "online_banking",
+            "synthetic_identity",
+            2,
+            1,
+            175.44,
+            0.5
+          ],
+          [
+            "card_not_present",
             "card_testing",
-            1,
-            1,
-            840.84,
-            0.0
+            6,
+            2,
+            81.34,
+            0.6667
           ],
           [
             "card_not_present",
             "account_takeover",
+            5,
             1,
-            1,
-            526.16,
-            0.0
+            76.28,
+            0.75
           ],
           [
-            "card_not_present",
-            "first_party",
+            "card_present",
+            "synthetic_identity",
             3,
             1,
-            524.86,
+            70.95,
             0.6667
           ],
           [
-            "atm",
-            "card_testing",
+            "online_banking",
+            "account_takeover",
+            2,
+            0,
+            0.0,
+            null
+          ],
+          [
+            "card_present",
+            "first_party",
             1,
-            1,
-            381.3,
-            0.0
+            0,
+            0.0,
+            1.0
           ]
         ],
-        "row_count": 5,
+        "row_count": 7,
         "truncated": false
       },
       "chart": null,

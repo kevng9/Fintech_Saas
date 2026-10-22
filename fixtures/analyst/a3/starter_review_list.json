@@ -11,7 +11,7 @@
   "recorded_at": "2026-07-25T00:00:00Z",
   "results": [
     {
-      "text": "The **12** highest-loss cases are ranked below by confirmed loss, then alert score; the largest is **FCASE-A3B-000020** at **$1,018.01**.\n\n- The five card-testing burst cases (FCASE-A3LC-000 to -004) are **$500** each and rank behind five larger baseline losses.\n- **3** cases are still open and need a disposition: FCASE-A3B-000002, FCASE-A3B-000004, and FCASE-A3B-000014.\n\nRanking by loss favors single large cases; ranking by segment surfaces the burst sooner. Dispositions stay with fraud investigators.",
+      "text": "The **12** highest-loss cases are ranked below by confirmed loss, then alert score; the largest is **FCASE-A3LC-003** at **$601.22**.\n\n- Five of the top six are the card-testing burst (FCASE-A3LC-000 to -004), between $412.37 and $601.22 each.\n- **3** cases are still open and need a disposition: FCASE-A3B-000002, FCASE-A3B-000004, and FCASE-A3B-000014.\n\nRanking by loss favors single large cases; ranking by segment shows the burst as one problem. Dispositions stay with fraud investigators.",
       "sql": {
         "command": "SELECT case_id, fraud_type, channel, score, human_disposition, confirmed_loss_usd\nFROM aa_fraud_case_review\nORDER BY confirmed_loss_usd DESC, score DESC LIMIT 12",
         "confidence_score": 0.9,
@@ -30,68 +30,20 @@
         ],
         "rows": [
           [
-            "FCASE-A3B-000020",
-            "first_party",
-            "atm",
-            0.723,
-            "confirmed_fraud",
-            1018.01
-          ],
-          [
-            "FCASE-A3B-000007",
-            "card_testing",
-            "card_present",
-            0.9405,
-            "confirmed_fraud",
-            840.84
-          ],
-          [
-            "FCASE-A3B-000005",
-            "account_takeover",
-            "card_not_present",
-            0.4028,
-            "confirmed_fraud",
-            526.16
-          ],
-          [
-            "FCASE-A3B-000006",
-            "first_party",
-            "card_not_present",
-            0.4119,
-            "confirmed_fraud",
-            524.86
-          ],
-          [
-            "FCASE-A3B-000008",
-            "first_party",
-            "atm",
-            0.6932,
-            "confirmed_fraud",
-            501.74
-          ],
-          [
-            "FCASE-A3LC-004",
-            "card_testing",
-            "card_not_present",
-            0.87,
-            "confirmed_fraud",
-            500.0
-          ],
-          [
             "FCASE-A3LC-003",
             "card_testing",
             "card_not_present",
             0.79,
             "confirmed_fraud",
-            500.0
+            601.22
           ],
           [
-            "FCASE-A3LC-002",
-            "card_testing",
+            "FCASE-A3B-000015",
+            "first_party",
             "card_not_present",
-            0.71,
+            0.3921,
             "confirmed_fraud",
-            500.0
+            595.18
           ],
           [
             "FCASE-A3LC-001",
@@ -99,7 +51,23 @@
             "card_not_present",
             0.63,
             "confirmed_fraud",
-            500.0
+            538.9
+          ],
+          [
+            "FCASE-A3LC-002",
+            "card_testing",
+            "card_not_present",
+            0.71,
+            "confirmed_fraud",
+            487.15
+          ],
+          [
+            "FCASE-A3LC-004",
+            "card_testing",
+            "card_not_present",
+            0.87,
+            "confirmed_fraud",
+            460.36
           ],
           [
             "FCASE-A3LC-000",
@@ -107,20 +75,52 @@
             "card_not_present",
             0.55,
             "confirmed_fraud",
-            500.0
+            412.37
           ],
           [
-            "FCASE-A3B-000015",
-            "card_testing",
-            "atm",
-            0.3921,
+            "FCASE-A3B-000008",
+            "synthetic_identity",
+            "online_banking",
+            0.6932,
             "confirmed_fraud",
-            381.3
+            175.44
+          ],
+          [
+            "FCASE-A3B-000005",
+            "account_takeover",
+            "card_not_present",
+            0.4028,
+            "confirmed_fraud",
+            76.28
+          ],
+          [
+            "FCASE-A3B-000006",
+            "synthetic_identity",
+            "card_present",
+            0.4119,
+            "confirmed_fraud",
+            70.95
+          ],
+          [
+            "FCASE-A3B-000007",
+            "card_testing",
+            "card_not_present",
+            0.9405,
+            "confirmed_fraud",
+            46.26
+          ],
+          [
+            "FCASE-A3B-000020",
+            "card_testing",
+            "card_not_present",
+            0.723,
+            "confirmed_fraud",
+            35.08
           ],
           [
             "FCASE-A3B-000003",
-            "synthetic_identity",
-            "atm",
+            "account_takeover",
+            "card_not_present",
             0.9747,
             "legitimate",
             0.0

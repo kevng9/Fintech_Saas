@@ -17,6 +17,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnalystWorkspace } from "@/components/a2/AnalystWorkspace";
 import { ScenarioPanel } from "@/components/a2/ScenarioPanel";
 import { SharedDrivers } from "@/components/anchors/SharedDrivers";
+import { OneQueryPanel } from "@/components/anchors/OneQueryPanel";
 import { SharedKpiTile } from "@/components/anchors/SharedKpiTile";
 import { SharedSeriesChart } from "@/components/anchors/SharedSeriesChart";
 import { SharedTable } from "@/components/anchors/SharedTable";
@@ -24,11 +25,30 @@ import { SharedWhatChanged } from "@/components/anchors/SharedWhatChanged";
 import { useDemoState } from "@/components/DemoStateProvider";
 import { LiveUpdatesBanner } from "@/components/LiveUpdatesBanner";
 import { Banner, Card, Pill, Skeleton } from "@/components/ui";
+import { A3_PROOF_QUESTION } from "@/lib/anchors/a3";
 import { count, formatMetric, logicalTime } from "@/lib/format";
 import type { SharedOverviewPayload } from "@/lib/apiTypes";
 
 const DEFAULT_WINDOW_CHOICES = [15, 60, 180, 720];
 const DIGITAL_WINDOW_CHOICES = [60, 720, 1440, 10080];
+const LIVE_DECISIONS = [
+  {
+    id: "A3_LIVE_CLEARS",
+    label: "1. Step-up clears a false decline",
+    body: "A card-not-present charge from an unfamiliar country scores high enough to stop. The customer approves that same payment from the phone registered to the account. The retry is approved. The case closes legitimate, and nothing is written off.",
+    done: "Step-up recorded",
+    action: "Show the step-up",
+    started: "The charge was stopped, then the customer approved the same payment. The case is legitimate and nothing was written off.",
+  },
+  {
+    id: "A3_LIVE_CONFIRMS",
+    label: "2. Live velocity confirms card testing",
+    body: "A $2 authorization is approved. Within a few minutes the same device sends security-code failures and a larger charge. Those later attempts are declined, and one case is opened for review. Confirmed loss waits for an investigator.",
+    done: "Burst recorded",
+    action: "Show the burst",
+    started: "The first $2 authorization was approved. Later attempts from the same device were declined, and one case is open for review.",
+  },
+] as const;
 
 function windowLabel(minutes: number): string {
   if (minutes === 10080) return "7d";
@@ -44,16 +64,25 @@ export default function SharedAnchorOverviewPage() {
   const [overview, setOverview] = useState<SharedOverviewPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [storyMessage, setStoryMessage] = useState<string | null>(null);
+  const [decisionMessage, setDecisionMessage] = useState<string | null>(null);
   const storyStartedRef = useRef(false);
 
   const anchorSummary = config?.anchors.find((item) => item.id === anchorId);
   const windowChoices = anchorId === "a1" ? DIGITAL_WINDOW_CHOICES : DEFAULT_WINDOW_CHOICES;
 
+  const runId = envelope?.state.run_id ?? null;
+
   useEffect(() => {
     setWindowMinutes(anchorId === "a1" ? 10080 : 60);
     storyStartedRef.current = false;
     setStoryMessage(null);
+    setDecisionMessage(null);
   }, [anchorId]);
+
+  useEffect(() => {
+    setStoryMessage(null);
+    setDecisionMessage(null);
+  }, [runId]);
 
   const stateSignature = envelope
     ? `${envelope.state.run_id}:${envelope.state.logical_time}:${envelope.state.state_version}`
@@ -95,6 +124,28 @@ export default function SharedAnchorOverviewPage() {
     }
     setStoryMessage("The change is now visible. Follow it from signal to evidence to the decision owner.");
   }, [inject, scenarioId]);
+
+  const scenarioComplete = useCallback(
+    (id: string) =>
+      (envelope?.executions ?? []).some(
+        (execution) => execution.scenario_id === id && execution.status === "complete",
+      ),
+    [envelope?.executions],
+  );
+
+  const startNamed = useCallback(
+    async (id: (typeof LIVE_DECISIONS)[number]["id"]) => {
+      const decision = LIVE_DECISIONS.find((item) => item.id === id);
+      setDecisionMessage(null);
+      const result = await inject(id);
+      if (!result.ok) {
+        setDecisionMessage(result.message ?? "That decision could not be started.");
+        return;
+      }
+      setDecisionMessage(decision?.started ?? "The decision is now visible.");
+    },
+    [inject],
+  );
 
   useEffect(() => {
     if (storyStartedRef.current || !envelope?.state || scenarioActive || !scenarioId) return;
@@ -213,6 +264,13 @@ export default function SharedAnchorOverviewPage() {
         )}
       </header>
 
+      {anchorId === "a3" && (
+        <p className="text-[12px] text-[var(--ink-soft)]">
+          <Link href="/anchors/a3/copy-path" className="font-semibold text-[var(--accent-dark)] hover:underline">
+            Compare this burst on a copy path
+          </Link>
+        </p>
+      )}
       {error && <Banner tone="bad">{error}</Banner>}
       {overview && (
         <LiveUpdatesBanner
@@ -220,7 +278,94 @@ export default function SharedAnchorOverviewPage() {
           streamStatus={overview.state.stream_status}
         />
       )}
-      {presentationMode && scenarioId && (
+      {presentationMode && scenarioId && anchorId === "a3" && (
+        <Card
+          title="One question, then the live cases arrive"
+          subtitle="The same query reads the new activity. A warehouse loaded overnight would still show the first answer."
+        >
+          <ol className="grid gap-3 md:grid-cols-3">
+            <li className="rounded-[14px] bg-[var(--surface-sunk)] p-4">
+              <p className="label">1. Baseline</p>
+              <p className="mt-2 text-[13px] leading-5">
+                Analytics is on the last batch. Live transactions are not updated in real time. Ask
+                the featured question. The answer is labeled Before live activity.
+              </p>
+            </li>
+            <li className="rounded-[14px] bg-[var(--surface-sunk)] p-4">
+              <p className="label">2. Live data</p>
+              <p className="mt-2 text-[13px] leading-5">
+                {scenarioActive
+                  ? "Live transactions are now included in analytics. The clock is stopped at that moment."
+                  : "The analytical picture is still the last batch. Start the feed to include the new transactions."}
+              </p>
+              <button
+                type="button"
+                className="btn btn-primary mt-3 min-h-11 px-4"
+                disabled={scenarioActive || busyAction === `inject:${scenarioId}`}
+                onClick={() => void startStory()}
+              >
+                {scenarioActive
+                  ? "Live data included"
+                  : busyAction === `inject:${scenarioId}`
+                    ? "Starting…"
+                    : "Start live data"}
+              </button>
+            </li>
+            <li className="rounded-[14px] bg-[var(--surface-sunk)] p-4">
+              <p className="label">3. Ask again</p>
+              <p className="mt-2 text-[13px] leading-5">
+                Use Ask again with current data. Similarity, reason codes, the 10-minute peak, loss,
+                and false positives are recalculated together.
+              </p>
+            </li>
+          </ol>
+          {scenarioActive && overview?.change && (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {overview.change.rows.slice(0, 4).map((row) => (
+                <div key={row.key} className="rounded-[14px] border border-[var(--line)] bg-[var(--surface)] p-4">
+                  <p className="label">{row.label}</p>
+                  <p className="mt-2 text-[24px] font-semibold tracking-[-0.04em]">
+                    {formatMetric(row.after, row.format)}
+                  </p>
+                  <p className="mt-1 text-[11px] text-[var(--ink-muted)]">
+                    Was {formatMetric(row.before, row.format)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+          {storyMessage && <p className="mt-3 text-[12px] text-[var(--ink-soft)]">{storyMessage}</p>}
+        </Card>
+      )}
+      {anchorId === "a3" && (
+        <Card
+          title="Two decisions that change while the attempts are still arriving"
+          subtitle="These sit beside the card-testing loss cluster. A rule does not book a loss."
+        >
+          <div className="grid gap-3 md:grid-cols-2">
+            {LIVE_DECISIONS.map((decision) => {
+              const complete = scenarioComplete(decision.id);
+              const starting = busyAction === `inject:${decision.id}`;
+              return (
+                <div key={decision.id} className="rounded-[14px] bg-[var(--surface-sunk)] p-4">
+                  <p className="label">{decision.label}</p>
+                  <p className="mt-2 text-[13px] leading-5">{decision.body}</p>
+                  <button
+                    type="button"
+                    className="btn btn-primary mt-3 min-h-11 px-4"
+                    disabled={complete || starting}
+                    onClick={() => void startNamed(decision.id)}
+                  >
+                    {complete ? decision.done : starting ? "Starting…" : decision.action}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          {decisionMessage && <p className="mt-3 text-[12px] text-[var(--ink-soft)]">{decisionMessage}</p>}
+        </Card>
+      )}
+      {presentationMode && scenarioId && anchorId !== "a3" && (
         <Card
           title={scenarioActive ? "Decision moment" : `A decision for the ${anchorSummary?.jobTitle ?? "operating owner"}`}
           subtitle={overview?.anchor.criticalBusinessIssue ?? anchorSummary?.criticalBusinessIssue}
@@ -267,7 +412,7 @@ export default function SharedAnchorOverviewPage() {
                 disabled={busyAction === `inject:${scenarioId}`}
                 onClick={() => void startStory()}
               >
-                {busyAction === `inject:${scenarioId}` ? "Starting…" : "Reveal the decision"}
+                {busyAction === `inject:${scenarioId}` ? "Starting…" : "Start live data feed"}
               </button>
             </div>
           )}
@@ -275,16 +420,26 @@ export default function SharedAnchorOverviewPage() {
         </Card>
       )}
 
-      {scenarioActive && overview && (
+      {anchorId === "a3" && overview && <OneQueryPanel refreshKey={stateSignature} />}
+
+      {(anchorId === "a3" || scenarioActive) && overview && (
         <section className="space-y-3">
           <div>
             <p className="label">Aura Analyst</p>
-            <h2 className="section-title mt-1">Ask what changed and inspect the evidence</h2>
+            <h2 className="section-title mt-1">
+              {anchorId === "a3" && !scenarioActive
+                ? "Ask while the operation is still quiet"
+                : anchorId === "a3"
+                  ? "Ask the same question on the data that just arrived"
+                  : "Ask what changed and inspect the evidence"}
+            </h2>
           </div>
           <AnalystWorkspace
             anchorId={anchorId}
             guardrailText={overview.anchor.guardrailText}
             humanOwnership={overview.anchor.humanOwnership}
+            proofPhase={anchorId === "a3" ? (scenarioActive ? "after" : "before") : null}
+            proofQuestion={anchorId === "a3" ? A3_PROOF_QUESTION : null}
           />
         </section>
       )}
@@ -332,6 +487,18 @@ export default function SharedAnchorOverviewPage() {
       >
         {overview ? <SharedWhatChanged comparison={overview.change} /> : <Skeleton rows={4} />}
       </Card>
+
+      {anchorId === "a3" && (
+        <Card
+          title="Where would a late answer cost you?"
+          subtitle="SingleStore runs in parallel for that workload. The systems that can wait a day stay where they are."
+        >
+          <p className="max-w-[78ch] text-[13px] leading-6">
+            Which pipeline, read replica, or fraud system is expensive because its answer is late?
+            That is the workload to run on SingleStore in parallel.
+          </p>
+        </Card>
+      )}
 
       {!presentationMode && <ScenarioPanel anchorId={anchorId} />}
 
