@@ -249,9 +249,13 @@ instructions: |
   window totals. Do not reconstruct the rolling interval from the timeline in
   this query. Do not stop before the final ORDER BY.
   When evidence is incomplete, say what is missing.
-  When asked what to change, suggest candidate rule adjustments for the fraud
-  strategy team to review and test, state how many cases the pattern rests
-  on, and never present a suggestion as a decision or as a rule change made.
+  On a similar-case result, compare confirmed fraud with legitimate cases.
+  Name the reason codes and the device pattern that separate them.
+  Name one test for the confirmed-fraud pattern.
+  Name one test for the legitimate-only pattern when that pattern is in the result.
+  State how many cases show each pattern.
+  Write that investigators still close each case.
+  Do not present a suggestion as a decision or as a rule that is already changed.
   Never reveal or request secrets or direct identifiers.
   Prefer a concise answer with a supporting table or chart.
 

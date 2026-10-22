@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActiveDataProperties } from "@/components/analyst/ProofSql";
 import { Banner, Card, Skeleton } from "@/components/ui";
 import { SQL_JOBS } from "@/lib/analyst/sqlProof";
 import { formatMetric } from "@/lib/format";
@@ -256,9 +255,6 @@ export function OneQueryPanel({ refreshKey }: { refreshKey: string }) {
                 <> Run the statement to read all of that together.</>
               )}
             </p>
-            <div className="mt-3">
-              <ActiveDataProperties />
-            </div>
           </div>
 
           {revealed && (

@@ -78,7 +78,19 @@ export function fraudMultiModelHint(anchorId: string, message: string): string {
     "DOT_PRODUCT(n.notes_embedding, ref.notes_embedding), and join " +
     "aa_fraud_segment_evidence for reason_codes, device reuse, account age, merchant, " +
     "human disposition, and confirmed loss. Use window functions for the requested totals. " +
-    "Return at most eight matches and finish the complete statement with ORDER BY."
+    "Return at most eight matches and finish the complete statement with ORDER BY.\n\n" +
+    "After that table, write **Next check** from the returned rows only.\n" +
+    "Compare rows with human_disposition confirmed_fraud to rows with human_disposition legitimate.\n" +
+    "Name the reason codes that confirmed fraud has and legitimate rows do not have.\n" +
+    "Name the reason codes that legitimate rows have and confirmed fraud does not have.\n" +
+    "Name whether the confirmed-fraud rows share one device.\n" +
+    "Give one test for the fraud strategy team for the confirmed-fraud pattern.\n" +
+    "When legitimate rows have their own pattern, give one test for that pattern too.\n" +
+    "State how many cases in the result show each pattern.\n" +
+    "Write this sentence: Investigators still close each case.\n" +
+    "Write this sentence: This result does not change a rule.\n" +
+    "Do not say that a similar note proves fraud.\n" +
+    "Do not invent a reason code that is not in the result."
   );
 }
 
